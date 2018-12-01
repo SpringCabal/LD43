@@ -5,8 +5,8 @@
       <author>Blender User</author>
       <authoring_tool>Blender 2.79.0 commit date:2018-03-22, commit time:14:10, hash:f4dc9f9d68b</authoring_tool>
     </contributor>
-    <created>2018-12-01T16:23:27</created>
-    <modified>2018-12-01T16:23:27</modified>
+    <created>2018-12-01T16:57:31</created>
+    <modified>2018-12-01T16:57:31</modified>
     <unit name="meter" meter="1"/>
     <up_axis>Z_UP</up_axis>
   </asset>
@@ -218,7 +218,7 @@
   <library_visual_scenes>
     <visual_scene id="Scene" name="Scene">
       <node id="Torso" name="Torso" type="NODE">
-        <matrix sid="transform">-3.17071e-7 -7.253735 0 -0.00145781 7.253735 -3.17071e-7 0 -0.02143726 0 0 7.253735 0.3582652 0 0 0 1</matrix>
+        <matrix sid="transform">-3.17071e-7 -7.253735 0 -0.00145781 7.253735 -3.17071e-7 0 -0.02143726 0 0 7.253735 10.94662 0 0 0 1</matrix>
         <instance_geometry url="#Cube-mesh" name="Torso">
           <bind_material>
             <technique_common>
@@ -227,7 +227,7 @@
           </bind_material>
         </instance_geometry>
         <node id="Head" name="Head" type="NODE">
-          <matrix sid="transform">1 0 0 0.02769843 0 1 0 -8.37385e-4 0 0 1 1.324328 0 0 0 1</matrix>
+          <matrix sid="transform">1 0 -2.11111e-10 0.02769843 0 1 0 -8.37385e-4 0 0 1 1.324327 0 0 0 1</matrix>
           <instance_geometry url="#Cube_004-mesh" name="Head">
             <bind_material>
               <technique_common>
@@ -237,7 +237,7 @@
           </instance_geometry>
         </node>
         <node id="Hand_Right" name="Hand_Right" type="NODE">
-          <matrix sid="transform">1 0 0 -0.004632754 0 1 0 -1.6994 0 0 1 0.3112971 0 0 0 1</matrix>
+          <matrix sid="transform">1 0 -2.11111e-10 -0.004632754 0 1 0 -1.6994 0 0 1 0.3112969 0 0 0 1</matrix>
           <instance_geometry url="#Cube_003-mesh" name="Hand_Right">
             <bind_material>
               <technique_common>
@@ -247,7 +247,7 @@
           </instance_geometry>
         </node>
         <node id="Hand_Left" name="Hand_Left" type="NODE">
-          <matrix sid="transform">1 0 0 0.05330453 0 1 0 1.742137 0 0 1 0.3083786 0 0 0 1</matrix>
+          <matrix sid="transform">1 0 -2.11111e-10 0.05330453 0 1 0 1.742137 0 0 1 0.3083783 0 0 0 1</matrix>
           <instance_geometry url="#Cube_002-mesh" name="Hand_Left">
             <bind_material>
               <technique_common>
