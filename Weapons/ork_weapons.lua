@@ -1,63 +1,51 @@
-local Axe = Weapon:New {
-    -- general
-    weaponType            = "Melee", -- there's a default, but honestly, why?
-    name                  = "Axe",
-    impactOnly            = true,
-    noSelfDamage          = true,
-    range                 = 1500,
-    weaponVelocity        = 1000,
-    reloadTime            = 1.0,
-    tolerance             = 6000,
-
-    -- collision & avoidance
-    avoidFriendly         = true,
-    avoidFeature          = true,
-
-    collideFriendly       = false,
-    collideFeature        = false,
-
+local BigOrkAxe = MeleeWeapon:New {
+    name                  = "BigOrkAxe",
+    range                 = 150,
+    reloadTime            = 3.0,
     -- targeting & accuracy
     accuracy              = 0.9,
-    -- model                 = 'spear.dae',
 
-    soundStart            = [[SpearThrow]],
+    -- soundStart            = [[SpearThrow]],
     soundHit              = [[Hit]],
 
     damage                = {
-        default = 100,
+        default = 300,
     }
 }
 
-local Bite = Weapon:New {
-    -- general
-    weaponType            = "Melee", -- there's a default, but honestly, why?
-    name                  = "Axe",
-    impactOnly            = true,
-    noSelfDamage          = true,
-    range                 = 50,
-    weaponVelocity        = 1000,
-    reloadTime            = 0.5,
-
-    -- collision & avoidance
-    avoidFriendly         = true,
-    avoidFeature          = true,
-
-    collideFriendly       = false,
-    collideFeature        = false,
-
+local BossOrkAxe = MeleeWeapon:New {
+    name                  = "BossOrkAxe",
+    range                 = 200,
+    reloadTime            = 3.0,
     -- targeting & accuracy
     accuracy              = 0.9,
-    -- model                 = 'spear.dae',
 
-    soundStart            = [[SpearThrow]],
+    -- soundStart            = [[SpearThrow]],
     soundHit              = [[Hit]],
 
     damage                = {
-        default = 50,
+        default = 600,
+    }
+}
+
+
+local Bite = MeleeWeapon:New {
+    name                  = "Bite",
+    range                 = 80,
+    reloadTime            = 0.5,
+    -- targeting & accuracy
+    accuracy              = 0.9,
+
+    -- soundStart            = [[SpearThrow]],
+    soundHit              = [[Hit]],
+
+    damage                = {
+        default = 20,
     }
 }
 
 return {
-    Axe = Axe,
+    BigOrkAxe = BigOrkAxe,
+    BossOrkAxe = BossOrkAxe,
     Bite = Bite
 }

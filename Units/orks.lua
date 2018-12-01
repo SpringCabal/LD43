@@ -35,7 +35,7 @@ local OrkBig = Humanoid:New {
 
 	weapons = {
 		{
-			name = "Axe",
+			name = "BigOrkAxe",
 		}
 	},
 }
@@ -57,7 +57,7 @@ local OrkBoss = Humanoid:New {
 
 	weapons = {
 		{
-			name = "Axe",
+			name = "BossOrkAxe",
 		}
 	},
 }

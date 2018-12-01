@@ -11,7 +11,7 @@ local Peasant = Humanoid:New {
 
 	weapons = {
 		{
-			name = "Spear",
+			name = "DefenderSpear",
 		}
 	},
 }
@@ -25,9 +25,11 @@ local Crossbowman = Humanoid:New {
 	maxDamage           = 1600,
 	-- mass                = 50, -- does this even matter?
 
+	collisionVolumeScales    = '37 64 37',
+
 	weapons = {
 		{
-			name = "Spear",
+			name = "CrossBow",
 		}
 	},
 }
