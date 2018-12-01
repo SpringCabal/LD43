@@ -56,6 +56,10 @@ local Humanoid = Unit:New {
     -- collisionVolumeTest      = 1,
 }
 
+local Raw = Unit:New {
+}
+
 return {
-    Humanoid = Humanoid
+    Humanoid = Humanoid,
+	Raw = Raw,
 }
