@@ -51,7 +51,7 @@ end
 
 local function Haste(unitID)
 	local mana = DrainNearbyUnits(unitID)
-	Spring.Echo("Haste!", mana)
+	Spring.Echo("Haste! Mana: ", mana)
 	-- GG.Attributes.AddEffect(unitID, "somekey?", {
 	-- 	accel = 1.5,
 	-- 	move = 1.5
@@ -60,12 +60,12 @@ end
 
 local function Fireball(unitID)
 	local mana = DrainNearbyUnits(unitID)
-	Spring.Echo("Fireball!", mana)
+	Spring.Echo("Fireball! Mana: ", mana)
 end
 
 local function Slow(unitID)
 	local mana = DrainNearbyUnits(unitID)
-	Spring.Echo("Slow!", mana)
+	Spring.Echo("Slow! Mana: ", mana)
 end
 
 -- ID mapping as well

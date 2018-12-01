@@ -66,16 +66,16 @@ function widget:Initialize()
 
     bindText = { -- keybinds told to player
         --purple .. "Q : " .. white .. "swap pull / push",
-        --purple .. "A : " .. white .. "stop shooting",
-        --purple .. "W : " .. white .. "jump (+ left mouse)",
-        --purple .. "S : " .. white .. "stop shooting & moving",
+        purple .. "1 : " .. white .. "Haste",
+        purple .. "2 : " .. white .. "Fireball",
+        purple .. "3 : " .. white .. "Web",
+        purple .. "Ctrl+Q : " .. white .. "Quit",
     }
 
     mouseText = {
 --         purple .. "Left click: " .. white .. "Shoot",
 --         purple .. "Right click : " .. white .. "Place Mines",
 --         purple .. "Scroll Wheel : " .. white .. "Zoom",
-        purple .. "Ctrl+Q : " .. white .. "Quit",
     }
 
 
@@ -88,6 +88,11 @@ function widget:Initialize()
     MakeBindingText()
 end
 
+function widget:Shutdown()
+    for _, ch in pairs(children) do
+        ch:Dispose()
+    end
+end
 
 function MakeBindingText()
     if (not WG.Chili) then

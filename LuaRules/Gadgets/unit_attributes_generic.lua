@@ -13,7 +13,7 @@ function gadget:GetInfo()
 		date      = "2018-11-30", -- v1 2009-11-27
 		license   = "GNU GPL, v2 or later",
 		layer     = -1,
-		enabled   = false, 
+		enabled   = false,
 	}
 end
 
@@ -70,20 +70,20 @@ local function UpdateSensorAndJamm(unitID, unitDefID, speedFactor)
 		}
 	end
 	local orig = origUnitSight[unitDefID]
-	
-	if orig.radar then 
+
+	if orig.radar then
 		Spring.SetUnitSensorRadius(unitID, "radar", orig.radar*speedFactor)
 	end
-	if orig.sonar then 
+	if orig.sonar then
 		Spring.SetUnitSensorRadius(unitID, "sonar", orig.sonar*speedFactor)
 	end
-	if orig.jammer then 
+	if orig.jammer then
 		Spring.SetUnitSensorRadius(unitID, "radarJammer", orig.jammer*speedFactor)
 	end
-	if orig.los then 
+	if orig.los then
 		Spring.SetUnitSensorRadius(unitID, "los", orig.los*speedFactor)
 	end
-	if orig.airLos then 
+	if orig.airLos then
 		Spring.SetUnitSensorRadius(unitID, "airLos", orig.airLos*speedFactor)
 	end
 end
@@ -108,8 +108,8 @@ local function UpdateBuildSpeed(unitID, ud, speedFactor)
 		}
 	end
 	local state = origUnitBuildSpeed[unitDefID]
-	
-	spSetUnitBuildSpeed(unitID, 
+
+	spSetUnitBuildSpeed(unitID,
 		state.buildSpeed * speedFactor, -- build
 		state.maxRepairSpeed * speedFactor, -- repair
 		state.reclaimSpeed * speedFactor, -- reclaim
@@ -126,7 +126,7 @@ local unitReloadPaused = {}
 
 local function UpdatePausedReload(unitID, unitDefID, gameFrame)
 	local state = origUnitWeapons[unitDefID]
-	
+
 	for i = 1, state.weaponCount do
 		local w = state.weapon[i]
 		local reloadState = spGetUnitWeaponState(unitID, i , 'reloadState')
@@ -145,16 +145,16 @@ end
 
 local function UpdateWeapons(unitID, ud, speedFactor, rangeFactor, gameFrame)
 	local unitDefID = ud.id
-	
+
 	if not origUnitWeapons[unitDefID] then
-	
+
 		origUnitWeapons[unitDefID] = {
 			weapon = {},
 			weaponCount = #ud.weapons,
 			maxWeaponRange = ud.maxWeaponRange,
 		}
 		local state = origUnitWeapons[unitDefID]
-		
+
 		for i = 1, state.weaponCount do
 			local wd = WeaponDefs[ud.weapons[i].weaponDef]
 			local reload = wd.reload
@@ -168,9 +168,9 @@ local function UpdateWeapons(unitID, ud, speedFactor, rangeFactor, gameFrame)
 				state.weapon[i].burstRate = false -- beamlasers go screwy if you mess with their burst length
 			end
 		end
-		
+
 	end
-	
+
 	local state = origUnitWeapons[unitDefID]
 	Spring.SetUnitMaxRange(unitID, state.maxWeaponRange*rangeFactor)
 
@@ -218,9 +218,9 @@ local origUnitSpeed = {}
 local function UpdateMovementSpeed(unitID, ud, speedFactor, turnAccelFactor, maxAccelerationFactor)
 	local unitDefID = ud.id
 	if not origUnitSpeed[unitDefID] then
-	
+
 		local moveData = spGetUnitMoveTypeData(unitID)
-	
+
 		origUnitSpeed[unitDefID] = {
 			origSpeed = ud.speed,
 			origReverseSpeed = (moveData.name == "ground") and moveData.maxReverseSpeed or ud.speed,
@@ -229,11 +229,11 @@ local function UpdateMovementSpeed(unitID, ud, speedFactor, turnAccelFactor, max
 			origMaxDec = ud.maxDec,
 			movetype = -1,
 		}
-		
+
 		local state = origUnitSpeed[unitDefID]
 		state.movetype = getMovetype(ud)
 	end
-	
+
 	local state = origUnitSpeed[unitDefID]
 	local decFactor = maxAccelerationFactor
 	local isSlowed = speedFactor < 1
@@ -243,14 +243,14 @@ local function UpdateMovementSpeed(unitID, ud, speedFactor, turnAccelFactor, max
 	end
 	if speedFactor <= 0 then
 		speedFactor = 0
-		
+
 		-- Set the units velocity to zero if it is attached to the ground.
 		local x, y, z = Spring.GetUnitPosition(unitID)
 		if x then
 			local h = Spring.GetGroundHeight(x, z)
 			if h and h >= y then
 				Spring.SetUnitVelocity(unitID, 0,0,0)
-				
+
 				-- Perhaps attributes should do this:
 				--local env = Spring.UnitScript.GetScriptEnv(unitID)
 				--if env and env.script.StopMoving then
@@ -269,7 +269,7 @@ local function UpdateMovementSpeed(unitID, ud, speedFactor, turnAccelFactor, max
 	if maxAccelerationFactor <= 0 then
 		maxAccelerationFactor = 0.001
 	end
-	
+
 	if spMoveCtrlGetTag(unitID) == nil then
 		if state.movetype == 0 then
 			local attribute = {
@@ -287,12 +287,12 @@ local function UpdateMovementSpeed(unitID, ud, speedFactor, turnAccelFactor, max
 			}
 			spSetGunshipMoveTypeData (unitID, attribute)
 		elseif state.movetype == 2 then
-			local accRate = state.origMaxAcc*maxAccelerationFactor 
+			local accRate = state.origMaxAcc*maxAccelerationFactor
 			if isSlowed and accRate > speedFactor then
 				-- Clamp acceleration to mitigate prevent brief speedup when executing new order
 				-- 1 is here as an arbitary factor, there is no nice conversion which means that 1 is a good value.
-				accRate = speedFactor 
-			end 
+				accRate = speedFactor
+			end
 			local attribute =  {
 				maxSpeed        = state.origSpeed       *speedFactor,
 				maxReverseSpeed = (isSlowed and 0) or state.origReverseSpeed, --disallow reverse while slowed
@@ -320,7 +320,7 @@ local currentSense = {}
 
 local function RemoveUnit(unitID)
 	unitReloadPaused[unitID] = nil -- defined earlier
-	
+
 	currentMove[unitID] = nil
 	currentTurn[unitID] = nil
 	currentAccel[unitID] = nil
@@ -334,16 +334,16 @@ local function UpdateUnitAttributes(unitID, attList)
 	if not spValidUnitID(unitID) then
 		return true
 	end
-	
+
 	local unitDefID = spGetUnitDefID(unitID)
-	if not unitDefID then 
+	if not unitDefID then
 		return true
 	end
-	
+
 	local frame = spGetGameFrame()
-	
+
 	local ud = UnitDefs[unitDefID]
-	
+
 	local moveMult = 1
 	local turnMult = 1
 	local accelMult = 1
@@ -351,7 +351,7 @@ local function UpdateUnitAttributes(unitID, attList)
 	local rangeMult = 1
 	local buildMult = 1
 	local senseMult = 1
-	
+
 	for _, data in attList.Iterator() do
 		moveMult = moveMult*(data.move or 1)
 		turnMult = turnMult*(data.turn or 1)
@@ -361,25 +361,25 @@ local function UpdateUnitAttributes(unitID, attList)
 		buildMult = buildMult*(data.build or 1)
 		senseMult = senseMult*(data.sense or 1)
 	end
-	
+
 	if (currentMove[unitID] or 1) ~= moveMult or (currentTurn[unitID] or 1) ~= turnMult or (currentAccel[unitID] or 1) ~= accelMult then
 		UpdateMovementSpeed(unitID, ud, moveMult, turnMult, accelMult)
 		currentMove[unitID] = moveMult
 		currentTurn[unitID] = turnMult
 		currentAccel[unitID] = accelMult
 	end
-	
+
 	if (currentReload[unitID] or 1) ~= reloadMult or (currentRange[unitID] or 1) ~= rangeMult then
 		UpdateWeapons(unitID, ud, reloadMult, rangeMult, frame)
 		currentReload[unitID] = reloadMult
 		currentRange[unitID] = rangeMult
 	end
-	
+
 	if (currentBuild[unitID] or 1) ~= buildMult then
 		UpdateBuildSpeed(unitID, ud, buildMult)
 		currentBuild[unitID] = buildMult
 	end
-	
+
 	if (currentSense[unitID] or 1) ~= senseMult then
 		UpdateSensorAndJamm(unitID, unitDefID, senseMult)
 		currentSense[unitID] = senseMult
@@ -403,7 +403,7 @@ function Attributes.AddEffect(unitID, key, effect)
 		attributeUnits[unitID] = IterableMap.New()
 	end
 	local data = attributeUnits[unitID].Get(key) or {}
-	
+
 	data.move = effect.move
 	data.turn = effect.turn or effect.move
 	data.accel = effect.accel or effect.move
@@ -411,7 +411,7 @@ function Attributes.AddEffect(unitID, key, effect)
 	data.range = effect.range
 	data.build = effect.build
 	data.sense = effect.sense
-	
+
 	attributeUnits[unitID].Add(key, data) -- Overwrites existing key if it exists
 	if UpdateUnitAttributes(unitID, attributeUnits[unitID]) then
 		Attributes.RemoveUnit(unitID)

@@ -13,9 +13,36 @@ local House = Unit:New {
     collisionVolumeScales   = '37 40 37',
     collisionVolumeTest     = 1,
     collisionVolumeType     = 'CylY',
-    footprintX          = 6,
-    footprintZ          = 6,
-    yardmap = "oooooooooooooooooooooooooooooooooooo",
+    footprintX          = 20,
+    footprintZ          = 20,
+    yardmap =
+[[
+oooooooooooooooooooo
+oooooooooooooooooooo
+oooooooooooooooooooo
+oooooooooooooooooooo
+oooooooooooooooooooo
+oooooooooooooooooooo
+oooooooooooooooooooo
+oooooooooooooooooooo
+oooooooooooooooooooo
+oooooooooooooooooooo
+oooooooooooooooooooo
+oooooooooooooooooooo
+oooooooooooooooooooo
+oooooooooooooooooooo
+oooooooooooooooooooo
+oooooooooooooooooooo
+oooooooooooooooooooo
+oooooooooooooooooooo
+oooooooooooooooooooo
+oooooooooooooooooooo
+oooooooooooooooooooo
+oooooooooooooooooooo
+oooooooooooooooooooo
+oooooooooooooooooooo
+oooooooooooooooooooo
+]],
 
     mass                = 50,
     minCollisionSpeed   = 1,
