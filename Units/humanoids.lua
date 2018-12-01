@@ -61,7 +61,7 @@ local Defender = Humanoid:New {
 	-- General
 	name                = "Defender",
 	movementClass       = "Defender",
-	objectName 			= "HumanWithStickLP.dae",
+	objectName 			= "HumanWithStick.dae",
 	script              = "defender.lua",
 	maxDamage           = 1600,
 	-- mass                = 50, -- does this even matter?
@@ -77,7 +77,7 @@ local BloodMage = Humanoid:New {
 	-- General
 	name                = "BloodMage",
 	movementClass       = "Defender",
-	objectName 			= "BloodMageLP.dae",
+	objectName 			= "BloodMage.dae",
 	script              = "defender.lua",
 	maxDamage           = 1600,
 	-- mass                = 50, -- does this even matter?
@@ -94,22 +94,6 @@ local OrkSmall = Humanoid:New {
 	name                = "OrkSmall",
 	movementClass       = "Defender",
 	objectName 			= "OrkSmall.dae",
-	script              = "defender.lua",
-	maxDamage           = 1600,
-	-- mass                = 50, -- does this even matter?
-
-	weapons = {
-		{
-			name = "Spear",
-		}
-	},
-}
-
-local OrkSmallLP = Humanoid:New {
-	-- General
-	name                = "OrkSmallLP",
-	movementClass       = "Defender",
-	objectName 			= "OrkSmallLP.dae",
 	script              = "defender.lua",
 	maxDamage           = 1600,
 	-- mass                = 50, -- does this even matter?
