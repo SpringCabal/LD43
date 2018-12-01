@@ -68,9 +68,16 @@ function RenderLights(beamLights, beamLightCount, pointLights, pointLightCount)
     return beamLights, beamLightCount, pointLights, pointLightCount
 end
 
+local disabled = true
 function widget:Initialize()
+    if disabled then
+        widgetHandler:RemoveWidget(self)
+        return
+    end
+
     if not WG.DeferredLighting_RegisterFunction then
         Spring.Log(LOG_SECTION, LOG.ERROR, "Missing WG.DeferredLighting_RegisterFunction function. Deferred lights aren't enabled.")
+        widgetHandler:RemoveWidget(self)
         return
     end
     Spring.Log(LOG_SECTION, LOG.NOTICE,"Setting up test lights...")
