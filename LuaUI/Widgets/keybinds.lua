@@ -51,11 +51,13 @@ end
 
 local gameMode
 local function UpdateGameMode()
+    Spring.SendCommands("unbindall") --muahahahaha
     if gameMode == "play" then
-        Spring.SendCommands("unbindall") --muahahahaha
         Spring.SendCommands("unbindkeyset enter chat") --because because.
     else
         Spring.SendCommands("bindkeyset enter chat")
+        Spring.SendCommands("bind f1 showelevation")
+        Spring.SendCommands("bind f2 showpathtraversability")
     end
     SetBindings()
 end
