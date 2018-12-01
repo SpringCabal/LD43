@@ -37,7 +37,7 @@ local color = {
     other = '\255\255\255\255', --normal chat color
     ally  = '\255\001\255\001', --ally chat
     spec  = '\255\255\255\001', --spectator chat
-    red   = '\255\255\001\001',
+    red   = '\255\255\100\001',
     orange= '\255\255\165\001',
     blue  = '\255\001\255\255',
 }
@@ -259,10 +259,12 @@ function widget:Initialize()
     ReloadAllMessages(true)
     hack = true
     Spring.SendCommands('bind f8 ' .. COMMAND_NAME)
+    Spring.SendCommands('console 0')
 end
 
 function widget:Shutdown()
     Spring.SendCommands('unbind f8 ' .. COMMAND_NAME)
+    Spring.SendCommands('console 1')
     if window then
         window:Dispose()
     end
@@ -294,27 +296,27 @@ local function processLine(line)
     local name = ''
     local dedup = cfg.msgCap
 
-    if (names[ssub(line,2,(sfind(line,"> ") or 1)-1)] ~= nil) then
-        -- Player Message
-        return _, true, _ --ignore
-    elseif (names[ssub(line,2,(sfind(line,"] ") or 1)-1)] ~= nil) then
-        -- Spec Message
-        return _, true, _ --ignore
-    elseif (names[ssub(line,2,(sfind(line,"(replay)") or 3)-3)] ~= nil) then
-        -- Spec Message (replay)
-        return _, true, _ --ignore
-    elseif (names[ssub(line,1,(sfind(line," added point: ") or 1)-1)] ~= nil) then
-        -- Map point
-        return _, true, _ --ignore
-    elseif (ssub(line,1,1) == ">") then
-        -- Game Message
-        text = ssub(line,3)
-        if ssub(line,1,3) == "> <" then --player speaking in battleroom
-            return _, true, _ --ignore
-        end
-    else
+    --if (names[ssub(line,2,(sfind(line,"> ") or 1)-1)] ~= nil) then
+    --    -- Player Message
+    --    return _, true, _ --ignore
+    --elseif (names[ssub(line,2,(sfind(line,"] ") or 1)-1)] ~= nil) then
+    --    -- Spec Message
+    --    return _, true, _ --ignore
+    --elseif (names[ssub(line,2,(sfind(line,"(replay)") or 3)-3)] ~= nil) then
+    --    -- Spec Message (replay)
+    --    return _, true, _ --ignore
+    --elseif (names[ssub(line,1,(sfind(line," added point: ") or 1)-1)] ~= nil) then
+    --    -- Map point
+    --    return _, true, _ --ignore
+    --elseif (ssub(line,1,1) == ">") then
+    --    -- Game Message
+    --    text = ssub(line,3)
+    --    if ssub(line,1,3) == "> <" then --player speaking in battleroom
+    --        return _, true, _ --ignore
+    --    end
+    --else
         text = line
-    end
+    --end
 
     local lowerLine = slower(line)
     if sfind(lowerLine,"error") or sfind(lowerLine,"failed") then
@@ -322,7 +324,8 @@ local function processLine(line)
     elseif sfind(lowerLine,"warning") then
         textColor = color.orange
     else
-        return _, true, _ --ignore
+		textColor = color.other
+        --return _, true, _ --ignore
     end
     line = textColor .. text
 

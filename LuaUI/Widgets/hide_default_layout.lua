@@ -13,9 +13,9 @@ end
 local gameMode
 local function UpdateGameMode()
     if gameMode == "play" then
-        Spring.SendCommands("Console 0")
+        --Spring.SendCommands("Console 0") -- Handled by console widget
     else
-        Spring.SendCommands("Console 1")
+        --Spring.SendCommands("Console 1") -- Handled by console widget
     end
 end
 
