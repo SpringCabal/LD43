@@ -1,22 +1,21 @@
 {
-    "title" : "LudumDare 43",
-    "setups" : [  
-      {
-        "package": {
-          "id": "dev",
-          "display": "Development"
-        },
-        "downloads": {
-          "maps" : ["Obsidian_1.5"],
-          "engines" : [ "104.0.1-909-g82a205f maintenance" ]
-        },
-        "auto_start" : false,
-        "no_downloads" : true,
-        "launch": {
-          "game": "Ludum Dare 43 $VERSION",
-          "map": "Obsidian_1.5"
-        }
+  "title" : "LudumDare 43",
+  "setups" : [  
+    {
+      "package": {
+        "id": "dev",
+        "display": "Development"
+      },
+      "downloads": {
+        "maps" : ["Obsidian_1.5"],
+        "engines" : [ "104.0.1-909-g82a205f maintenance" ]
+      },
+      "auto_start" : false,
+      "no_downloads" : true,
+      "launch": {
+        "game": "Ludum Dare 43 $VERSION",
+        "map": "Obsidian_1.5"
       }
-    ]
-  }
-  
+    }
+  ]
+}
