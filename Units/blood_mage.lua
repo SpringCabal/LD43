@@ -50,11 +50,8 @@ local BloodMage = Raw:New {
 	-- Collision Volumes
 	-- This should be a good default for games that don't care about performance
 	-- Let's hope it works...
-	usePieceCollisionVolumes = true,
-	usePieceSelectionVolumes = true,
-	-- collisionVolumeType      = 'CylY',
-	-- collisionVolumeScales    = '37 40 37',
-    -- collisionVolumeTest      = 1,
+	collisionVolumeType      = 'CylY',
+	collisionVolumeScales    = '37 60 37',
 
 	-- General
 	name                = "BloodMage",
@@ -66,7 +63,9 @@ local BloodMage = Raw:New {
 
 	maxVelocity         = 50,
 	brakeRate           = 0.6,
-	turnRate            = 760 / 0.16,
+    turnRate            = 760 / 0.16,
+
+    fireState           = 0,
 
 	weapons = {
 		{

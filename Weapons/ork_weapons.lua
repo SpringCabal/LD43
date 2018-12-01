@@ -1,14 +1,12 @@
--- Comments on the right are my grievances with the format
-
 local Axe = Weapon:New {
     -- general
     weaponType            = "Melee", -- there's a default, but honestly, why?
     name                  = "Axe",
     impactOnly            = true,
     noSelfDamage          = true,
-    range                 = 700,
+    range                 = 1500,
     weaponVelocity        = 1000,
-    reloadTime            = 3.0,
+    reloadTime            = 1.0,
     tolerance             = 6000,
 
     -- collision & avoidance
@@ -26,10 +24,40 @@ local Axe = Weapon:New {
     soundHit              = [[Hit]],
 
     damage                = {
-        default = 1000,
+        default = 100,
+    }
+}
+
+local Bite = Weapon:New {
+    -- general
+    weaponType            = "Melee", -- there's a default, but honestly, why?
+    name                  = "Axe",
+    impactOnly            = true,
+    noSelfDamage          = true,
+    range                 = 50,
+    weaponVelocity        = 1000,
+    reloadTime            = 0.5,
+
+    -- collision & avoidance
+    avoidFriendly         = true,
+    avoidFeature          = true,
+
+    collideFriendly       = false,
+    collideFeature        = false,
+
+    -- targeting & accuracy
+    accuracy              = 0.9,
+    -- model                 = 'spear.dae',
+
+    soundStart            = [[SpearThrow]],
+    soundHit              = [[Hit]],
+
+    damage                = {
+        default = 50,
     }
 }
 
 return {
-	Axe = Axe
+    Axe = Axe,
+    Bite = Bite
 }

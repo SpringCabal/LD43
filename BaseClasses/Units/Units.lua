@@ -49,11 +49,10 @@ local Humanoid = Unit:New {
 	-- Collision Volumes
 	-- This should be a good default for games that don't care about performance
 	-- Let's hope it works...
-	usePieceCollisionVolumes = true,
-	usePieceSelectionVolumes = true,
-	-- collisionVolumeType      = 'CylY',
-	-- collisionVolumeScales    = '37 40 37',
-    -- collisionVolumeTest      = 1,
+	usePieceCollisionVolumes = false,
+	usePieceSelectionVolumes = false,
+	collisionVolumeType      = 'CylY',
+	collisionVolumeScales    = '37 40 37',
 }
 
 local Raw = Unit:New {

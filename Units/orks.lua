@@ -5,12 +5,15 @@ local OrkSmall = Humanoid:New {
 	movementClass       = "Defender",
 	objectName 			= "OrkSmall.dae",
 	script              = "ork.lua",
-	maxDamage           = 1600,
+	maxDamage           = 500,
 	-- mass                = 50, -- does this even matter?
+	footprintX 			= 2,
+	footprintZ 			= 2,
+	maxVelocity         = 3,
 
 	weapons = {
 		{
-			name = "Axe",
+			name = "Bite",
 		}
 	},
 }
@@ -21,8 +24,14 @@ local OrkBig = Humanoid:New {
 	movementClass       = "Defender",
 	objectName 			= "OrkBig.dae",
 	script              = "ork.lua",
-	maxDamage           = 1600,
+	maxDamage           = 1000,
 	-- mass                = 50, -- does this even matter?
+
+	footprintX 			= 8,
+	footprintZ 			= 8,
+
+	collisionVolumeType      = 'CylY',
+	collisionVolumeScales    = '149 119 149',
 
 	weapons = {
 		{
@@ -40,9 +49,15 @@ local OrkBoss = Humanoid:New {
 	maxDamage           = 1600,
 	-- mass                = 50, -- does this even matter?
 
+	footprintX 			= 12,
+	footprintZ 			= 12,
+
+	collisionVolumeType      = 'CylY',
+	collisionVolumeScales    = '320 235 320',
+
 	weapons = {
 		{
-			name = "Spear",
+			name = "Axe",
 		}
 	},
 }
