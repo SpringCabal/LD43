@@ -209,26 +209,22 @@ local function GetUnitFinalPosition(uID)
 
 		local cmd = cmds[i]
 		if (cmd.id < 0) or positionCmds[cmd.id] then
-
-			local params = cmd.params
+	local params = cmd.params
 			if #params >= 3 then
-				return params[1], params[2], params[3]
+	return params[1], params[2], params[3]
 			else
-				if #params == 1 then
-
-					local pID = params[1]
-					local px, py, pz
-
-					if pID > maxUnits then
-						px, py, pz = spGetFeaturePosition(pID - maxUnits)
-					else
-						px, py, pz = spGetUnitPosition(pID)
-					end
-
-					if px then
-						return px, py, pz
-					end
-				end
+	if #params == 1 then
+			local pID = params[1]
+		local px, py, pz
+			if pID > maxUnits then
+		px, py, pz = spGetFeaturePosition(pID - maxUnits)
+		else
+		px, py, pz = spGetUnitPosition(pID)
+		end
+			if px then
+		return px, py, pz
+		end
+	end
 			end
 		end
 	end
@@ -320,12 +316,10 @@ local function GetInterpNodes(mUnits)
 
 		local reqDist = n * spacing
 		while (reqDist > eDist) do
-
-			sX = eX
+	sX = eX
 			sZ = eZ
 			sDist = eDist
-
-			eIdx = eIdx + 1
+	eIdx = eIdx + 1
 			ePos = fNodes[eIdx]
 			eX = ePos[1]
 			eZ = ePos[3]
@@ -413,25 +407,22 @@ function widget:MousePress(mx, my, mButton)
 
 		local overrideCmdID = overrideCmds[defaultCmdID]
 		if overrideCmdID then
-
-			local targType, targID = spTraceScreenRay(mx, my, false, inMinimap)
+	local targType, targID = spTraceScreenRay(mx, my, false, inMinimap)
 			if targType == 'unit' then
-				overriddenCmd = defaultCmdID
-				overriddenTarget = targID
+	overriddenCmd = defaultCmdID
+	overriddenTarget = targID
 			elseif targType == 'feature' then
-				overriddenCmd = defaultCmdID
-				overriddenTarget = targID + maxUnits
+	overriddenCmd = defaultCmdID
+	overriddenTarget = targID + maxUnits
 			else
-				-- We can't reversibly override a command if we can't get the original target, so we give up overriding it.
-				return false
+	-- We can't reversibly override a command if we can't get the original target, so we give up overriding it.
+	return false
 			end
-
-			usingCmd = overrideCmdID
+	usingCmd = overrideCmdID
 		else
 			overriddenCmd = nil
 			overriddenTarget = nil
-
-			usingCmd = defaultCmdID
+	usingCmd = defaultCmdID
 		end
 
 		usingRMB = true
@@ -491,26 +482,22 @@ function widget:MouseMove(mx, my, dx, dy, mButton)
 
 		-- If the line is a path, start the units moving to this node
 		if pathCandidate then
-
-			local alt, ctrl, meta, shift = GetModKeys()
+	local alt, ctrl, meta, shift = GetModKeys()
 			local cmdOpts = GetCmdOpts(false, ctrl, meta, shift, usingRMB) -- using alt uses springs box formation, so we set it off always
 			GiveNotifyingOrder(usingCmd, pos, cmdOpts)
 			lastPathPos = pos
-
-			draggingPath = true
+	draggingPath = true
 		end
 	else
 		-- Are we dragging a path?
 		if draggingPath then
-
-			dx = pos[1] - lastPathPos[1]
+	dx = pos[1] - lastPathPos[1]
 			local dz = pos[3] - lastPathPos[3]
 			if (dx*dx + dz*dz) > minPathSpacingSq then
-
-				local alt, ctrl, meta, shift = GetModKeys()
-				local cmdOpts = GetCmdOpts(false, ctrl, meta, true, usingRMB) -- using alt uses springs box formation, so we set it off always
-				GiveNotifyingOrder(usingCmd, pos, cmdOpts)
-				lastPathPos = pos
+		local alt, ctrl, meta, shift = GetModKeys()
+	local cmdOpts = GetCmdOpts(false, ctrl, meta, true, usingRMB) -- using alt uses springs box formation, so we set it off always
+	GiveNotifyingOrder(usingCmd, pos, cmdOpts)
+	lastPathPos = pos
 			end
 		end
 	end
@@ -549,11 +536,9 @@ function widget:MouseRelease(mx, my, mButton)
 		end
 
 		if targetID and targetID == overriddenTarget then
-
-			-- Signal that we are no longer using the drawn formation
+	-- Signal that we are no longer using the drawn formation
 			usingFormation = false
-
-			-- Process the original command instead
+	-- Process the original command instead
 			local cmdOpts = GetCmdOpts(alt, ctrl, meta, shift, usingRMB)
 			GiveNotifyingOrder(overriddenCmd, {overriddenTarget}, cmdOpts)
 		end
@@ -571,7 +556,7 @@ function widget:MouseRelease(mx, my, mButton)
 		if (not inMinimap) or spIsAboveMiniMap(mx, my) then
 			local _, pos = spTraceScreenRay(mx, my, true, inMinimap)
 			if pos then
-				AddFNode(pos)
+	AddFNode(pos)
 			end
 		end
 
@@ -583,71 +568,64 @@ function widget:MouseRelease(mx, my, mButton)
 		if fDists[#fNodes] < minFormationLength then
 			-- We should check if any units are able to execute it,
 			-- but the order is small enough network-wise that the tiny bug potential isn't worth it.
-
-			-- Check if this order was meant to target a unit
+	-- Check if this order was meant to target a unit
 			local targetID
 			if overrideCmds[usingCmd] then
-				local targType, targID = spTraceScreenRay(mx, my, false, inMinimap)
-				if targType == 'unit' then
-					targetID = targID
-				elseif targType == 'feature' then
-					targetID = targID + maxUnits
-				end
+	local targType, targID = spTraceScreenRay(mx, my, false, inMinimap)
+	if targType == 'unit' then
+		targetID = targID
+	elseif targType == 'feature' then
+		targetID = targID + maxUnits
+	end
 			end
-
-			if targetID then
-				-- Give order (i.e. pass the command to the engine to use as normal)
-				GiveNotifyingOrder(usingCmd, {targetID}, cmdOpts)
+	if targetID then
+	-- Give order (i.e. pass the command to the engine to use as normal)
+	GiveNotifyingOrder(usingCmd, {targetID}, cmdOpts)
 			elseif usingCmd == CMD_MOVE then
-				GiveNotifyingOrder(usingCmd, fNodes[1], cmdOpts)
+	GiveNotifyingOrder(usingCmd, fNodes[1], cmdOpts)
 			else
-				-- Deselect command, select default command instead
-				spSetActiveCommand(0)
+	-- Deselect command, select default command instead
+	spSetActiveCommand(0)
 			end
 
 		else
 			-- Order is a formation; line was drawn
 			-- Are any units able to execute it?
 			local mUnits = GetExecutingUnits(usingCmd)
-
-			if #mUnits > 0 then
-
-				local interpNodes = GetInterpNodes(mUnits)
-
-				local orders
-				if (#mUnits <= maxHungarianUnits) then
-					orders = GetOrdersHungarian(interpNodes, mUnits, #mUnits, shift and not meta)
-				else
-					orders = GetOrdersNoX(interpNodes, mUnits, #mUnits, shift and not meta)
-				end
-
-				local unitArr = {}
-				local orderArr = {}
-				if meta then
-					local altOpts = GetCmdOpts(true, false, false, false, false)
-					for i = 1, #orders do
-						local orderPair = orders[i]
-						local orderPos = orderPair[2]
-						GiveNotifyingOrderToUnit(unitArr, orderArr, orderPair[1], CMD_INSERT, {0, usingCmd, cmdOpts.coded, orderPos[1], orderPos[2], orderPos[3]}, altOpts)
-						if (i == #orders and #unitArr > 0) or #unitArr >= 100 then
-							Spring.GiveOrderArrayToUnitArray(unitArr, orderArr, true)
-							unitArr = {}
-							orderArr = {}
-						end
-					end
-				else
-					for i = 1, #orders do
-						local orderPair = orders[i]
-						GiveNotifyingOrderToUnit(unitArr, orderArr, orderPair[1], usingCmd, orderPair[2], cmdOpts)
-						if (i == #orders and #unitArr > 0) or #unitArr >= 100 then
-							Spring.GiveOrderArrayToUnitArray(unitArr, orderArr, true)
-							unitArr = {}
-							orderArr = {}
-						end
-					end
-				end
-
-			spSetActiveCommand(0) -- Deselect command
+	if #mUnits > 0 then
+		local interpNodes = GetInterpNodes(mUnits)
+		local orders
+	if (#mUnits <= maxHungarianUnits) then
+		orders = GetOrdersHungarian(interpNodes, mUnits, #mUnits, shift and not meta)
+	else
+		orders = GetOrdersNoX(interpNodes, mUnits, #mUnits, shift and not meta)
+	end
+		local unitArr = {}
+	local orderArr = {}
+	if meta then
+		local altOpts = GetCmdOpts(true, false, false, false, false)
+		for i = 1, #orders do
+		local orderPair = orders[i]
+		local orderPos = orderPair[2]
+		GiveNotifyingOrderToUnit(unitArr, orderArr, orderPair[1], CMD_INSERT, {0, usingCmd, cmdOpts.coded, orderPos[1], orderPos[2], orderPos[3]}, altOpts)
+		if (i == #orders and #unitArr > 0) or #unitArr >= 100 then
+		Spring.GiveOrderArrayToUnitArray(unitArr, orderArr, true)
+		unitArr = {}
+		orderArr = {}
+		end
+		end
+	else
+		for i = 1, #orders do
+		local orderPair = orders[i]
+		GiveNotifyingOrderToUnit(unitArr, orderArr, orderPair[1], usingCmd, orderPair[2], cmdOpts)
+		if (i == #orders and #unitArr > 0) or #unitArr >= 100 then
+		Spring.GiveOrderArrayToUnitArray(unitArr, orderArr, true)
+		unitArr = {}
+		orderArr = {}
+		end
+		end
+	end
+	spSetActiveCommand(0) -- Deselect command
 			end
 		end
 
@@ -657,18 +635,18 @@ function widget:MouseRelease(mx, my, mButton)
 		if ctrl then
 			local selUnits = spGetSelectedUnits()
 			for i = 1, #selUnits do
-				local uSpeed = UnitDefs[spGetUnitDefID(selUnits[i])].speed
-				if uSpeed > 0 and uSpeed < wantedSpeed then
-					wantedSpeed = uSpeed
-				end
+	local uSpeed = UnitDefs[spGetUnitDefID(selUnits[i])].speed
+	if uSpeed > 0 and uSpeed < wantedSpeed then
+		wantedSpeed = uSpeed
+	end
 			end
 		end
 
 		-- Directly giving speed order appears to work perfectly, including with shifted orders ...
 		-- ... But other widgets CMD.INSERT the speed order into the front (Posn 1) of the queue instead (which doesn't work with shifted orders)
 		if usingCmd ~= CMD.ATTACK and usingCmd ~= CMD.UNLOAD then --hack to fix bomber line attack etc.
-		  local speedOpts = GetCmdOpts(alt, ctrl, meta, shift, true)
-		  GiveNotifyingOrder(CMD_SET_WANTED_MAX_SPEED, {wantedSpeed / 30}, speedOpts)
+	local speedOpts = GetCmdOpts(alt, ctrl, meta, shift, true)
+	GiveNotifyingOrder(CMD_SET_WANTED_MAX_SPEED, {wantedSpeed / 30}, speedOpts)
 		end
 	end
 
@@ -743,23 +721,23 @@ local function DrawFormationDots(vertFunction, zoomY, unitCount)
 		DrawFilledCircleOutFading(fNodes[1], dotSize, 8)
 		if (#fNodes > 2) then
 			for i=1, #fNodes-1 do
-				local x = fNodes[i][1]
-				local y = fNodes[i][3]
-				local x2 = fNodes[i+1][1]
-				local y2 = fNodes[i+1][3]
-				local dx = x - x2
-				local dy = y - y2
-				local length = sqrt((dx*dx)+(dy*dy))
-				while (currentLength + length >= lengthUnitNext) do
-					local factor = (lengthUnitNext - currentLength) / length
-					local factorPos =
-						{fNodes[i][1] + ((fNodes[i+1][1] - fNodes[i][1]) * factor),
-						fNodes[i][2] + ((fNodes[i+1][2] - fNodes[i][2]) * factor),
-						fNodes[i][3] + ((fNodes[i+1][3] - fNodes[i][3]) * factor)}
-					DrawFilledCircleOutFading(factorPos, dotSize, 8)
-					lengthUnitNext = lengthUnitNext + lengthPerUnit
-				end
-				currentLength = currentLength + length
+	local x = fNodes[i][1]
+	local y = fNodes[i][3]
+	local x2 = fNodes[i+1][1]
+	local y2 = fNodes[i+1][3]
+	local dx = x - x2
+	local dy = y - y2
+	local length = sqrt((dx*dx)+(dy*dy))
+	while (currentLength + length >= lengthUnitNext) do
+		local factor = (lengthUnitNext - currentLength) / length
+		local factorPos =
+		{fNodes[i][1] + ((fNodes[i+1][1] - fNodes[i][1]) * factor),
+		fNodes[i][2] + ((fNodes[i+1][2] - fNodes[i][2]) * factor),
+		fNodes[i][3] + ((fNodes[i+1][3] - fNodes[i][3]) * factor)}
+		DrawFilledCircleOutFading(factorPos, dotSize, 8)
+		lengthUnitNext = lengthUnitNext + lengthPerUnit
+	end
+	currentLength = currentLength + length
 			end
 		end
 		DrawFilledCircleOutFading(fNodes[#fNodes], dotSize, 8)
@@ -872,15 +850,13 @@ function GetOrdersNoX(nodes, units, unitCount, shifted)
 
 		-- Work on finding furthest points (As we have ux/uz already)
 		for i = u - 1, 1, -1 do
-
-			local up = unitSet[i]
+	local up = unitSet[i]
 			local vx, vz = up[1], up[3]
 			local dx, dz = vx - ux, vz - uz
 			local dist = dx*dx + dz*dz
-
-			if (dist > fdist) then
-				fdist = dist
-				fm = (vz - uz) / (vx - ux)
+	if (dist > fdist) then
+	fdist = dist
+	fm = (vz - uz) / (vx - ux)
 			end
 		end
 	end
@@ -892,15 +868,13 @@ function GetOrdersNoX(nodes, units, unitCount, shifted)
 		local nx, nz = np[1], np[3]
 
 		for j = i + 1, unitCount do
-
-			local mp = nodes[j]
+	local mp = nodes[j]
 			local mx, mz = mp[1], mp[3]
 			local dx, dz = mx - nx, mz - nz
 			local dist = dx*dx + dz*dz
-
-			if (dist > fdist) then
-				fdist = dist
-				fm = (mz - nz) / (mx - nx)
+	if (dist > fdist) then
+	fdist = dist
+	fm = (mz - nz) / (mx - nx)
 			end
 		end
 	end
@@ -957,52 +931,41 @@ function GetOrdersNoX(nodes, units, unitCount, shifted)
 		local clashes = false
 
 		for i = 1, stFinCnt do
-
-			-- Get opposing unit and matching node position
+	-- Get opposing unit and matching node position
 			local f = stFin[i]
 			local fd = unitSet[f]
 			local tn = fd[4]
-
-			-- Get collision point
+	-- Get collision point
 			local ix = (Cs[f] - Cu) / (Mu - Ms[f])
 			local iz = Mu * ix + Cu
-
-			-- Check bounds
+	-- Check bounds
 			if ((ux - ix) * (ix - nx) >= 0) and
-			   ((uz - iz) * (iz - nz) >= 0) and
-			   ((fd[1] - ix) * (ix - tn[1]) >= 0) and
-			   ((fd[3] - iz) * (iz - tn[3]) >= 0) then
-
-				-- Lines cross
-
-				-- Swap matches, note this retains solution integrity
-				ud[4] = tn
-				fd[4] = mn
-
-				-- Remove clashee from finished
-				stFin[i] = stFin[stFinCnt]
-				stFinCnt = stFinCnt - 1
-
-				-- Add clashee to top of check stack
-				stChkCnt = stChkCnt + 1
-				stChk[stChkCnt] = f
-
-				-- No need to check further
-				clashes = true
-				break
+		((uz - iz) * (iz - nz) >= 0) and
+		((fd[1] - ix) * (ix - tn[1]) >= 0) and
+		((fd[3] - iz) * (iz - tn[3]) >= 0) then
+		-- Lines cross
+		-- Swap matches, note this retains solution integrity
+	ud[4] = tn
+	fd[4] = mn
+		-- Remove clashee from finished
+	stFin[i] = stFin[stFinCnt]
+	stFinCnt = stFinCnt - 1
+		-- Add clashee to top of check stack
+	stChkCnt = stChkCnt + 1
+	stChk[stChkCnt] = f
+		-- No need to check further
+	clashes = true
+	break
 			end
 		end
 
 		if not clashes then
-
-			-- Add checked unit to finished
+	-- Add checked unit to finished
 			stFinCnt = stFinCnt + 1
 			stFin[stFinCnt] = u
-
-			-- Remove from to-check stack (Easily done, we know it was one on top)
+	-- Remove from to-check stack (Easily done, we know it was one on top)
 			stChkCnt = stChkCnt - 1
-
-			-- We can set the M/C now
+	-- We can set the M/C now
 			Ms[u] = Mu
 			Cs[u] = Cu
 		end
@@ -1050,11 +1013,10 @@ function GetOrdersHungarian(nodes, units, unitCount, shifted)
 		distances[i] = {}
 		local dists = distances[i]
 		for j = 1, unitCount do
-
-			local nodePos = nodes[j]
+	local nodePos = nodes[j]
 			local dx, dz = nodePos[1] - ux, nodePos[3] - uz
 			dists[j] = floor(sqrt(dx*dx + dz*dz) + 0.5)
-			 -- Integer distances = greatly improved algorithm speed
+	-- Integer distances = greatly improved algorithm speed
 		end
 	end
 
@@ -1078,20 +1040,17 @@ function GetOrdersHungarian(nodes, units, unitCount, shifted)
 		-- To make judgements we need number of units to be close to max
 		-- Because we are making predictions of time and we want them to be accurate
 		if (#units > maxHungarianUnits*unitIncreaseThresh) then
-
-			-- This implementation of Hungarian algorithm is O(n3)
+	-- This implementation of Hungarian algorithm is O(n3)
 			-- Because we have less than maxUnits, but are altering maxUnits...
 			-- We alter the time, to 'predict' time we would be getting at maxUnits
 			-- We then recheck that against maxHngTime
-
-			local nMult = maxHungarianUnits / #units
-
-			if ((delay*nMult*nMult*nMult) < maxHngTime) then
-				maxHungarianUnits = maxHungarianUnits + 1
+	local nMult = maxHungarianUnits / #units
+	if ((delay*nMult*nMult*nMult) < maxHngTime) then
+	maxHungarianUnits = maxHungarianUnits + 1
 			else
-				if (maxHungarianUnits > minHungarianUnits) then
-					maxHungarianUnits = maxHungarianUnits - 1
-				end
+	if (maxHungarianUnits > minHungarianUnits) then
+		maxHungarianUnits = maxHungarianUnits - 1
+	end
 			end
 		end
 	end
@@ -1129,7 +1088,7 @@ function findHungarian(array, n)
 		local minVal = aRow[1]
 		for j = 2, n do
 			if aRow[j] < minVal then
-				minVal = aRow[j]
+	minVal = aRow[j]
 			end
 		end
 
@@ -1144,7 +1103,7 @@ function findHungarian(array, n)
 		local minVal = array[1][j]
 		for i = 2, n do
 			if array[i][j] < minVal then
-				minVal = array[i][j]
+	minVal = array[i][j]
 			end
 		end
 
@@ -1158,9 +1117,9 @@ function findHungarian(array, n)
 		local aRow = array[i]
 		for j = 1, n do
 			if (aRow[j] == 0) and not colcover[j] then
-				colcover[j] = true
-				starscol[i] = j
-				break
+	colcover[j] = true
+	starscol[i] = j
+	break
 			end
 		end
 	end
@@ -1172,15 +1131,15 @@ function findHungarian(array, n)
 		local done = true
 		for i = 1, n do
 			if not colcover[i] then
-				done = false
-				break
+	done = false
+	break
 			end
 		end
 
 		if done then
 			local pairings = {}
 			for i = 1, n do
-				pairings[i] = {i, starscol[i]}
+	pairings[i] = {i, starscol[i]}
 			end
 			return pairings
 		end
@@ -1202,10 +1161,10 @@ function doPrime(array, colcover, rowcover, n, starscol, r, c, rmax, primescol)
 
 		for i = 1, rmax do
 			if not rowcover[i] and (array[i][starCol] == 0) then
-				local rr, cc = doPrime(array, colcover, rowcover, n, starscol, i, starCol, rmax, primescol)
-				if rr then
-					return rr, cc
-				end
+	local rr, cc = doPrime(array, colcover, rowcover, n, starscol, i, starCol, rmax, primescol)
+	if rr then
+		return rr, cc
+	end
 			end
 		end
 
@@ -1222,16 +1181,16 @@ function stepPrimeZeroes(array, colcover, rowcover, n, starscol, primescol)
 		-- Find uncovered zeros and prime them
 		for i = 1, n do
 			if not rowcover[i] then
-				local aRow = array[i]
-				for j = 1, n do
-					if (aRow[j] == 0) and not colcover[j] then
-						local k, l = doPrime(array, colcover, rowcover, n, starscol, i, j, i-1, primescol)
-						if k then
-							return k, l
-						end
-						break -- this row is covered
-					end
-				end
+	local aRow = array[i]
+	for j = 1, n do
+		if (aRow[j] == 0) and not colcover[j] then
+		local k, l = doPrime(array, colcover, rowcover, n, starscol, i, j, i-1, primescol)
+		if k then
+		return k, l
+		end
+		break -- this row is covered
+		end
+	end
 			end
 		end
 
@@ -1239,12 +1198,12 @@ function stepPrimeZeroes(array, colcover, rowcover, n, starscol, primescol)
 		local minVal = huge
 		for i = 1, n do
 			if not rowcover[i] then
-				local aRow = array[i]
-				for j = 1, n do
-					if (aRow[j] < minVal) and not colcover[j] then
-						minVal = aRow[j]
-					end
-				end
+	local aRow = array[i]
+	for j = 1, n do
+		if (aRow[j] < minVal) and not colcover[j] then
+		minVal = aRow[j]
+		end
+	end
 			end
 		end
 
@@ -1255,17 +1214,17 @@ function stepPrimeZeroes(array, colcover, rowcover, n, starscol, primescol)
 		for i = 1, n do
 			local aRow = array[i]
 			if rowcover[i] then
-				for j = 1, n do
-					if colcover[j] then
-						aRow[j] = aRow[j] + minVal
-					end
-				end
+	for j = 1, n do
+		if colcover[j] then
+		aRow[j] = aRow[j] + minVal
+		end
+	end
 			else
-				for j = 1, n do
-					if not colcover[j] then
-						aRow[j] = aRow[j] - minVal
-					end
-				end
+	for j = 1, n do
+		if not colcover[j] then
+		aRow[j] = aRow[j] - minVal
+		end
+	end
 			end
 		end
 	end
@@ -1281,21 +1240,16 @@ function stepFiveStar(colcover, rowcover, row, col, n, starscol, primescol)
 		local noFind = true
 
 		for i = 1, n do
-
-			if (starscol[i] == col) and (i ~= ignoreRow) then
-
-				noFind = false
-
-				-- Unstar the star
-				-- Turn the prime on the same row into a star (And ignore this row (aka star) when searching for next star)
-
-				local pcol = primescol[i]
-				primescol[i] = false
-				starscol[i] = pcol
-				ignoreRow = i
-				col = pcol
-
-				break
+	if (starscol[i] == col) and (i ~= ignoreRow) then
+		noFind = false
+		-- Unstar the star
+	-- Turn the prime on the same row into a star (And ignore this row (aka star) when searching for next star)
+		local pcol = primescol[i]
+	primescol[i] = false
+	starscol[i] = pcol
+	ignoreRow = i
+	col = pcol
+		break
 			end
 		end
 	until noFind

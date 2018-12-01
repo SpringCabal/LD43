@@ -7,7 +7,7 @@ function widget:GetInfo()
 		author  = 'Googlefrog',
 		date    = '',
 		license = 'GNU GPL v2',
-        layer = 0,
+		layer = 0,
 		enabled = true,
 	}
 end

@@ -2,15 +2,15 @@
 --------------------------------------------------------------------------------
 function widget:GetInfo()
   return {
-    name      = "Map Edge Extension",
-    version   = "v0.5",
-    desc      = "Draws a mirrored map next to the edges of the real map",
-    author    = "Pako",
-    date      = "2010.10.27 - 2011.10.29", --YYYY.MM.DD, created - updated
-    license   = "GPL",
-    layer     = 0,
-    enabled   = true,
-    --detailsDefault = 3
+	name      = "Map Edge Extension",
+	version   = "v0.5",
+	desc      = "Draws a mirrored map next to the edges of the real map",
+	author    = "Pako",
+	date      = "2010.10.27 - 2011.10.29", --YYYY.MM.DD, created - updated
+	license   = "GPL",
+	layer     = 0,
+	enabled   = true,
+	--detailsDefault = 3
   }
 end
 --------------------------------------------------------------------------------
@@ -83,9 +83,9 @@ local function SetupShaderTable()
 
 		float alpha = 1.0;
 		#ifdef curvature
-		  if(mirrorX)gl_Vertex.y -= pow(abs(gl_Vertex.x-left*mirrorX)/150.0, 2.0);
-		  if(mirrorZ)gl_Vertex.y -= pow(abs(gl_Vertex.z-up*mirrorZ)/150.0, 2.0);
-		  alpha = 0.0;
+	if(mirrorX)gl_Vertex.y -= pow(abs(gl_Vertex.x-left*mirrorX)/150.0, 2.0);
+	if(mirrorZ)gl_Vertex.y -= pow(abs(gl_Vertex.z-up*mirrorZ)/150.0, 2.0);
+	alpha = 0.0;
 			if(mirrorX) alpha -= pow(abs(gl_Vertex.x-left*mirrorX)/lengthX, 2.0);
 			if(mirrorZ) alpha -= pow(abs(gl_Vertex.z-up*mirrorZ)/lengthZ, 2.0);
 			alpha = 1.0 + (6.0 * (alpha + 0.18));
@@ -93,17 +93,17 @@ local function SetupShaderTable()
 
 		float ff = 20000.0;
 		if((mirrorZ && mirrorX))
-		  ff=ff/(pow(abs(gl_Vertex.z-up*mirrorZ)/150.0, 2.0)+pow(abs(gl_Vertex.x-left*mirrorX)/150.0, 2.0)+2.0);
+	ff=ff/(pow(abs(gl_Vertex.z-up*mirrorZ)/150.0, 2.0)+pow(abs(gl_Vertex.x-left*mirrorX)/150.0, 2.0)+2.0);
 		else if(mirrorX)
-		  ff=ff/(pow(abs(gl_Vertex.x-left*mirrorX)/150.0, 2.0)+2.0);
+	ff=ff/(pow(abs(gl_Vertex.x-left*mirrorX)/150.0, 2.0)+2.0);
 		else if(mirrorZ)
-		  ff=ff/(pow(abs(gl_Vertex.z-up*mirrorZ)/150.0, 2.0)+2.0);
+	ff=ff/(pow(abs(gl_Vertex.z-up*mirrorZ)/150.0, 2.0)+2.0);
 
 		gl_Position  = gl_ModelViewProjectionMatrix*gl_Vertex;
 		//gl_Position.z+ff;
 
 		#ifdef edgeFog
-		  gl_FogFragCoord = length((gl_ModelViewMatrix * gl_Vertex).xyz)+ff; //see how Spring shaders do the fog and copy from there to fix this
+	gl_FogFragCoord = length((gl_ModelViewMatrix * gl_Vertex).xyz)+ff; //see how Spring shaders do the fog and copy from there to fix this
 		#endif
 
 		gl_FrontColor = vec4(brightness * gl_Color.rgb, alpha);
@@ -202,15 +202,15 @@ local function DrawMapVertices(useMirrorShader)
 			xm0, xm1 = xm1, xm1+Scale
 			ind = (ind+1)%2
 			for z=sten[ind+1], sten[ind+2], (1+(-ind*2))*Scale do
-				zv = abs(dz+z)+sz
-				TexCoord(xm0/mapSizeX, z/mapSizeZ)
-       -- Normal(GetGroundNormal(xm0,z))
-        h = sggh(xm0,z)
-				Vertex(xv0,h,zv)
-				TexCoord(xm1/mapSizeX, z/mapSizeZ)
-        --Normal(GetGroundNormal(xm1,z))
-				h = sggh(xm1,z)
-				Vertex(xv1,h,zv)
+	zv = abs(dz+z)+sz
+	TexCoord(xm0/mapSizeX, z/mapSizeZ)
+	-- Normal(GetGroundNormal(xm0,z))
+		h = sggh(xm0,z)
+	Vertex(xv0,h,zv)
+	TexCoord(xm1/mapSizeX, z/mapSizeZ)
+		--Normal(GetGroundNormal(xm1,z))
+	h = sggh(xm1,z)
+	Vertex(xv1,h,zv)
 			end
 		end
 		if not useMirrorShader then

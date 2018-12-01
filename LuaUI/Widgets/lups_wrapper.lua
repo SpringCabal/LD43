@@ -20,10 +20,10 @@ if VFS.FileExists("lups/lups.cfg",VFS.ZIP) then
   local newFile = VFS.LoadFile("lups/lups.cfg",VFS.ZIP);
 
   if (not VFS.FileExists("lups.cfg",VFS.RAW_ONLY)) then
-    local f=io.open("lups.cfg",'w+');
-    if (f) then
-      f:write(newFile);
-    end
-    f:close();
+	local f=io.open("lups.cfg",'w+');
+	if (f) then
+	  f:write(newFile);
+	end
+	f:close();
   end
 end

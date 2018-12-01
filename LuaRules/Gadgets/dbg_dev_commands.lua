@@ -1,13 +1,13 @@
 
 function gadget:GetInfo()
   return {
-    name      = "Dev Commands",
-    desc      = "Adds useful commands.",
-    author    = "Google Frog",
-    date      = "12 Sep 2011",
-    license   = "GNU GPL, v2 or later",
-    layer     = 0,
-    enabled   = true,  --  loaded by default?
+	name      = "Dev Commands",
+	desc      = "Adds useful commands.",
+	author    = "Google Frog",
+	date      = "12 Sep 2011",
+	license   = "GNU GPL, v2 or later",
+	layer     = 0,
+	enabled   = true,  --  loaded by default?
 	handler   = true,
   }
 end
@@ -100,16 +100,16 @@ local function give(cmd,line,words,player)
 			Spring.CreateUnit(udid, x, y, z, 0, 0, false)
 			local ud = UnitDefs[udid]
 			if ud.buildOptions and #ud.buildOptions > 0 then
-				local sublist = ud.buildOptions
-				for j = 1, #sublist do
-					local subUdid = sublist[j]
-					local x2, z2 = (j+1)*INCREMENT, i*INCREMENT
-					local y2 = Spring.GetGroundHeight(x2,z2)
-					Spring.CreateUnit(subUdid, x2, y2, z2+32, 0, 0, false)
-					--Spring.CreateUnit(subUdid, x2+32, y2, z2, 1, 0, false)
-					--Spring.CreateUnit(subUdid, x2, y2, z2-32, 2, 0, false)
-					--Spring.CreateUnit(subUdid, x2-32, y2, z2, 3, 0, false)
-				end
+	local sublist = ud.buildOptions
+	for j = 1, #sublist do
+		local subUdid = sublist[j]
+		local x2, z2 = (j+1)*INCREMENT, i*INCREMENT
+		local y2 = Spring.GetGroundHeight(x2,z2)
+		Spring.CreateUnit(subUdid, x2, y2, z2+32, 0, 0, false)
+		--Spring.CreateUnit(subUdid, x2+32, y2, z2, 1, 0, false)
+		--Spring.CreateUnit(subUdid, x2, y2, z2-32, 2, 0, false)
+		--Spring.CreateUnit(subUdid, x2-32, y2, z2, 3, 0, false)
+	end
 			end
 		end
 	end
@@ -149,9 +149,9 @@ local function restart(cmd,line,words,player)
 		for i=1,#teams do
 			local teamID = teams[i]
 			if GG.startUnits[teamID] and GG.CommanderSpawnLocation[teamID] then
-				local spawn = GG.CommanderSpawnLocation[teamID]
-				local unitID = GG.DropUnit(GG.startUnits[teamID], spawn.x, spawn.y, spawn.z, spawn.facing, teamID, nil, 0)
-				Spring.SetUnitRulesParam(unitID, "facplop", 1, {inlos = true})
+	local spawn = GG.CommanderSpawnLocation[teamID]
+	local unitID = GG.DropUnit(GG.startUnits[teamID], spawn.x, spawn.y, spawn.z, spawn.facing, teamID, nil, 0)
+	Spring.SetUnitRulesParam(unitID, "facplop", 1, {inlos = true})
 			end
 		end
 
@@ -191,7 +191,7 @@ local function bisect(cmd,line,words,player)
 	for i = 1, #gadgetList do
 		if i >= offset and (offset-i)%increment == 0 then
 			if not invert then
-				gadgetHandler:GotChatMsg("disablegadget " .. gadgetList[i], 0)
+	gadgetHandler:GotChatMsg("disablegadget " .. gadgetList[i], 0)
 			end
 		elseif invert then
 			gadgetHandler:GotChatMsg("disablegadget " .. gadgetList[i], 0)
@@ -222,7 +222,7 @@ local function bisect(cmd,line,words,player)
 	for i = 1, #gadgetList do
 		if i >= offset and (offset-i)%increment == 0 then
 			if not invert then
-				gadgetHandler:GotChatMsg("disablegadget " .. gadgetList[i], 0)
+	gadgetHandler:GotChatMsg("disablegadget " .. gadgetList[i], 0)
 			end
 		elseif invert then
 			gadgetHandler:GotChatMsg("disablegadget " .. gadgetList[i], 0)

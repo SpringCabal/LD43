@@ -3,13 +3,12 @@
 
 local skin = {
   info = {
-    name    = "DarkGlass",
-    version = "0.11",
-    author  = "jK",
-
-    depend = {
-      "Glass",
-    },
+	name    = "DarkGlass",
+	version = "0.11",
+	author  = "jK",
+	  depend = {
+	  "Glass",
+	},
   }
 }
 
@@ -25,19 +24,15 @@ skin.window = {
   tiles = {22, 24, 22, 23}, --// tile widths: left,top,right,bottom
   padding = {14, 23, 14, 14},
   hitpadding = {10, 4, 10, 10},
-
-  captionColor = {1, 1, 1, 0.55},
-
-  boxes = {
-    resize = {-25, -25, -14, -14},
-    drag = {0, 0, "100%", 24},
+	captionColor = {1, 1, 1, 0.55},
+	boxes = {
+	resize = {-25, -25, -14, -14},
+	drag = {0, 0, "100%", 24},
   },
-
-  NCHitTest = NCHitTestWithPadding,
+	NCHitTest = NCHitTestWithPadding,
   NCMouseDown = WindowNCMouseDown,
   NCMouseDownPostChildren = WindowNCMouseDownPostChildren,
-
-  DrawControl = DrawWindow,
+	DrawControl = DrawWindow,
   DrawDragGrip = DrawDragGrip,
   DrawResizeGrip = DrawResizeGrip,
 }

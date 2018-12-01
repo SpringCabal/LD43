@@ -24,7 +24,7 @@ local BloodMage = Raw:New {
 	footprintZ          = 4,
 	upright             = true,
 	minCollisionSpeed   = 1000000,
-    pushResistant       = false,
+	pushResistant       = false,
 	maxVelocity         = 10,
 	-- maxVelocity's default value of "0" is odd, unless the default is a "building"?
 	-- then again, acceleration is not 0 by default..
@@ -63,9 +63,8 @@ local BloodMage = Raw:New {
 
 	maxVelocity         = 50,
 	brakeRate           = 0.6,
-    turnRate            = 760 / 0.16,
-
-    fireState           = 0,
+	turnRate            = 760 / 0.16,
+	 fireState           = 0,
 
 	weapons = {
 		{

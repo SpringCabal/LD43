@@ -18,14 +18,14 @@ function Spring.Utilities.ClampPosition(x, z)
 			return x, z
 		else
 			if x < 1 then
-				x = 1
+	x = 1
 			elseif x > mapWidth-1 then
-				x = mapWidth-1
+	x = mapWidth-1
 			end
 			if z < 1 then
-				z = 1
+	z = 1
 			elseif z > mapHeight-1 then
-				z = mapHeight-1
+	z = mapHeight-1
 			end
 			return x, z
 		end

@@ -31,9 +31,9 @@ function LoadExtensions()
 			Spring.Log("Chonsole", LOG.ERROR, err)
 		else
 			if commands ~= nil then
-				for _, cmd in pairs(commands) do
-					cmdConfig[cmd.command] = cmd
-				end
+	for _, cmd in pairs(commands) do
+		cmdConfig[cmd.command] = cmd
+	end
 			end
 		end
 	end
@@ -122,7 +122,7 @@ end
 else
 	
 local function ExecuteInUnsynced(_, data)
-    local msg_table = explode('|', data)
+	local msg_table = explode('|', data)
 	local cmd = cmdConfig[msg_table[1]]
 	if cmd == nil then
 		Spring.Log("Chonsole", LOG.ERROR, "No such command: " .. msg_table[1])

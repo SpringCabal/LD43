@@ -8,13 +8,13 @@ end
 
 function gadget:GetInfo()
    return {
-      name      = "Center Offset",
-      desc      = "Offsets aimpoints",
-      author    = "KingRaptor (L.J. Lim) and GoogleFrog",
-      date      = "12.7.2012",
-      license   = "Public Domain",
-      layer     = 0,
-      enabled   = true
+	  name      = "Center Offset",
+	  desc      = "Offsets aimpoints",
+	  author    = "KingRaptor (L.J. Lim) and GoogleFrog",
+	  date      = "12.7.2012",
+	  license   = "Public Domain",
+	  layer     = 0,
+	  enabled   = true
    }
 end
 

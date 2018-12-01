@@ -208,26 +208,22 @@ function widget:ViewResize()
 			fbo = true, min_filter = GL.LINEAR, mag_filter = GL.LINEAR,
 			format = GL_RGB32F_ARB, wrap_s = GL.CLAMP, wrap_t = GL.CLAMP,
 		})
-
-		if options.enableBloom.value then
+	if options.enableBloom.value then
 			local width, height = vsx/2, vsy/2
-
-			brightTexture1 = glCreateTexture(width, height, {
-				fbo = true, min_filter = GL.LINEAR, mag_filter = GL.LINEAR,
-				format = GL_RGB8, wrap_s = GL.CLAMP, wrap_t = GL.CLAMP,
+		brightTexture1 = glCreateTexture(width, height, {
+	fbo = true, min_filter = GL.LINEAR, mag_filter = GL.LINEAR,
+	format = GL_RGB8, wrap_s = GL.CLAMP, wrap_t = GL.CLAMP,
 			})
 			brightTexture2 = glCreateTexture(width, height, {
-				fbo = true, min_filter = GL.LINEAR, mag_filter = GL.LINEAR,
-				format = GL_RGB8, wrap_s = GL.CLAMP, wrap_t = GL.CLAMP,
+	fbo = true, min_filter = GL.LINEAR, mag_filter = GL.LINEAR,
+	format = GL_RGB8, wrap_s = GL.CLAMP, wrap_t = GL.CLAMP,
 			})
-
-			if not brightTexture1 or not brightTexture2 then
-				Spring.Echo('Deferred Rendering: Failed to create bloom buffers!')
-				options.enableBloom.value = false
+		if not brightTexture1 or not brightTexture2 then
+	Spring.Echo('Deferred Rendering: Failed to create bloom buffers!')
+	options.enableBloom.value = false
 			end
 		end
-
-		if not screenHDR then
+	if not screenHDR then
 			Spring.Echo('Deferred Rendering: Failed to create HDR buffer!')
 			options.enableHDR.value = false
 		end
@@ -294,148 +290,128 @@ function widget:Initialize()
 			widgetHandler:RemoveWidget()
 		else
 			fragSrc = VFS.LoadFile("LuaUI\\Widgets\\Shaders\\deferred_lighting.fs", VFS.ZIP)
-
-			--Spring.Echo('gfx_deferred_rendering.lua: Shader code:', fragSrc)
-
-			depthPointShader = depthPointShader or glCreateShader({
-				defines = {
-				    "#version 120\n",
-					"#define BEAM_LIGHT 0\n",
-					"#define CLIP_CONTROL " .. (Platform.glSupportClipSpaceControl and 1 or 0) .. "\n"
-				},
-				vertex = vertSrc,
-				fragment = fragSrc,
-				uniformInt = {
-					modelnormals = 0,
-					modeldepths = 1,
-					mapnormals = 2,
-					mapdepths = 3,
-					modelExtra = 4,
-				},
+		--Spring.Echo('gfx_deferred_rendering.lua: Shader code:', fragSrc)
+		depthPointShader = depthPointShader or glCreateShader({
+	defines = {
+		"#version 120\n",
+		"#define BEAM_LIGHT 0\n",
+		"#define CLIP_CONTROL " .. (Platform.glSupportClipSpaceControl and 1 or 0) .. "\n"
+	},
+	vertex = vertSrc,
+	fragment = fragSrc,
+	uniformInt = {
+		modelnormals = 0,
+		modeldepths = 1,
+		mapnormals = 2,
+		mapdepths = 3,
+		modelExtra = 4,
+	},
 			})
-
-			if (not depthPointShader) then
-				spEcho(glGetShaderLog())
-				spEcho("gfx_deferred_rendering.lua: Bad depth point shader, removing self.")
-				GLSLRenderer = false
-				widgetHandler:RemoveWidget()
+		if (not depthPointShader) then
+	spEcho(glGetShaderLog())
+	spEcho("gfx_deferred_rendering.lua: Bad depth point shader, removing self.")
+	GLSLRenderer = false
+	widgetHandler:RemoveWidget()
 			else
-				lightposlocPoint       = glGetUniformLocation(depthPointShader, "lightpos")
-				lightcolorlocPoint     = glGetUniformLocation(depthPointShader, "lightcolor")
-				uniformEyePosPoint     = glGetUniformLocation(depthPointShader, 'eyePos')
-				uniformViewPrjInvPoint = glGetUniformLocation(depthPointShader, 'viewProjectionInv')
+	lightposlocPoint       = glGetUniformLocation(depthPointShader, "lightpos")
+	lightcolorlocPoint     = glGetUniformLocation(depthPointShader, "lightcolor")
+	uniformEyePosPoint     = glGetUniformLocation(depthPointShader, 'eyePos')
+	uniformViewPrjInvPoint = glGetUniformLocation(depthPointShader, 'viewProjectionInv')
 			end
-
-			depthBeamShader = depthBeamShader or glCreateShader({
-				defines = {
-					"#version 120\n",
-					"#define BEAM_LIGHT 1\n",
-					"#define CLIP_CONTROL " .. (Platform.glSupportClipSpaceControl and 1 or 0) .. "\n"
-				},
-				vertex = vertSrc,
-				fragment = fragSrc,
-				uniformInt = {
-					modelnormals = 0,
-					modeldepths = 1,
-					mapnormals = 2,
-					mapdepths = 3,
-					modelExtra = 4,
-				},
+		depthBeamShader = depthBeamShader or glCreateShader({
+	defines = {
+		"#version 120\n",
+		"#define BEAM_LIGHT 1\n",
+		"#define CLIP_CONTROL " .. (Platform.glSupportClipSpaceControl and 1 or 0) .. "\n"
+	},
+	vertex = vertSrc,
+	fragment = fragSrc,
+	uniformInt = {
+		modelnormals = 0,
+		modeldepths = 1,
+		mapnormals = 2,
+		mapdepths = 3,
+		modelExtra = 4,
+	},
 			})
-
-			if (not depthBeamShader) then
-				spEcho(glGetShaderLog())
-				spEcho("gfx_deferred_rendering.lua: Bad depth beam shader, removing self.")
-				GLSLRenderer = false
-				widgetHandler:RemoveWidget()
+		if (not depthBeamShader) then
+	spEcho(glGetShaderLog())
+	spEcho("gfx_deferred_rendering.lua: Bad depth beam shader, removing self.")
+	GLSLRenderer = false
+	widgetHandler:RemoveWidget()
 			else
-				lightposlocBeam       = glGetUniformLocation(depthBeamShader, 'lightpos')
-				lightpos2locBeam      = glGetUniformLocation(depthBeamShader, 'lightpos2')
-				lightcolorlocBeam     = glGetUniformLocation(depthBeamShader, 'lightcolor')
-				uniformEyePosBeam     = glGetUniformLocation(depthBeamShader, 'eyePos')
-				uniformViewPrjInvBeam = glGetUniformLocation(depthBeamShader, 'viewProjectionInv')
+	lightposlocBeam       = glGetUniformLocation(depthBeamShader, 'lightpos')
+	lightpos2locBeam      = glGetUniformLocation(depthBeamShader, 'lightpos2')
+	lightcolorlocBeam     = glGetUniformLocation(depthBeamShader, 'lightcolor')
+	uniformEyePosBeam     = glGetUniformLocation(depthBeamShader, 'eyePos')
+	uniformViewPrjInvBeam = glGetUniformLocation(depthBeamShader, 'viewProjectionInv')
 			end
-
-			if options.enableHDR.value and options.enableBloom.value then
-				brightShader = brightShader or glCreateShader({
-					defines = {"#version 120\n"},
-					fragment = VFS.LoadFile("LuaUI\\Widgets\\Shaders\\bloom_bright.fs", VFS.ZIP),
-
-					uniformInt = {texture0 = 0},
-					uniformFloat = {illuminationThreshold, inverseRX, inverseRY}
-				})
-
-				if not brightShader then
-					Spring.Echo('Deferred Rendering Widget: brightShader failed to compile!')
-					Spring.Echo(gl.GetShaderLog())
-				end
-
-				blurShaderH71 = blurShaderH71 or glCreateShader({
-					defines = {"#version 120\n"},
-					fragment = VFS.LoadFile("LuaUI\\Widgets\\Shaders\\bloom_blurH.fs", VFS.ZIP),
-
-					uniformInt = {texture0 = 0},
-					uniformFloat = {inverseRX}
-				})
-
-				if not blurShaderH71 then
-					Spring.Echo('Deferred Rendering Widget: blurshaderH71 failed to compile!')
-					Spring.Echo(gl.GetShaderLog())
-				end
-
-				blurShaderV71 = blurShaderV71 or glCreateShader({
-					defines = {"#version 120\n"},
-					fragment = VFS.LoadFile("LuaUI\\Widgets\\Shaders\\bloom_blurV.fs", VFS.ZIP),
-
-					uniformInt = {texture0 = 0},
-					uniformFloat = {inverseRY}
-				})
-
-				if not blurShaderV71 then
-					Spring.Echo('Deferred Rendering Widget: blueShaderV71 failed to compile!')
-					Spring.Echo(gl.GetShaderLog())
-				end
-
-				if not brightShader or not blurShaderH71 or not blurShaderV71 then
-					Spring.Echo('Deferred Rendering Widget: Failed to create bloom shaders!')
-					options.enableBloom.value = false
-				else
-					brightShaderText0Loc = glGetUniformLocation(brightShader, "texture0")
-					brightShaderInvRXLoc = glGetUniformLocation(brightShader, "inverseRX")
-					brightShaderInvRYLoc = glGetUniformLocation(brightShader, "inverseRY")
-					brightShaderIllumLoc = glGetUniformLocation(brightShader, "illuminationThreshold")
-
-					blurShaderH71Text0Loc = glGetUniformLocation(blurShaderH71, "texture0")
-					blurShaderH71InvRXLoc = glGetUniformLocation(blurShaderH71, "inverseRX")
-					blurShaderH71FragLoc = glGetUniformLocation(blurShaderH71, "fragKernelRadius")
-					blurShaderV71Text0Loc = glGetUniformLocation(blurShaderV71, "texture0")
-					blurShaderV71InvRYLoc = glGetUniformLocation(blurShaderV71, "inverseRY")
-					blurShaderV71FragLoc = glGetUniformLocation(blurShaderV71, "fragKernelRadius")
-				end
+		if options.enableHDR.value and options.enableBloom.value then
+	brightShader = brightShader or glCreateShader({
+		defines = {"#version 120\n"},
+		fragment = VFS.LoadFile("LuaUI\\Widgets\\Shaders\\bloom_bright.fs", VFS.ZIP),
+	uniformInt = {texture0 = 0},
+		uniformFloat = {illuminationThreshold, inverseRX, inverseRY}
+	})
+			if not brightShader then
+		Spring.Echo('Deferred Rendering Widget: brightShader failed to compile!')
+		Spring.Echo(gl.GetShaderLog())
+	end
+			blurShaderH71 = blurShaderH71 or glCreateShader({
+		defines = {"#version 120\n"},
+		fragment = VFS.LoadFile("LuaUI\\Widgets\\Shaders\\bloom_blurH.fs", VFS.ZIP),
+	uniformInt = {texture0 = 0},
+		uniformFloat = {inverseRX}
+	})
+			if not blurShaderH71 then
+		Spring.Echo('Deferred Rendering Widget: blurshaderH71 failed to compile!')
+		Spring.Echo(gl.GetShaderLog())
+	end
+			blurShaderV71 = blurShaderV71 or glCreateShader({
+		defines = {"#version 120\n"},
+		fragment = VFS.LoadFile("LuaUI\\Widgets\\Shaders\\bloom_blurV.fs", VFS.ZIP),
+	uniformInt = {texture0 = 0},
+		uniformFloat = {inverseRY}
+	})
+			if not blurShaderV71 then
+		Spring.Echo('Deferred Rendering Widget: blueShaderV71 failed to compile!')
+		Spring.Echo(gl.GetShaderLog())
+	end
+			if not brightShader or not blurShaderH71 or not blurShaderV71 then
+		Spring.Echo('Deferred Rendering Widget: Failed to create bloom shaders!')
+		options.enableBloom.value = false
+	else
+		brightShaderText0Loc = glGetUniformLocation(brightShader, "texture0")
+		brightShaderInvRXLoc = glGetUniformLocation(brightShader, "inverseRX")
+		brightShaderInvRYLoc = glGetUniformLocation(brightShader, "inverseRY")
+		brightShaderIllumLoc = glGetUniformLocation(brightShader, "illuminationThreshold")
+	blurShaderH71Text0Loc = glGetUniformLocation(blurShaderH71, "texture0")
+		blurShaderH71InvRXLoc = glGetUniformLocation(blurShaderH71, "inverseRX")
+		blurShaderH71FragLoc = glGetUniformLocation(blurShaderH71, "fragKernelRadius")
+		blurShaderV71Text0Loc = glGetUniformLocation(blurShaderV71, "texture0")
+		blurShaderV71InvRYLoc = glGetUniformLocation(blurShaderV71, "inverseRY")
+		blurShaderV71FragLoc = glGetUniformLocation(blurShaderV71, "fragKernelRadius")
+	end
 			end
-
-			if options.enableHDR.value then
-				combineShader = combineShader or glCreateShader({
-					defines = {"#version 120\n"},
-					fragment = VFS.LoadFile("LuaUI\\Widgets\\Shaders\\bloom_combine.fs", VFS.ZIP),
-
-					uniformInt = { texture0 = 0, texture1 = 1, useBloom = 1, useHDR = 1},
-					uniformFloat = {fragMaxBrightness}
-				})
-
-				if not combineShader then
-					Spring.Echo('Deferred Rendering Widget: combineShader failed to compile!')
-					options.enableHDR.value = false
-					Spring.Echo(gl.GetShaderLog())
-				else
-					combineShaderUseBloomLoc = glGetUniformLocation(combineShader, "useBloom")
-					combineShaderTexture0Loc = glGetUniformLocation(combineShader, "texture0")
-					combineShaderTexture1Loc = glGetUniformLocation(combineShader, "texture1")
-					combineShaderFragLoc = glGetUniformLocation(combineShader, "fragMaxBrightness")
-				end
+		if options.enableHDR.value then
+	combineShader = combineShader or glCreateShader({
+		defines = {"#version 120\n"},
+		fragment = VFS.LoadFile("LuaUI\\Widgets\\Shaders\\bloom_combine.fs", VFS.ZIP),
+	uniformInt = { texture0 = 0, texture1 = 1, useBloom = 1, useHDR = 1},
+		uniformFloat = {fragMaxBrightness}
+	})
+			if not combineShader then
+		Spring.Echo('Deferred Rendering Widget: combineShader failed to compile!')
+		options.enableHDR.value = false
+		Spring.Echo(gl.GetShaderLog())
+	else
+		combineShaderUseBloomLoc = glGetUniformLocation(combineShader, "useBloom")
+		combineShaderTexture0Loc = glGetUniformLocation(combineShader, "texture0")
+		combineShaderTexture1Loc = glGetUniformLocation(combineShader, "texture1")
+		combineShaderFragLoc = glGetUniformLocation(combineShader, "fragMaxBrightness")
+	end
 			end
-
-			WG.DeferredLighting_RegisterFunction = DeferredLighting_RegisterFunction
+		WG.DeferredLighting_RegisterFunction = DeferredLighting_RegisterFunction
 			WG.DeferredLighting_UnregisterFunction = DeferredLighting_UnregisterFunction
 		end
 		screenratio = vsy / vsx --so we dont overdraw and only always draw a square
@@ -495,26 +471,24 @@ local function DrawLightType(lights, lightsCount, lighttype) -- point = 0 beam =
 			local lightradius = param.radius
 			--Spring.Echo("Drawlighttype position = ", light.px, light.py, light.pz)
 			local sx, sy, sz = spWorldToScreenCoords(light.px, light.py, light.pz) -- returns x, y, z, where x and y are screen pixels, and z is z buffer depth.
-
-			-- prevent sharp cutoffs when projectile is slightly offscreen
+		-- prevent sharp cutoffs when projectile is slightly offscreen
 			sx = math.max(0,sx)
 			sx = math.min(sx,vsx)
-
-			sx = sx/vsx
+		sx = sx/vsx
 			sy = sy/vsy --since FOV is static in the Y direction, the Y ratio is the correct one
 			local dist_sq = (light.px-cx)^2 + (light.py-cy)^2 + (light.pz-cz)^2
 			local ratio = lightradius / math.sqrt(dist_sq) * 1.5
 			glUniform(lightposlocPoint, light.px, light.py, light.pz, param.radius) --in world space
 			glUniform(lightcolorlocPoint, param.r * light.colMult, param.g * light.colMult, param.b * light.colMult, 1)
 			glTexRect(
-				math.max(-1 , (sx-0.5)*2-ratio*screenratio),
-				math.max(-1 , (sy-0.5)*2-ratio),
-				math.min( 1 , (sx-0.5)*2+ratio*screenratio),
-				math.min( 1 , (sy-0.5)*2+ratio),
-				math.max( 0 , sx - 0.5*ratio*screenratio),
-				math.max( 0 , sy - 0.5*ratio),
-				math.min( 1 , sx + 0.5*ratio*screenratio),
-				math.min( 1 , sy + 0.5*ratio)
+	math.max(-1 , (sx-0.5)*2-ratio*screenratio),
+	math.max(-1 , (sy-0.5)*2-ratio),
+	math.min( 1 , (sx-0.5)*2+ratio*screenratio),
+	math.min( 1 , (sy-0.5)*2+ratio),
+	math.max( 0 , sx - 0.5*ratio*screenratio),
+	math.max( 0 , sy - 0.5*ratio),
+	math.min( 1 , sx + 0.5*ratio*screenratio),
+	math.min( 1 , sy + 0.5*ratio)
 			) -- screen size goes from -1, -1 to 1, 1; uvs go from 0, 0 to 1, 1
 		end
 		if lighttype == 1 then -- beam
@@ -525,30 +499,27 @@ local function DrawLightType(lights, lightsCount, lighttype) -- point = 0 beam =
 			local lightradius = param.radius + math.sqrt(light.dx^2 + light.dy^2 + light.dz^2)*0.5
 			VerboseEcho("Drawlighttype position = ", light.px, light.py, light.pz)
 			local sx, sy, sz = spWorldToScreenCoords(px, py, pz) -- returns x, y, z, where x and y are screen pixels, and z is z buffer depth.
-
-			-- prevent sharp cutoffs when beam is slightly offscreen
+		-- prevent sharp cutoffs when beam is slightly offscreen
 			sx = math.max(0,sx)
 			sx = math.min(sx,vsx)
-			
 			sx = sx/vsx
 			sy = sy/vsy --since FOV is static in the Y direction, the Y ratio is the correct one
 			local dist_sq = (px-cx)^2 + (py-cy)^2 + (pz-cz)^2
 			local ratio = lightradius / math.sqrt(dist_sq)
 			ratio = ratio*2
-
-			glUniform(lightposlocBeam, light.px, light.py, light.pz, param.radius) --in world space
+		glUniform(lightposlocBeam, light.px, light.py, light.pz, param.radius) --in world space
 			glUniform(lightpos2locBeam, light.px+light.dx, light.py+light.dy+24, light.pz+light.dz, param.radius) --in world space, the magic constant of +24 in the Y pos is needed because of our beam distance calculator function in GLSL
 			glUniform(lightcolorlocBeam, param.r * light.colMult, param.g * light.colMult, param.b * light.colMult, 1)
 			--TODO: use gl.Shape instead, to avoid overdraw
 			glTexRect(
-				math.max(-1 , (sx-0.5)*2-ratio*screenratio),
-				math.max(-1 , (sy-0.5)*2-ratio),
-				math.min( 1 , (sx-0.5)*2+ratio*screenratio),
-				math.min( 1 , (sy-0.5)*2+ratio),
-				math.max( 0 , sx - 0.5*ratio*screenratio),
-				math.max( 0 , sy - 0.5*ratio),
-				math.min( 1 , sx + 0.5*ratio*screenratio),
-				math.min( 1 , sy + 0.5*ratio)
+	math.max(-1 , (sx-0.5)*2-ratio*screenratio),
+	math.max(-1 , (sy-0.5)*2-ratio),
+	math.min( 1 , (sx-0.5)*2+ratio*screenratio),
+	math.min( 1 , (sy-0.5)*2+ratio),
+	math.max( 0 , sx - 0.5*ratio*screenratio),
+	math.max( 0 , sy - 0.5*ratio),
+	math.min( 1 , sx + 0.5*ratio*screenratio),
+	math.min( 1 , sy + 0.5*ratio)
 			) -- screen size goes from -1, -1 to 1, 1; uvs go from 0, 0 to 1, 1
 		end
 	end
@@ -576,15 +547,13 @@ local function Bloom()
 			glUniform(   brightShaderIllumLoc, options.illumThreshold.value)
 			mglRenderToTexture(brightTexture1, screenHDR, 1, -1)
 		glUseShader(0)
-
-		glUseShader(blurShaderH71)
+	glUseShader(blurShaderH71)
 			glUniformInt(blurShaderH71Text0Loc, 0)
 			glUniform(   blurShaderH71InvRXLoc, ivsx)
 			glUniform(	 blurShaderH71FragLoc, kernelRadius)
 			mglRenderToTexture(brightTexture2, brightTexture1, 1, -1)
 		glUseShader(0)
-
-		glUseShader(blurShaderV71)
+	glUseShader(blurShaderV71)
 			glUniformInt(blurShaderV71Text0Loc, 0)
 			glUniform(   blurShaderV71InvRYLoc, ivsy)
 			glUniform(	 blurShaderV71FragLoc, kernelRadius)

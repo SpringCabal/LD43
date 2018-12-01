@@ -1,21 +1,21 @@
 {
   "title" : "Ludum_Dare_43",
   "setups" : [  
-    {
-      "package": {
-        "id": "dev",
-        "display": "Development"
-      },
-      "downloads": {
-        "maps" : ["Eyam"],
-        "engines" : [ "104.0.1-909-g82a205f maintenance" ]
-      },
-      "auto_start" : false,
-      "no_downloads" : true,
-      "launch": {
-        "game": "Ludum Dare 43 $VERSION",
-        "map": "Eyam"
-      }
-    }
+	{
+	  "package": {
+		"id": "dev",
+		"display": "Development"
+	  },
+	  "downloads": {
+		"maps" : ["Eyam"],
+		"engines" : [ "104.0.1-909-g82a205f maintenance" ]
+	  },
+	  "auto_start" : false,
+	  "no_downloads" : true,
+	  "launch": {
+		"game": "Ludum Dare 43 $VERSION",
+		"map": "Eyam"
+	  }
+	}
   ]
 }

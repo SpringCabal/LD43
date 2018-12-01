@@ -24,11 +24,7 @@ local function DrawQuad(x, y, size)
 	gl.Vertex(x + size, y + size, 0)
 	gl.Vertex(x + size, y - size, 0)
 end
-
-
-
-
-local shader = gl.CreateShader({
+	local shader = gl.CreateShader({
 	uniform = {
 	},
 
@@ -119,16 +115,8 @@ local shader = gl.CreateShader({
 })
 
 Spring.Echo(gl.GetShaderLog())
-
-
-
-
-
-
-
-
-
-function SIGN(x)
+	
+	function SIGN(x)
 	return ((x >= 0) and 1) or -1
 end
 
@@ -177,45 +165,42 @@ function CreateSuperEllipse(power1,power2,n)
 		gl.BeginEnd(GL.TRIANGLE_STRIP, function()
 			local i = 0
 			while (i <= n) do
-				local theta3 = i * TWOPI / n;
-
-				if (j == n/2 - 1) then
-					local px,py,pz    = EvalSuperEllipse(theta2        , 0        , power1, power2);
-					local p1x,p1y,p1z = EvalSuperEllipse(theta2        , 0 + delta, power1, power2);
-					local p2x,p2y,p2z = EvalSuperEllipse(theta2 + delta, 0 + delta, power1, power2);
-					local nx,ny,nz = CalcNormal(p1x,p1y,p1z, px,py,pz, p2x,p2y,p2z);
-					gl.Normal(nx,ny,nz);
-					gl.TexCoord(i/n,2*(j+1)/n);
-					gl.Vertex(px,py,pz);
-				else
-					local px,py,pz    = EvalSuperEllipse(theta2        , theta3        , power1, power2);
-					local p1x,p1y,p1z = EvalSuperEllipse(theta2 + delta, theta3        , power1, power2);
-					local p2x,p2y,p2z = EvalSuperEllipse(theta2        , theta3 + delta, power1, power2);
-					local nx,ny,nz = CalcNormal(p1x,p1y,p1z, px,py,pz, p2x,p2y,p2z);
-					gl.Normal(nx,ny,nz);
-					gl.TexCoord(i/n,2*(j+1)/n);
-					gl.Vertex(px,py,pz);
-				end
-
-				if (j == 0) then
-					local px,py,pz    = EvalSuperEllipse(theta1        , 0        , power1, power2);
-					local p1x,p1y,p1z = EvalSuperEllipse(theta1        , 0 + delta, power1, power2);
-					local p2x,p2y,p2z = EvalSuperEllipse(theta1 + delta, 0 + delta, power1, power2);
-					local nx,ny,nz = CalcNormal(p1x,p1y,p1z, px,py,pz, p2x,p2y,p2z);
-					gl.Normal(nx,ny,nz);
-					gl.TexCoord(i/n,2*j/n);
-					gl.Vertex(px,py,pz);
-				else
-					local px,py,pz    = EvalSuperEllipse(theta1        , theta3        , power1, power2);
-					local p1x,p1y,p1z = EvalSuperEllipse(theta1 + delta, theta3        , power1, power2);
-					local p2x,p2y,p2z = EvalSuperEllipse(theta1        , theta3 + delta, power1, power2);
-					local nx,ny,nz = CalcNormal(p1x,p1y,p1z, px,py,pz, p2x,p2y,p2z);
-					gl.Normal(nx,ny,nz);
-					gl.TexCoord(i/n,2*j/n);
-					gl.Vertex(px,py,pz);
-				end
-
-				i = i + 1
+	local theta3 = i * TWOPI / n;
+		if (j == n/2 - 1) then
+		local px,py,pz    = EvalSuperEllipse(theta2        , 0        , power1, power2);
+		local p1x,p1y,p1z = EvalSuperEllipse(theta2        , 0 + delta, power1, power2);
+		local p2x,p2y,p2z = EvalSuperEllipse(theta2 + delta, 0 + delta, power1, power2);
+		local nx,ny,nz = CalcNormal(p1x,p1y,p1z, px,py,pz, p2x,p2y,p2z);
+		gl.Normal(nx,ny,nz);
+		gl.TexCoord(i/n,2*(j+1)/n);
+		gl.Vertex(px,py,pz);
+	else
+		local px,py,pz    = EvalSuperEllipse(theta2        , theta3        , power1, power2);
+		local p1x,p1y,p1z = EvalSuperEllipse(theta2 + delta, theta3        , power1, power2);
+		local p2x,p2y,p2z = EvalSuperEllipse(theta2        , theta3 + delta, power1, power2);
+		local nx,ny,nz = CalcNormal(p1x,p1y,p1z, px,py,pz, p2x,p2y,p2z);
+		gl.Normal(nx,ny,nz);
+		gl.TexCoord(i/n,2*(j+1)/n);
+		gl.Vertex(px,py,pz);
+	end
+		if (j == 0) then
+		local px,py,pz    = EvalSuperEllipse(theta1        , 0        , power1, power2);
+		local p1x,p1y,p1z = EvalSuperEllipse(theta1        , 0 + delta, power1, power2);
+		local p2x,p2y,p2z = EvalSuperEllipse(theta1 + delta, 0 + delta, power1, power2);
+		local nx,ny,nz = CalcNormal(p1x,p1y,p1z, px,py,pz, p2x,p2y,p2z);
+		gl.Normal(nx,ny,nz);
+		gl.TexCoord(i/n,2*j/n);
+		gl.Vertex(px,py,pz);
+	else
+		local px,py,pz    = EvalSuperEllipse(theta1        , theta3        , power1, power2);
+		local p1x,p1y,p1z = EvalSuperEllipse(theta1 + delta, theta3        , power1, power2);
+		local p2x,p2y,p2z = EvalSuperEllipse(theta1        , theta3 + delta, power1, power2);
+		local nx,ny,nz = CalcNormal(p1x,p1y,p1z, px,py,pz, p2x,p2y,p2z);
+		gl.Normal(nx,ny,nz);
+		gl.TexCoord(i/n,2*j/n);
+		gl.Vertex(px,py,pz);
+	end
+		i = i + 1
 			end
 		end)
 		j = j + 1
@@ -259,42 +244,37 @@ function DrawSun()
 		while (i <= n) do
 			local theta = i * TWOPI / n;
 			local r = 0.8
-
-			if (theta == TWOPI) then
-				gl.Normal(0, 0, -1);
-				gl.Vertex(r * 0.5 * math.cos(math.pi - (theta - math.pi)), 1.15, -r * 0.5 * math.sin(math.pi - (theta - math.pi)));
-				gl.Vertex(r * 0.5 * math.cos(math.pi - (theta - math.pi)), 0.80, -r * 0.5 * math.sin(math.pi - (theta - math.pi)));
+	if (theta == TWOPI) then
+	gl.Normal(0, 0, -1);
+	gl.Vertex(r * 0.5 * math.cos(math.pi - (theta - math.pi)), 1.15, -r * 0.5 * math.sin(math.pi - (theta - math.pi)));
+	gl.Vertex(r * 0.5 * math.cos(math.pi - (theta - math.pi)), 0.80, -r * 0.5 * math.sin(math.pi - (theta - math.pi)));
 			end
-
-			if (theta <= math.pi)or(theta == TWOPI) then
-				local vx, vy = GetSunVertex(r, theta)
-
-				--gl.Color(s, 0, 0, 1);
-				if (theta == TWOPI)or(theta == math.pi) then
-					gl.Normal(0, 0, -1);
-				else
-					local vxp1, vyp1 = GetSunVertex(r, theta + 0.0001 * math.pi)
-					local vxm1, vym1 = GetSunVertex(r, theta - 0.0001 * math.pi)
-					local nxp1,nyp1,nzp1 = CalcNormal(vxp1,0,vyp1, vx,0,vy, vx,1,vy);
-					local nxm1,nym1,nzm1 = CalcNormal(vxm1,0,vym1, vx,1,vy, vx,0,vy);
-					local nx,ny,nz = nxp1 + nxm1, nyp1 + nym1, nzp1 + nzm1
-					gl.Normal(nx,ny,nz);
-				end
-				gl.Vertex(vx, 1.15, vy);
-				gl.Vertex(vx, 0.80, vy);
+	if (theta <= math.pi)or(theta == TWOPI) then
+	local vx, vy = GetSunVertex(r, theta)
+		--gl.Color(s, 0, 0, 1);
+	if (theta == TWOPI)or(theta == math.pi) then
+		gl.Normal(0, 0, -1);
+	else
+		local vxp1, vyp1 = GetSunVertex(r, theta + 0.0001 * math.pi)
+		local vxm1, vym1 = GetSunVertex(r, theta - 0.0001 * math.pi)
+		local nxp1,nyp1,nzp1 = CalcNormal(vxp1,0,vyp1, vx,0,vy, vx,1,vy);
+		local nxm1,nym1,nzm1 = CalcNormal(vxm1,0,vym1, vx,1,vy, vx,0,vy);
+		local nx,ny,nz = nxp1 + nxm1, nyp1 + nym1, nzp1 + nzm1
+		gl.Normal(nx,ny,nz);
+	end
+	gl.Vertex(vx, 1.15, vy);
+	gl.Vertex(vx, 0.80, vy);
 			end
-
-			if (theta >= math.pi)and(theta ~= TWOPI) then
-				if (theta == math.pi) then
-					gl.Normal(0, 0, -1);
-				else
-					gl.Normal(math.cos(theta), 0, math.sin(theta));
-				end
-				gl.Vertex(r * 0.5 * math.cos(math.pi - (theta - math.pi)), 1.15, -r * 0.5 * math.sin(math.pi - (theta - math.pi)));
-				gl.Vertex(r * 0.5 * math.cos(math.pi - (theta - math.pi)), 0.80, -r * 0.5 * math.sin(math.pi - (theta - math.pi)));
+	if (theta >= math.pi)and(theta ~= TWOPI) then
+	if (theta == math.pi) then
+		gl.Normal(0, 0, -1);
+	else
+		gl.Normal(math.cos(theta), 0, math.sin(theta));
+	end
+	gl.Vertex(r * 0.5 * math.cos(math.pi - (theta - math.pi)), 1.15, -r * 0.5 * math.sin(math.pi - (theta - math.pi)));
+	gl.Vertex(r * 0.5 * math.cos(math.pi - (theta - math.pi)), 0.80, -r * 0.5 * math.sin(math.pi - (theta - math.pi)));
 			end
-
-			i = i + 1
+	i = i + 1
 		end
 	end)
 
@@ -305,13 +285,11 @@ function DrawSun()
 		while (i <= n/2) do
 			local theta = i * TWOPI / n;
 			local r = 0.8
-
-			if (theta <= math.pi) then
-				local vx, vy = GetSunVertex(r, theta)
-				gl.Vertex(vx, 1.15, vy);
+	if (theta <= math.pi) then
+	local vx, vy = GetSunVertex(r, theta)
+	gl.Vertex(vx, 1.15, vy);
 			end
-
-			gl.Vertex(r * 0.5 * math.cos(theta), 1.15, -r * 0.5 * math.sin(theta));
+	gl.Vertex(r * 0.5 * math.cos(theta), 1.15, -r * 0.5 * math.sin(theta));
 			i = i + 1
 		end
 	end)
@@ -352,11 +330,7 @@ function DrawLogo()
 		gl.PopMatrix()
 	end)
 end
-
-
-
-
-function addon.DrawLoadScreen()
+	function addon.DrawLoadScreen()
 	local loadProgress = SG.GetLoadProgress()
 
 	--b = math.min(b + 0.0005, 1.0)

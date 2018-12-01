@@ -152,14 +152,13 @@ function _ChangeHeightmap(startX, startZ, delta, radius, height)
 -- 				d = math.max(d, minGH - gh)
 -- 			end
 			if delta < 0 then
-				return
+	return
 -- 				height = Spring.GetGroundOrigHeight(x + startX, z + startZ)
 			end
-
-			if height > gh then
-				d = math.min(d, height - gh)
+	if height > gh then
+	d = math.min(d, height - gh)
 			else
-				d = -math.min(d, gh - height)
+	d = -math.min(d, gh - height)
 			end
 			Spring.AddHeightMap(x + startX, z + startZ,  d)
 		end
@@ -193,9 +192,9 @@ function HandleLuaMessage(msg)
 			movementMessage = false
 		else
 			movementMessage = {
-				frame = Spring.GetGameFrame(),
-				x = x,
-				z = z
+	frame = Spring.GetGameFrame(),
+	x = x,
+	z = z
 			}
 		end
 	elseif msg_table[1] == 'attack' then
@@ -240,18 +239,15 @@ function gadget:GameFrame(frame)
 			Spring.GiveOrderToUnit(controlledID, CMD.STOP,{},{})
 			local vx, _, vz = Spring.GetUnitVelocity(controlledID)
 			if vx then
-				local speed = Vector.AbsVal(vx, vz)
-				if wispMoving or (speed > 6) then
-					MoveUnit(controlledID, vx, vz, 20)
-					wispMoving = false
-				end
+	local speed = Vector.AbsVal(vx, vz)
+	if wispMoving or (speed > 6) then
+		MoveUnit(controlledID, vx, vz, 20)
+		wispMoving = false
+	end
 			end
-
-			movementMessage = false
+	movementMessage = false
 		end
-
-
-		Spring.SetGameRulesParam("wisp_x", x)
+	Spring.SetGameRulesParam("wisp_x", x)
 		Spring.SetGameRulesParam("wisp_y", y)
 		Spring.SetGameRulesParam("wisp_z", z)
 	end

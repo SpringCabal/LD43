@@ -1,12 +1,12 @@
 function widget:GetInfo()
   return {
-    name      = "Music for dummies",
-    desc      = "",
-    author    = "ashdnazg, gajop",
-    date      = "yesterday",
-    license   = "GPL-v2",
-    layer     = 1001,
-    enabled   = true,
+	name      = "Music for dummies",
+	desc      = "",
+	author    = "ashdnazg, gajop",
+	date      = "yesterday",
+	license   = "GPL-v2",
+	layer     = 1001,
+	enabled   = true,
   }
 end
 
@@ -21,40 +21,40 @@ local startedPlaying = false
 local musicFile
 
 local function StartPlaying()
-    playingTime = 0
-    if not startedPlaying then
-        Spring.PlaySoundStream(musicFile, VOLUME)
-        _, trackTime = Spring.GetSoundStreamTime()
-    end
-    startedPlaying = true
+	playingTime = 0
+	if not startedPlaying then
+		Spring.PlaySoundStream(musicFile, VOLUME)
+		_, trackTime = Spring.GetSoundStreamTime()
+	end
+	startedPlaying = true
 end
 
 function widget:Initialize()
-    if not musicFile then
-        widgetHandler:RemoveWidget()
-        return
-    end
-    if Spring.GetGameFrame() > 0 then
-        StartPlaying()
-    end
+	if not musicFile then
+		widgetHandler:RemoveWidget()
+		return
+	end
+	if Spring.GetGameFrame() > 0 then
+		StartPlaying()
+	end
 end
 
 function widget:GameStart()
-    StartPlaying()
+	StartPlaying()
 end
 
 function widget:Update(dt)
-    if startedPlaying then
-        playingTime = playingTime + dt
-        --playingTime = Spring.GetSoundStreamTime()
-        if playingTime > trackTime - BUFFER then
-            startedPlaying = false
-            Spring.StopSoundStream()
-            StartPlaying()
-        end
-    end
+	if startedPlaying then
+		playingTime = playingTime + dt
+		--playingTime = Spring.GetSoundStreamTime()
+		if playingTime > trackTime - BUFFER then
+		startedPlaying = false
+		Spring.StopSoundStream()
+		StartPlaying()
+		end
+	end
 end
 
 function widget:Shutdown()
-    Spring.StopSoundStream()
+	Spring.StopSoundStream()
 end

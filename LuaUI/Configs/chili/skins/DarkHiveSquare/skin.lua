@@ -3,13 +3,12 @@
 
 local skin = {
   info = {
-    name    = "DarkHiveSquare",
-    version = "0.1",
-    author  = "luckywaldo7",
-    
-    depend = {
-      "DarkHive",
-    },
+	name    = "DarkHiveSquare",
+	version = "0.1",
+	author  = "luckywaldo7",
+	depend = {
+	  "DarkHive",
+	},
   }
 }
 

@@ -12,7 +12,7 @@ end
 -- matches a string of type %<age>.d
 local function interpolateFormattedVariables(str, vars)
   return str:gsub("%%<%s*(.-)%s*>%.([cdEefgGiouXxsq])", function(key, formatChar)
-    return string.format("%" .. formatChar, vars[key] or 'nil')
+	return string.format("%" .. formatChar, vars[key] or 'nil')
   end)
 end
 

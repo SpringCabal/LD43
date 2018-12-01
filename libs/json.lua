@@ -83,13 +83,13 @@ function json.encode (v)
 		local bArray, maxCount = isArray(v)
 		if bArray then
 			for i = 1,maxCount do
-				table.insert(rval, json.encode(v[i]))
+	table.insert(rval, json.encode(v[i]))
 			end
 		else		-- An object, not an array
 			for i,j in pairs(v) do
-				if isEncodable(i) and isEncodable(j) then
-					table.insert(rval, '"' .. encodeString(i) .. '":' .. json.encode(j))
-				end
+	if isEncodable(i) and isEncodable(j) then
+		table.insert(rval, '"' .. encodeString(i) .. '":' .. json.encode(j))
+	end
 			end
 		end
 		if bArray then
@@ -290,9 +290,9 @@ function decode_scanString(s,startPos)
 		local curChar = string.sub(s,endPos,endPos)
 		if not escaped then	
 			if curChar==[[\]] then
-				escaped = true
+	escaped = true
 			else
-				bEnded = curChar==startChar
+	bEnded = curChar==startChar
 			end
 		else
 		-- If we're escaped, we accept the current character come what may

@@ -28,9 +28,6 @@ function addon.DrawLoadScreen()
 	local loadProgress = SG.GetLoadProgress()
 
 	local vsx, vsy = gl.GetViewSizes()
-
-
-
 	-- draw progressbar
 	local hbw = 3.5/vsx
 	local vbw = 3.5/vsy

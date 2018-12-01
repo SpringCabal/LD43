@@ -34,7 +34,7 @@ local pressSpace = 1
 
 local function getMouseCoordinate(mx,my)
 	local traceType, pos = Spring.TraceScreenRay(mx, my, true)
-    if not pos then return false end
+	if not pos then return false end
 	local x, y, z = pos[1], pos[2], pos[3]
 -- 	if x<2048 or z<2048 or x>8192 or z>8192 then
 -- 		return false

@@ -19,9 +19,9 @@ i18n.plural, i18n.interpolate, i18n.variants, i18n.version, i18n._VERSION = plur
 
 local function dotSplit(str)
   local fields, length = {},0
-    str:gsub("[^%.]+", function(c)
-    length = length + 1
-    fields[length] = c
+	str:gsub("[^%.]+", function(c)
+	length = length + 1
+	fields[length] = c
   end)
   return fields, length
 end
@@ -76,9 +76,9 @@ end
 
 local function treatNode(node, data)
   if type(node) == 'string' then
-    return interpolate(node, data)
+	return interpolate(node, data)
   elseif isPluralTable(node) then
-    return interpolate(pluralize(node, data), data)
+	return interpolate(pluralize(node, data), data)
   end
   return node
 end
@@ -86,14 +86,14 @@ end
 local function recursiveLoad(currentContext, data)
   local composedKey
   for k,v in pairs(data) do
-    composedKey = (currentContext and (currentContext .. '.') or "") .. tostring(k)
-    assertPresent('load', composedKey, k)
-    assertPresentOrTable('load', composedKey, v)
-    if type(v) == 'string' then
-      i18n.set(composedKey, v)
-    else
-      recursiveLoad(composedKey, v)
-    end
+	composedKey = (currentContext and (currentContext .. '.') or "") .. tostring(k)
+	assertPresent('load', composedKey, k)
+	assertPresentOrTable('load', composedKey, v)
+	if type(v) == 'string' then
+	  i18n.set(composedKey, v)
+	else
+	  recursiveLoad(composedKey, v)
+	end
   end
 end
 
@@ -102,8 +102,8 @@ local function localizedTranslate(key, locale, data)
   local node = store
 
   for i=1, length do
-    node = node[path[i]]
-    if not node then return nil end
+	node = node[path[i]]
+	if not node then return nil end
   end
 
   return treatNode(node, data)
@@ -119,9 +119,9 @@ function i18n.set(key, value)
   local node = store
 
   for i=1, length-1 do
-    key = path[i]
-    node[key] = node[key] or {}
-    node = node[key]
+	key = path[i]
+	node[key] = node[key] or {}
+	node = node[key]
   end
 
   local lastKey = path[length]
@@ -137,28 +137,28 @@ function i18n.translate(key, data)
 
   local fallbacks = variants.fallbacks(usedLocale, fallbackLocale)
   for i=1, #fallbacks do
-    local fallback = fallbacks[i]
-    local value = localizedTranslate(key, fallback, data)
-    if value then 
-      return value
-    else
-      if missingTranslations[key] == nil then
-        missingTranslations[key] = { }
-      end
-      local missingTranslation = missingTranslations[key]
-      if not missingTranslation[fallback] and not (fallback == "en" and data.default) then
-        Spring.Log("i18n", "warning", "\"" .. key .. "\" is not translated in " .. fallback)
-        missingTranslation[fallback] = true
-      end
-    end
+	local fallback = fallbacks[i]
+	local value = localizedTranslate(key, fallback, data)
+	if value then 
+	  return value
+	else
+	  if missingTranslations[key] == nil then
+		missingTranslations[key] = { }
+	  end
+	  local missingTranslation = missingTranslations[key]
+	  if not missingTranslation[fallback] and not (fallback == "en" and data.default) then
+		Spring.Log("i18n", "warning", "\"" .. key .. "\" is not translated in " .. fallback)
+		missingTranslation[fallback] = true
+	  end
+	end
   end
   if missingTranslations[key] == nil then
-    missingTranslations[key] = { }
+	missingTranslations[key] = { }
   end
   local missingTranslation = missingTranslations[key]
   if not missingTranslation["_all"] and data.default == nil then
-    Spring.Log("i18n", "error", "No translation found for \"" .. key .. "\"")
-    missingTranslation["_all"] = true
+	Spring.Log("i18n", "error", "No translation found for \"" .. key .. "\"")
+	missingTranslation["_all"] = true
   end
   return data.default or key
 end
@@ -196,14 +196,14 @@ end
 
 function i18n.loadFile(path)
   local success, data = pcall(function() 
-    local chunk = VFS.LoadFile(path, VFS.ZIP_FIRST)
-    x = assert(loadstring(chunk))
-    return x() 
+	local chunk = VFS.LoadFile(path, VFS.ZIP_FIRST)
+	x = assert(loadstring(chunk))
+	return x() 
   end)
   if not success then
-    Spring.Log("i18n", LOG.ERROR, "Failed to parse file " .. path .. ": ")
-    Spring.Log("i18n", LOG.ERROR, data)
-    return nil
+	Spring.Log("i18n", LOG.ERROR, "Failed to parse file " .. path .. ": ")
+	Spring.Log("i18n", LOG.ERROR, data)
+	return nil
   end
   i18n.load(data)
 end

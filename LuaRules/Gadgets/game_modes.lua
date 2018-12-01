@@ -8,13 +8,13 @@ end
 
 function gadget:GetInfo()
    return {
-      name      = "Game modes",
-      desc      = "Loads game modes from modoptions and sets the appropriate gamerules",
-      author    = "gajop",
-      date      = "15.04.2016.",
-      license   = "Public Domain",
-      layer     = 0,
-      enabled   = true
+	  name      = "Game modes",
+	  desc      = "Loads game modes from modoptions and sets the appropriate gamerules",
+	  author    = "gajop",
+	  date      = "15.04.2016.",
+	  license   = "Public Domain",
+	  layer     = 0,
+	  enabled   = true
    }
 end
 

@@ -7,13 +7,13 @@ end
 --------------------------------------------------------------------------------
 function gadget:GetInfo()
   return {
-    name      = "Turn Without Interia",
-    desc      = "Remove turn interia because I don't want to deal with configuring it propperly right now (and such a change would not work for 91.0 anyway).",
-    author    = "Google Frog",
-    date      = "7 Sep 2014",
-    license   = "GNU GPL, v2 or later",
-    layer     = 0,
-    enabled   = true
+	name      = "Turn Without Interia",
+	desc      = "Remove turn interia because I don't want to deal with configuring it propperly right now (and such a change would not work for 91.0 anyway).",
+	author    = "Google Frog",
+	date      = "7 Sep 2014",
+	license   = "GNU GPL, v2 or later",
+	layer     = 0,
+	enabled   = true
   }
 end
 

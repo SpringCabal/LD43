@@ -23,7 +23,7 @@ local Humanoid = Unit:New {
 	footprintZ          = 4,
 	upright             = true,
 	minCollisionSpeed   = 1000000,
-    pushResistant       = true,
+	pushResistant       = true,
 	maxVelocity         = 10,
 	-- maxVelocity's default value of "0" is odd, unless the default is a "building"?
 	-- then again, acceleration is not 0 by default..
@@ -59,6 +59,6 @@ local Raw = Unit:New {
 }
 
 return {
-    Humanoid = Humanoid,
+	Humanoid = Humanoid,
 	Raw = Raw,
 }

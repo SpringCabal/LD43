@@ -22,10 +22,10 @@ local function inherit (c, p, concatNames)
 			inherit(c[k], v)
 		else
 			if concatNames and k == "name" then 
-				c[k] = v .. " " .. (c[k] or "")
+	c[k] = v .. " " .. (c[k] or "")
 			else
-				if c[k] == nil then c[k] = v end
-				--Spring.Echo(c.name, k, v, c[k])
+	if c[k] == nil then c[k] = v end
+	--Spring.Echo(c.name, k, v, c[k])
 			end
 		end
 	end
@@ -126,12 +126,12 @@ function setmetatable(t, mt)
 	if type(mt.__index) == "table" then
 		if (mt.__index.lowerkeys) then
 			if (not sharedEnvMT) then
-				sharedEnvMT = setmetatable_orig(sharedEnv, {
-					__index     = mt.__index,
-					__newindex  = function() error('Attempt to write to system') end,
-					__metatable = function() error('Attempt to access system metatable') end
-				})
-				--Spring.Echo("foo", type(sharedEnv), type(sharedEnvMT))
+	sharedEnvMT = setmetatable_orig(sharedEnv, {
+		__index     = mt.__index,
+		__newindex  = function() error('Attempt to write to system') end,
+		__metatable = function() error('Attempt to access system metatable') end
+	})
+	--Spring.Echo("foo", type(sharedEnv), type(sharedEnvMT))
 			end
 			local x = setmetatable_orig(t, { __index = sharedEnvMT })
 			--Spring.Echo("bar", x.SharedDefFunc)

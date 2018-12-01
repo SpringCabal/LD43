@@ -7,17 +7,14 @@ arising from the use of this software.
 Permission is granted to anyone to use this software for any purpose,
 including commercial applications, and to alter it and redistribute it
 freely, subject to the following restrictions:
-
-    1. The origin of this software must not be misrepresented; you must not
-    claim that you wrote the original software. If you use this software
-    in a product, an acknowledgment in the product documentation would be
-    appreciated but is not required.
-
-    2. Altered source versions must be plainly marked as such, and must not be
-    misrepresented as being the original software.
-
-    3. This notice may not be removed or altered from any source
-    distribution.
+	 1. The origin of this software must not be misrepresented; you must not
+	claim that you wrote the original software. If you use this software
+	in a product, an acknowledgment in the product documentation would be
+	appreciated but is not required.
+	 2. Altered source versions must be plainly marked as such, and must not be
+	misrepresented as being the original software.
+	 3. This notice may not be removed or altered from any source
+	distribution.
 --]]
 
 
@@ -36,23 +33,23 @@ local _register = {
 -- Checks if thing is a kind or whether an 'object' or 'class'
 local function isA(thing,kind)
   if kind then
-    assert(kind == 'object' or kind == 'class',
-      'When given, string \'kind\' must be a \'class\' or an \'object\'')
+	assert(kind == 'object' or kind == 'class',
+	  'When given, string \'kind\' must be a \'class\' or an \'object\'')
   end
   if thing then
-    if _register.class[thing] then
-      if kind then 
-        return _register.class[thing].__system.__type == kind
-      else
-        return _register.class[thing].__system.__type
-      end
-    elseif _register.object[thing] then
-      if kind then
-        return _register.object[thing].__system.__type == kind
-      else
-        return _register.object[thing].__system.__type
-      end
-    end
+	if _register.class[thing] then
+	  if kind then 
+		return _register.class[thing].__system.__type == kind
+	  else
+		return _register.class[thing].__system.__type
+	  end
+	elseif _register.object[thing] then
+	  if kind then
+		return _register.object[thing].__system.__type == kind
+	  else
+		return _register.object[thing].__system.__type
+	  end
+	end
   end
   return false
 end
@@ -60,12 +57,12 @@ end
 -- tostring
 local function __tostring(self,...)
   if self.describe then 
-    return self:describe(...)
+	return self:describe(...)
   end
   local is = isA(self)
   if is then
-    return ('%s: <%s>')
-      :format(is,_register[is][self].__system.__addr)
+	return ('%s: <%s>')
+	  :format(is,_register[is][self].__system.__addr)
   end
   return tostring(self)
 end
@@ -83,15 +80,15 @@ local Class
 local function deep_copy(t)
   local r = {}
   for k,v in pairs(t) do
-    if type(v) == 'table' then
-      if (_register.class[v] or _register.object[v]) then 
-        r[k] = v
-      else 
-        r[k] = deep_copy(v)
-      end
-    else
-      r[k] = v
-    end
+	if type(v) == 'table' then
+	  if (_register.class[v] or _register.object[v]) then 
+		r[k] = v
+	  else 
+		r[k] = deep_copy(v)
+	  end
+	else
+	  r[k] = v
+	end
   end
   return r
 end
@@ -99,7 +96,7 @@ end
 -- Checks for a method in a list of attributes
 local function checkForMethod(list)
   for k,attr in pairs(list) do
-    assert(type(attr)~='function','Cannot assign functions as members')
+	assert(type(attr)~='function','Cannot assign functions as members')
   end
 end
 
@@ -109,16 +106,16 @@ local function instantiateFromClass(self,...)
   assert(not _register.class[self].__system.__abstract, 'Cannot instantiate from abstract class')
   local instance = deep_copy(self)
   _register.object[instance] = {
-    __system = {
-      __type = 'object',
-      __superClass = self,
-      __addr = tostring(instance),
-    }
+	__system = {
+	  __type = 'object',
+	  __superClass = self,
+	  __addr = tostring(instance),
+	}
   }
   local instance = setmetatable(instance,self)
-    if self.init then
-      self.init(instance, ...)
-    end
+	if self.init then
+	  self.init(instance, ...)
+	end
   return instance
 end
 
@@ -152,12 +149,11 @@ end
 local function callFromSuperClass(self,f,...)
   local superClass = getmetatable(self)
   if not superClass then return nil end
-  
-  local super = isA(self, 'class') and superClass or _register.class[superClass].__system.__superClass
+	 local super = isA(self, 'class') and superClass or _register.class[superClass].__system.__superClass
   local s = self
   while s[f] == super[f] do
-    s = super
-    super = _register.class[super].__system.__superClass
+	s = super
+	super = _register.class[super].__system.__superClass
   end
 
   -- If the superclass also has a superclass, temporarily set :super to call THAT superclass' methods
@@ -194,13 +190,13 @@ Class = function(members)
   local newClass = members and deep_copy(members) or {}                              -- includes class variables
   newClass.__index = newClass                                                        -- prepares class for inheritance
   _register.class[newClass] = {__system = {                                          -- builds information for internal handling
-      __type = "class",
-      __abstract = abstract or false,
-      __final = final or false,
-      __superClass = false,
-      __subClass = {},
-      __addr = tostring(newClass)
-    }
+	  __type = "class",
+	  __abstract = abstract or false,
+	  __final = final or false,
+	  __superClass = false,
+	  __subClass = {},
+	  __addr = tostring(newClass)
+	}
   }
 
   newClass.new = instantiateFromClass                                                -- class instanciation
@@ -213,19 +209,19 @@ Class = function(members)
   newClass.getSubClasses = getSubClasses                                             -- gets the subclasses
   newClass.__tostring = __tostring                                                   -- tostring
   newClass.is_A = function(self,aClass,shallow)                                              -- Object's class checking
-    --assert(isA(self,'object'),'is_A() must be called from an object')
-    if aClass then
-      assert(isA(aClass,'class'),'When given, Argument must be a class')
-      local target = self
-      repeat
-        local superclass = target:getClass()
-        if superclass == aClass then return true end
-        target = superclass
-      until (not superclass or shallow)
-      return false
-    else
-      return self:getClass()
-    end
+	--assert(isA(self,'object'),'is_A() must be called from an object')
+	if aClass then
+	  assert(isA(aClass,'class'),'When given, Argument must be a class')
+	  local target = self
+	  repeat
+		local superclass = target:getClass()
+		if superclass == aClass then return true end
+		target = superclass
+	  until (not superclass or shallow)
+	  return false
+	else
+	  return self:getClass()
+	end
   end
 
   return setmetatable(newClass,baseClassMt)
@@ -250,7 +246,7 @@ return {
   _VERSION = "",
   is_A = isA,
   class = setmetatable({
-    abstract = abstractClass,
-    final = finalClass},
+	abstract = abstractClass,
+	final = finalClass},
   {__call = function(self,...) return Class(...) end}),
 }

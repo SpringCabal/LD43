@@ -19,9 +19,9 @@ lobby:AddListener("OnJoin",
 		local id = 1
 		while true do
 			if not consoles[id] then
-				consoles[id] = chanName
-				Spring.Echo("\255" .. channelColor .. i18n("joined", {default = "Joined"}) .. " [" .. tostring(id) .. ". " .. chanName .. "]")
-				break
+	consoles[id] = chanName
+	Spring.Echo("\255" .. channelColor .. i18n("joined", {default = "Joined"}) .. " [" .. tostring(id) .. ". " .. chanName .. "]")
+	break
 			end
 			id = id + 1
 		end
@@ -31,9 +31,9 @@ lobby:AddListener("OnJoined",
 	function(listener, chanName, userName)
 		for id, name in pairs(consoles) do
 			if name == chanName then
-				consoles[id] = chanName
-				Spring.Echo("\255" .. channelColor .. userName .. " " .. i18n("user_joined", {default = "joined"}) .. " [" .. tostring(id) .. ". " .. chanName .. "]")
-				break
+	consoles[id] = chanName
+	Spring.Echo("\255" .. channelColor .. userName .. " " .. i18n("user_joined", {default = "joined"}) .. " [" .. tostring(id) .. ". " .. chanName .. "]")
+	break
 			end
 		end
 	end
@@ -42,9 +42,9 @@ lobby:AddListener("OnLeft",
 	function(listener, chanName, userName)
 		for id, name in pairs(consoles) do
 			if name == chanName then
-				consoles[id] = chanName
-				Spring.Echo("\255" .. channelColor .. userName .. " " .. i18n("user_left", {default = "left"}) .. " [" .. tostring(id) .. ". " .. chanName .. "]")
-				break
+	consoles[id] = chanName
+	Spring.Echo("\255" .. channelColor .. userName .. " " .. i18n("user_left", {default = "left"}) .. " [" .. tostring(id) .. ". " .. chanName .. "]")
+	break
 			end
 		end
 	end
@@ -53,10 +53,10 @@ lobby:AddListener("OnSaid",
 	function(listener, chanName, userName, message)
 		for id, name in pairs(consoles) do
 			if name == chanName then
-				-- print channel message
-				local msg = "\255" .. channelColor .. "[" .. tostring(id) .. ". " .. chanName .. "] <" .. userName .. "> " .. message .. "\b"
-				Spring.Echo(msg)
-				break
+	-- print channel message
+	local msg = "\255" .. channelColor .. "[" .. tostring(id) .. ". " .. chanName .. "] <" .. userName .. "> " .. message .. "\b"
+	Spring.Echo(msg)
+	break
 			end
 		end
 	end
@@ -94,7 +94,7 @@ commands = {
 		exec = function(command, cmdParts)
 			Spring.Echo("\255" .. channelColor .. i18n("connecting_server", {default="Connecting to server..."}))
 			lobby:AddListener("OnTASServer", function()
-				lobby:Login(cmdParts[2], cmdParts[3], 3)
+	lobby:Login(cmdParts[2], cmdParts[3], 3)
 			end)
 			lobby:Connect("springrts.com", 8200)
 		end,
@@ -104,8 +104,8 @@ commands = {
 		description = i18n("logout_desc", {default="Logout from Spring Lobby"}),
 		exec = function(command, cmdParts)
 			if lobby:GetConnectionStatus() ~= "connected" then
-				-- No need to print out an error message to the user, since it doesn't make any sense to logout while not connected anyway
-				return
+	-- No need to print out an error message to the user, since it doesn't make any sense to logout while not connected anyway
+	return
 			end
 			lobby:Exit("Leaving")
 		end,
@@ -115,8 +115,8 @@ commands = {
 		description = i18n("join_desc", {default="Join a channel"}),
 		exec = function(command, cmdParts)
 			if lobby:GetConnectionStatus() ~= "connected" then
-				Spring.Echo("\255" .. channelColor .. i18n("login_first", {default="Cannot join a channel while disconnected. Login first."}) .. "\b")
-				return
+	Spring.Echo("\255" .. channelColor .. i18n("login_first", {default="Cannot join a channel while disconnected. Login first."}) .. "\b")
+	return
 			end
 			lobby:Join(cmdParts[2], cmdParts[3])
 		end,
@@ -126,29 +126,28 @@ commands = {
 		description = i18n("leave_desc", {default="Leave a channel"}),
 		exec = function(command, cmdParts)
 			if lobby:GetConnectionStatus() ~= "connected" then
-				-- No need to print out an error message to the user, since it doesn't make any sense to leave channels while not connected anyway
-				return
+	-- No need to print out an error message to the user, since it doesn't make any sense to leave channels while not connected anyway
+	return
 			end
-
-			local chanName = cmdParts[2]
+	local chanName = cmdParts[2]
 			local currentContext = GetCurrentContext()
 			if chanName == nil or chanName:trim() == "" then
-				if currentContext.name == "channel" then
-					chanName = consoles[currentContext.id]
-				else
-					return
-				end
+	if currentContext.name == "channel" then
+		chanName = consoles[currentContext.id]
+	else
+		return
+	end
 			end
 			-- TODO: should probably use a listener instead but need to implement it
 			for id, name in pairs(consoles) do
-				if name == chanName then
-					Spring.Echo("\255" .. channelColor .. i18n("left", {default="Left"}) .. " [" .. tostring(id) .. ". " .. chanName .. "]")
-					if currentContext.name == "channel" and currentContext.id == id then
-						ResetCurrentContext()
-					end
-					consoles[id] = nil
-					break
-				end
+	if name == chanName then
+		Spring.Echo("\255" .. channelColor .. i18n("left", {default="Left"}) .. " [" .. tostring(id) .. ". " .. chanName .. "]")
+		if currentContext.name == "channel" and currentContext.id == id then
+		ResetCurrentContext()
+		end
+		consoles[id] = nil
+		break
+	end
 			end
 			lobby:Leave(chanName)
 		end,
@@ -165,10 +164,10 @@ context = {
 		name = "channel",
 		parse = function(txt)
 			if tonumber(txt:trim():sub(2)) ~= nil and txt:sub(#txt, #txt) == " " then
-				local id = tonumber(txt:trim():sub(2))
-				if consoles[id] ~= nil then
-					return true, { display = "\255" .. channelColor .. "[" .. tostring(id) .. ". " .. consoles[id] .. "]\b", name = "channel", id = id, persist = true }
-				end
+	local id = tonumber(txt:trim():sub(2))
+	if consoles[id] ~= nil then
+		return true, { display = "\255" .. channelColor .. "[" .. tostring(id) .. ". " .. consoles[id] .. "]\b", name = "channel", id = id, persist = true }
+	end
 			end
 		end,
 		exec = function(str, context)

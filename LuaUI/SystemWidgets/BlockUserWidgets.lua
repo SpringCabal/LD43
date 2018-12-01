@@ -51,6 +51,6 @@ function addon.BlockAddon(name, knownInfo)
 
 	if (not knownInfo.fromZip)and(knownInfo.enabled) then
 		knownInfo.enabled = false
-        return true
-    end
+		return true
+	end
 end

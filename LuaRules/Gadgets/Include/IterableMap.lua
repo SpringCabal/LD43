@@ -40,7 +40,6 @@ function IterableMap.New()
 		end
 		local myIndex = indexByKey[key]
 		local endKey = keyByIndex[indexMax]
-		
 		keyByIndex[myIndex] = endKey
 		indexByKey[endKey] = myIndex
 		keyByIndex[indexMax] = nil
@@ -53,11 +52,9 @@ function IterableMap.New()
 		if (not oldKey) or (not indexByKey[oldKey]) or indexByKey[newKey] then
 			return false
 		end
-		
 		keyByIndex[indexByKey[oldKey]] = newKey
 		indexByKey[newKey] = indexByKey[oldKey]
 		dataByKey[newKey] = dataByKey[oldKey]
-		
 		indexByKey[oldKey] = nil
 		dataByKey[oldKey] = nil
 		return true
@@ -67,7 +64,6 @@ function IterableMap.New()
 	function api.Get(key)
 		return dataByKey[key]
 	end
-		
 	function api.Set(key, data)
 		if not indexByKey[key] then
 			api.Add(key, data)
@@ -109,7 +105,7 @@ function IterableMap.New()
 		return function ()
 			i = i + 1
 			if i <= indexMax then 
-				return keyByIndex[i], dataByKey[keyByIndex[i]]
+	return keyByIndex[i], dataByKey[keyByIndex[i]]
 			end
 		end
 	end
@@ -123,10 +119,10 @@ function IterableMap.New()
 		while i <= indexMax do
 			local key = keyByIndex[i]
 			if funcToApply(key, dataByKey[key], i, ...) then
-				-- Return true to remove element
-				api.Remove(key)
+	-- Return true to remove element
+	api.Remove(key)
 			else
-				i = i + 1
+	i = i + 1
 			end
 		end
 	end
@@ -136,16 +132,14 @@ function IterableMap.New()
 		while i <= indexMax do
 			local key = keyByIndex[i]
 			if funcToApply(key, dataByKey[key], i) then
-				-- Return true to remove element
-				api.Remove(key)
+	-- Return true to remove element
+	api.Remove(key)
 			else
-				i = i + 1
+	i = i + 1
 			end
 		end
 	end
-	
-	
-	-- This 'method' of iteration is for barbarians. Seems to have performance
+		-- This 'method' of iteration is for barbarians. Seems to have performance
 	-- similar to Apply.
 	function api.GetIndexMax()
 		return indexMax

@@ -3,13 +3,13 @@
 
 function widget:GetInfo()
   return {
-    name      = "ChiliProfiler",
-    desc      = "",
-    author    = "",
-    date      = "2013",
-    license   = "GPLv2",
-    layer     = 2,
-    enabled   = false  --  loaded by default?
+	name      = "ChiliProfiler",
+	desc      = "",
+	author    = "",
+	date      = "2013",
+	license   = "GPLv2",
+	layer     = 2,
+	enabled   = false  --  loaded by default?
   }
 end
 
@@ -69,13 +69,12 @@ local function trace(event, line)
 		local sampleName = ("%s%s%s"):format(s, n, l)
 		if not alreadySampled[sampleName] then
 			alreadySampled[sampleName] = true
-
-			sample_tree[s] = sample_tree[s] or {}
+	sample_tree[s] = sample_tree[s] or {}
 			sample_tree[s][n] = sample_tree[s][n] or {0,0}
 			sample_tree[s][n][1] = sample_tree[s][n][1] + 1
 			if top and (j - 1 == 2) then
-				sample_tree[s][n][2] = sample_tree[s][n][2] + 1
-				top = false
+	sample_tree[s][n][2] = sample_tree[s][n][2] + 1
+	top = false
 			end
 		end
 	end
@@ -87,9 +86,9 @@ local function rendertree()
 		local node_file
 		for f,c in pairs(t) do
 			if (c[1]/samples > min_usage)or(c[2]/samples > min_usage) then
-				local cap = ("%.1f%% (%.1f%%): %s"):format(100 * (c[1]/samples), 100 * (c[2]/samples), f)
-				if not(node_file) then node_file = tree0.root:Add(s) end
-				local nf = node_file:Add(cap)
+	local cap = ("%.1f%% (%.1f%%): %s"):format(100 * (c[1]/samples), 100 * (c[2]/samples), f)
+	if not(node_file) then node_file = tree0.root:Add(s) end
+	local nf = node_file:Add(cap)
 			end
 		end
 	end
@@ -124,35 +123,35 @@ function widget:Initialize()
 
 		children = {
 			Chili.Label:New{
-				name = "lbl_profiler_samples",
-				x=0, right=0,
-				y=0, bottom=-20,
-				align = "right", valign = "bottom",
-				caption = "Samples: 0",
+	name = "lbl_profiler_samples",
+	x=0, right=0,
+	y=0, bottom=-20,
+	align = "right", valign = "bottom",
+	caption = "Samples: 0",
 			},
 			Chili.ScrollPanel:New{
-				x=0, right=0,
-				y=20, bottom=20,
-				children = {
-					Chili.TreeView:New{
-						name = "tree_profiler",
-						x=0, right=0,
-						y=0, bottom=0,
-						defaultExpanded = true,
-					},
-				},
+	x=0, right=0,
+	y=20, bottom=20,
+	children = {
+		Chili.TreeView:New{
+		name = "tree_profiler",
+		x=0, right=0,
+		y=0, bottom=0,
+		defaultExpanded = true,
+		},
+	},
 			},
 			Chili.Button:New{
-				x=0, right="50%",
-				y=-20, bottom=0,
-				caption="start",
-				OnMouseUp = {AddProfiler},
+	x=0, right="50%",
+	y=-20, bottom=0,
+	caption="start",
+	OnMouseUp = {AddProfiler},
 			},
 			Chili.Button:New{
-				x="50%", right=0,
-				y=-20, bottom=0,
-				caption = "stop",
-				OnMouseUp = {function() debug.sethook( nil ); profiling = false; rendertree() end},
+	x="50%", right=0,
+	y=-20, bottom=0,
+	caption = "stop",
+	OnMouseUp = {function() debug.sethook( nil ); profiling = false; rendertree() end},
 			},
 		},
 	}

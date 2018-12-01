@@ -1,12 +1,12 @@
 function widget:GetInfo()
   return {
-    name      = "Chonsole",
-    desc      = "Chili Console",
-    author    = "gajop",
-    date      = "in the future",
-    license   = "GPL-v2",
-    layer     = 0,
-    enabled   = true,
+	name      = "Chonsole",
+	desc      = "Chili Console",
+	author    = "gajop",
+	date      = "in the future",
+	license   = "GPL-v2",
+	layer     = 0,
+	enabled   = true,
   }
 end
 
@@ -108,17 +108,17 @@ local function ExtractDir(filepath)
   filepath = filepath:gsub("\\", "/")
   local lastChar = filepath:sub(-1)
   if (lastChar == "/") then
-    filepath = filepath:sub(1,-2)
+	filepath = filepath:sub(1,-2)
   end
   local pos,b,e,match,init,n = 1,1,1,1,0,0
   repeat
-    pos,init,n = b,init+1,n+1
-    b,init,match = filepath:find("/",init,true)
+	pos,init,n = b,init+1,n+1
+	b,init,match = filepath:find("/",init,true)
   until (not b)
   if (n==1) then
-    return filepath
+	return filepath
   else
-    return filepath:sub(1,pos)
+	return filepath:sub(1,pos)
   end
 end
 
@@ -126,17 +126,17 @@ local function ExtractFileName(filepath)
   filepath = filepath:gsub("\\", "/")
   local lastChar = filepath:sub(-1)
   if (lastChar == "/") then
-    filepath = filepath:sub(1,-2)
+	filepath = filepath:sub(1,-2)
   end
   local pos,b,e,match,init,n = 1,1,1,1,0,0
   repeat
-    pos,init,n = b,init+1,n+1
-    b,init,match = filepath:find("/",init,true)
+	pos,init,n = b,init+1,n+1
+	b,init,match = filepath:find("/",init,true)
   until (not b)
   if (n==1) then
-    return filepath
+	return filepath
   else
-    return filepath:sub(pos+1)
+	return filepath:sub(pos+1)
   end
 end
 
@@ -171,14 +171,14 @@ function widget:Initialize()
 			local fdir = ExtractDir(f)
 			local i18nFile = fdir .. "i18n/" .. fname
 			if VFS.FileExists(i18nFile, nil, VFS.DEF_MODE) then
-				local success, err = pcall(function() VFS.Include(i18nFile, nil, VFS.DEF_MODE) end)
-				if not success then
-					Spring.Log("Chonsole", LOG.ERROR, "Error loading translation file: " .. f)
-					Spring.Log("Chonsole", LOG.ERROR, err)
-				end
-				if translations ~= nil then
-					i18n.load(translations)
-				end
+	local success, err = pcall(function() VFS.Include(i18nFile, nil, VFS.DEF_MODE) end)
+	if not success then
+		Spring.Log("Chonsole", LOG.ERROR, "Error loading translation file: " .. f)
+		Spring.Log("Chonsole", LOG.ERROR, err)
+	end
+	if translations ~= nil then
+		i18n.load(translations)
+	end
 			end
 		end
 		-- Load extension
@@ -189,14 +189,14 @@ function widget:Initialize()
 			Spring.Log("Chonsole", LOG.ERROR, err)
 		else
 			if commands ~= nil then
-				for _, cmd in pairs(commands) do
-					table.insert(cmdConfig, cmd)
-				end
+	for _, cmd in pairs(commands) do
+		table.insert(cmdConfig, cmd)
+	end
 			end
 			if context ~= nil then
-				for _, parser in pairs(context) do
-					table.insert(contextParser, parser)
-				end
+	for _, parser in pairs(context) do
+		table.insert(contextParser, parser)
+	end
 			end
 		end
 	end
@@ -216,7 +216,7 @@ function widget:Initialize()
 		},
 		KeyPress = function(...)
 			if not ParseKey(...) then
-				return Chili.EditBox.KeyPress(...)
+	return Chili.EditBox.KeyPress(...)
 			end
 			return true
 		end,
@@ -371,13 +371,13 @@ function ParseKey(ebConsole, key, mods, ...)
 			SuggestionsUp()
 		else
 			if currentHistory == 0 then
-				FilterHistory(ebConsole.text)
+	FilterHistory(ebConsole.text)
 			end
 			if #filteredHistory > currentHistory then
-				--and not (currentHistory == 0 and ebConsole.text ~= "") 
-				currentHistory = currentHistory + 1
-				ShowHistoryItem()
-				ShowSuggestions()
+	--and not (currentHistory == 0 and ebConsole.text ~= "") 
+	currentHistory = currentHistory + 1
+	ShowHistoryItem()
+	ShowSuggestions()
 			end
 		end
 	elseif key == Spring.GetKeyCode("down") then
@@ -405,24 +405,24 @@ function ParseKey(ebConsole, key, mods, ...)
 		end
 		if #filteredSuggestions == 1 and #dynamicSuggestions ~= 0 and #suggestions[filteredSuggestions[1]].text <= #ebConsole.text then
 			if #dynamicSuggestions[nextSubSuggestion].suggestion.command >= #ebConsole.text or currentSubSuggestion ~= 0 then
-				currentSubSuggestion = nextSubSuggestion
-				local suggestion = dynamicSuggestions[currentSubSuggestion].suggestion
-				if #dynamicSuggestions > 1 then
-					ebConsole:SetText(suggestion.command)
-				else
-					ebConsole:SetText(suggestion.command .. " ")
-				end
-				ebConsole.cursor = #ebConsole.text + 1
-				UpdateSuggestions()
+	currentSubSuggestion = nextSubSuggestion
+	local suggestion = dynamicSuggestions[currentSubSuggestion].suggestion
+	if #dynamicSuggestions > 1 then
+		ebConsole:SetText(suggestion.command)
+	else
+		ebConsole:SetText(suggestion.command .. " ")
+	end
+	ebConsole.cursor = #ebConsole.text + 1
+	UpdateSuggestions()
 			end
 		elseif #suggestions[filteredSuggestions[nextSuggestion]].text >= #ebConsole.text or currentSuggestion ~= 0 then
 			currentSuggestion = nextSuggestion
 			local id = filteredSuggestions[currentSuggestion]
 			if #filteredSuggestions > 1 then
-				ebConsole:SetText(suggestions[id].text)
+	ebConsole:SetText(suggestions[id].text)
 			else
-				-- this will also select it if there's only one option
-				ebConsole:SetText(suggestions[id].text .. " ")
+	-- this will also select it if there's only one option
+	ebConsole:SetText(suggestions[id].text .. " ")
 			end
 			ebConsole.cursor = #ebConsole.text + 1
 			UpdateSuggestions()
@@ -430,13 +430,13 @@ function ParseKey(ebConsole, key, mods, ...)
 	elseif key == Spring.GetKeyCode("pageup") then
 		for i = 1, config.suggestions.pageUpFactor do
 			if currentSuggestion > 0 or currentSubSuggestion > 0 then
-				SuggestionsUp()
+	SuggestionsUp()
 			end
 		end
 	elseif key == Spring.GetKeyCode("pagedown") then
 		for i = 1, config.suggestions.pageDownFactor do
 			if #filteredSuggestions > currentSuggestion or (#dynamicSuggestions > currentSubSuggestion and dynamicSuggestions[currentSubSuggestion+1].suggestion.visible) then
-				SuggestionsDown()
+	SuggestionsDown()
 			end
 		end
 	else
@@ -483,16 +483,15 @@ function PostParseKey(...)
 		for _, parser in pairs(contextParser) do
 			local success, err = pcall(function() res, context = parser.parse(txt) end)
 			if not success then
-				Spring.Log("Chonsole", LOG.ERROR, "Error processing custom context: " .. tostring(cmd.command))
-				Spring.Log("Chonsole", LOG.ERROR, err)
+	Spring.Log("Chonsole", LOG.ERROR, "Error processing custom context: " .. tostring(cmd.command))
+	Spring.Log("Chonsole", LOG.ERROR, err)
 			end
 			if res then
-				ebConsole:SetText("")
-				currentContext = context
-				break
+	ebConsole:SetText("")
+	currentContext = context
+	break
 			end
 		end
-		
 		if not res and not currentContext.persist then
 			currentContext = { display = i18n("say_context", {default="Say:"}), name = "say", persist = true }
 		end
@@ -581,9 +580,9 @@ function MakeSuggestion(suggestion)
 			align = "right",
 			padding = {0, 0, 0, 0},
 			font = {
-				size = config.suggestions.fontSize,
+	size = config.suggestions.fontSize,
 -- 				shadow = false,
-				font = config.console.fontFile,
+	font = config.console.fontFile,
 			},
 			parent = ctrlSuggestion,
 		}
@@ -598,7 +597,7 @@ function PopulateSuggestion(ctrlSuggestion, suggestion)
 		function()
 			local txt = suggestion.text
 			if suggestion.dynId ~= nil then
-				txt = suggestions[filteredSuggestions[1]].text .. " " .. txt
+	txt = suggestions[filteredSuggestions[1]].text .. " " .. txt
 			end
 			ebConsole:SetText(txt)
 			ebConsole.cursor = #ebConsole.text + 1
@@ -673,15 +672,15 @@ function FilterSuggestions(txt)
 			local cmdName = suggestion.command:lower()
 			local matched
 			if #cmdParts > 1 then 
-				matched = cmdName == partialCmd
+	matched = cmdName == partialCmd
 			else
-				matched = cmdName:starts(partialCmd)
+	matched = cmdName:starts(partialCmd)
 			end
 			if matched and not addedCommands[suggestion.id] then
-				suggestion.visible = true
-				count = count + 1
-				table.insert(filteredSuggestions, suggestion.id)
-				addedCommands[suggestion.id] = true
+	suggestion.visible = true
+	count = count + 1
+	table.insert(filteredSuggestions, suggestion.id)
+	addedCommands[suggestion.id] = true
 			end
 		end
 -- 		for _, command in pairs(commandList) do
@@ -695,32 +694,32 @@ function FilterSuggestions(txt)
 		if count == 1 then
 			local suggestion = suggestions[filteredSuggestions[1]]
 			if suggestion.suggestions ~= nil then
-				local subSuggestions
-				local success, err = pcall(function() 
-					subSuggestions = suggestion.suggestions(txt, cmdParts)
-				end)
-				if not success then
-					Spring.Log("Chonsole", LOG.ERROR, "Error obtaining suggestions for command: " .. tostring(suggestion.command))
-					Spring.Log("Chonsole", LOG.ERROR, err)
-					return
-				end
-				for i, subSuggestion in pairs(subSuggestions) do
-					if subSuggestion.visible == nil then
-						subSuggestion.visible = true
-					end
-					subSuggestion.dynId = #dynamicSuggestions + 1
-					if i > #dynamicSuggestions then
-						local ctrlSuggestion = CreateSuggestion(subSuggestion)
-						ctrlSuggestion.suggestion = subSuggestion
-						table.insert(dynamicSuggestions, ctrlSuggestion)
-						spSuggestions:AddChild(ctrlSuggestion)
-					else
-						local ctrlSuggestion = dynamicSuggestions[i]
-						ctrlSuggestion.suggestion.visible = true
-						ctrlSuggestion.suggestion = subSuggestion
-						PopulateSuggestion(ctrlSuggestion, subSuggestion)
-					end
-				end
+	local subSuggestions
+	local success, err = pcall(function() 
+		subSuggestions = suggestion.suggestions(txt, cmdParts)
+	end)
+	if not success then
+		Spring.Log("Chonsole", LOG.ERROR, "Error obtaining suggestions for command: " .. tostring(suggestion.command))
+		Spring.Log("Chonsole", LOG.ERROR, err)
+		return
+	end
+	for i, subSuggestion in pairs(subSuggestions) do
+		if subSuggestion.visible == nil then
+		subSuggestion.visible = true
+		end
+		subSuggestion.dynId = #dynamicSuggestions + 1
+		if i > #dynamicSuggestions then
+		local ctrlSuggestion = CreateSuggestion(subSuggestion)
+		ctrlSuggestion.suggestion = subSuggestion
+		table.insert(dynamicSuggestions, ctrlSuggestion)
+		spSuggestions:AddChild(ctrlSuggestion)
+		else
+		local ctrlSuggestion = dynamicSuggestions[i]
+		ctrlSuggestion.suggestion.visible = true
+		ctrlSuggestion.suggestion = subSuggestion
+		PopulateSuggestion(ctrlSuggestion, subSuggestion)
+		end
+	end
 			end
 		end
 	end
@@ -748,7 +747,7 @@ function UpdateSuggestionDisplay(suggestion, ctrlSuggestion, row)
 		elseif suggestion.dynId ~= nil and suggestion.dynId == currentSubSuggestion then
 			ctrlSuggestion.backgroundColor = config.suggestions.suggestionColor
 		elseif suggestion.id == nil then
- 			ctrlSuggestion.backgroundColor = config.suggestions.subsuggestionColor
+	ctrlSuggestion.backgroundColor = config.suggestions.subsuggestionColor
 		else
 			ctrlSuggestion.backgroundColor = { 0, 0, 0, 0 }
 		end
@@ -756,11 +755,11 @@ function UpdateSuggestionDisplay(suggestion, ctrlSuggestion, row)
 		if suggestion.cheat then
 			local cheatColor
 			if Spring.IsCheatingEnabled() then
-				cheatColor = config.suggestions.cheatEnabledColor
+	cheatColor = config.suggestions.cheatEnabledColor
 			elseif autoCheat then
-				cheatColor = config.suggestions.autoCheatColor
+	cheatColor = config.suggestions.autoCheatColor
 			else
-				cheatColor = config.suggestions.cheatDisabledColor
+	cheatColor = config.suggestions.cheatDisabledColor
 			end
 			ctrlSuggestion.lblCheat.font.color = cheatColor
 			ctrlSuggestion.lblCheat:Invalidate()
@@ -845,36 +844,35 @@ function ProcessText(str)
 		local cmdParts = explode(" ", command:gsub("%s+", " "))
 		for _, cmd in pairs(cmdConfig) do
 			if cmd.command == cmdParts[1]:lower() and cmd.exec ~= nil then
-				if not cmd.cheat or Spring.IsCheatingEnabled() then
-					ExecuteCustomCommand(cmd, command, cmdParts)
-				elseif autoCheat then
-					Spring.SendCommands("cheat 1")
-					table.insert(autoCheatBuffer, {cmd, command, cmdParts})
-				else
-					Spring.Echo("Enable cheats with /cheat or /autocheat")
-					-- NOTICE: Custom commands won't even be attempted if they're supposed to fail
-					-- In case a user tries to manually send such attempts, it will still be stopped in the gadget.
-					-- ExecuteCustomCommand(cmd, command, cmdParts)
-				end
-				return
+	if not cmd.cheat or Spring.IsCheatingEnabled() then
+		ExecuteCustomCommand(cmd, command, cmdParts)
+	elseif autoCheat then
+		Spring.SendCommands("cheat 1")
+		table.insert(autoCheatBuffer, {cmd, command, cmdParts})
+	else
+		Spring.Echo("Enable cheats with /cheat or /autocheat")
+		-- NOTICE: Custom commands won't even be attempted if they're supposed to fail
+		-- In case a user tries to manually send such attempts, it will still be stopped in the gadget.
+		-- ExecuteCustomCommand(cmd, command, cmdParts)
+	end
+	return
 			end
 		end
-		
 		local index = suggestionNameMapping[cmdParts[1]]
 		Spring.Echo(command)
 		if index then
 			local suggestion = suggestions[index]
 			if (suggestion.cheat or cmdParts[1]:lower() == "luarules" and cmdParts[2]:lower() == "reload") and not Spring.IsCheatingEnabled() then
-				if autoCheat then
-					Spring.SendCommands("cheat 1")
-					table.insert(autoCheatBuffer, command)
-				else
-					Spring.Echo("Enable cheats with /cheat or /autocheat")
-					-- NOTICE: It will still try to execute the engine command which should fail.
-					Spring.SendCommands(command)
-				end
+	if autoCheat then
+		Spring.SendCommands("cheat 1")
+		table.insert(autoCheatBuffer, command)
+	else
+		Spring.Echo("Enable cheats with /cheat or /autocheat")
+		-- NOTICE: It will still try to execute the engine command which should fail.
+		Spring.SendCommands(command)
+	end
 			else
-				Spring.SendCommands(command)
+	Spring.SendCommands(command)
 			end
 		else
 			Spring.Log("Chonsole", LOG.WARNING, "Unknown command: " .. command)
@@ -891,21 +889,20 @@ function ProcessText(str)
 		else
 			local found = false
 			for _, parser in pairs(contextParser) do
-				if currentContext.name == parser.name then
-					local success, err = pcall(function() parser.exec(str, currentContext) end)
-					if not success then
-						Spring.Log("Chonsole", LOG.ERROR, "Error executing custom context: " .. tostring(cmd.command))
-						Spring.Log("Chonsole", LOG.ERROR, err)
-					end
-					found = true
-					break
-				end
+	if currentContext.name == parser.name then
+		local success, err = pcall(function() parser.exec(str, currentContext) end)
+		if not success then
+		Spring.Log("Chonsole", LOG.ERROR, "Error executing custom context: " .. tostring(cmd.command))
+		Spring.Log("Chonsole", LOG.ERROR, err)
+		end
+		found = true
+		break
+	end
 			end
-			
-			if not found then
-				Spring.Echo(currentContext)
-				Spring.Echo("Unexpected context " .. currentContext.name)
-				command = "say "
+		if not found then
+	Spring.Echo(currentContext)
+	Spring.Echo("Unexpected context " .. currentContext.name)
+	command = "say "
 			end
 		end
 		if command then
@@ -928,15 +925,15 @@ function widget:DrawScreen()
 		gl.PushMatrix()
 			local texInfo = gl.TextureInfo(texName)
 			if texInfo and texInfo.xsize >= 0 then
-				gl.Texture(texName)
-				-- FIXME: y is inverted in OpenGL (with respect to Chili)
-				-- TODO: Fix magic numbers (make them configurable)
-				gl.TexRect(ebConsole.x-400, ebConsole.y, ebConsole.x, ebConsole.y + 400)
-				local sizeStr = tostring(texInfo.xsize) .. "x" .. tostring(texInfo.ysize)
-				if texInfo.xsize == 0 then
-					gl.Color(1, 0, 0)
-				end
-				gl.Text(sizeStr, ebConsole.x - 240, ebConsole.y - 15, 16)
+	gl.Texture(texName)
+	-- FIXME: y is inverted in OpenGL (with respect to Chili)
+	-- TODO: Fix magic numbers (make them configurable)
+	gl.TexRect(ebConsole.x-400, ebConsole.y, ebConsole.x, ebConsole.y + 400)
+	local sizeStr = tostring(texInfo.xsize) .. "x" .. tostring(texInfo.ysize)
+	if texInfo.xsize == 0 then
+		gl.Color(1, 0, 0)
+	end
+	gl.Text(sizeStr, ebConsole.x - 240, ebConsole.y - 15, 16)
 			end
 		gl.PopMatrix()
 	end
@@ -947,10 +944,10 @@ function widget:Update()
 		for _, command in pairs(autoCheatBuffer) do
 			-- engine command
 			if type(command) == "string" then
-				Spring.SendCommands(command)
+	Spring.SendCommands(command)
 			-- custom command
 			elseif type(command) == "table" then
-				ExecuteCustomCommand(command[1], command[2], command[3])
+	ExecuteCustomCommand(command[1], command[2], command[3])
 			end
 		end
 		autoCheatBuffer = {}

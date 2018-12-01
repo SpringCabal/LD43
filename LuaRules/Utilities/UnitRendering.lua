@@ -18,20 +18,16 @@ end
 local unitRendering = {
   lods = {},
   curHighestLOD = 0,
-
-  activeMats = {},
-
-  spSetLODCount = Spring.UnitRendering.SetLODCount,
+	activeMats = {},
+	spSetLODCount = Spring.UnitRendering.SetLODCount,
   spSetMaterialLastLOD = Spring.UnitRendering.SetMaterialLastLOD,
 }
 
 local featureRendering = {
   lods = {},
   curHighestLOD = 0,
-
-  activeMats = {},
-
-  spSetLODCount = Spring.FeatureRendering.SetLODCount,
+	activeMats = {},
+	spSetLODCount = Spring.FeatureRendering.SetLODCount,
   spSetMaterialLastLOD = Spring.FeatureRendering.SetMaterialLastLOD,
 }
 
@@ -47,50 +43,41 @@ end
 local function ActivateMaterial(rendering, objectID, lod)
   local activeMats = rendering.activeMats[objectID]
   if not activeMats then
-    activeMats = {current = math.huge}
-    rendering.activeMats[objectID] = activeMats
+	activeMats = {current = math.huge}
+	rendering.activeMats[objectID] = activeMats
   end
-
-  local lod_count = GetLODCount(rendering, objectID)
+	local lod_count = GetLODCount(rendering, objectID)
   if lod_count < lod then
-    SetLODCount(rendering, objectID, lod)
+	SetLODCount(rendering, objectID, lod)
   end
-
-  rendering.activeMats[lod] = true
-
-  if lod > rendering.curHighestLOD then
-    rendering.curHighestLOD = lod
+	rendering.activeMats[lod] = true
+	if lod > rendering.curHighestLOD then
+	rendering.curHighestLOD = lod
   end
-
-  if lod <= activeMats.current then
-    activeMats.current = lod
-    rendering.spSetMaterialLastLOD(objectID, "opaque", lod)
+	if lod <= activeMats.current then
+	activeMats.current = lod
+	rendering.spSetMaterialLastLOD(objectID, "opaque", lod)
   end
 end
-
-
-local function DeactivateMaterial(rendering, objectID, lod)
+	local function DeactivateMaterial(rendering, objectID, lod)
   local activeMats = rendering.activeMats[objectID]
   if not activeMats then
-    return
+	return
   end
-
-  activeMats[lod] = nil
-
-  if activeMats.current == lod then
-    --// detect next available material
-    for i = 1, rendering.curHighestLOD do
-      if activeMats[i] then
-        activeMats.current = i
-        rendering.spSetMaterialLastLOD(objectID, "opaque", i)
-        return
-      end
-    end
-
-    --// none material active
-    rendering.activeMats[objectID] = nil
-    rendering.spSetMaterialLastLOD(objectID, "opaque", 0)
-    SetLODCount(rendering, objectID, 0)
+	activeMats[lod] = nil
+	if activeMats.current == lod then
+	--// detect next available material
+	for i = 1, rendering.curHighestLOD do
+	  if activeMats[i] then
+		activeMats.current = i
+		rendering.spSetMaterialLastLOD(objectID, "opaque", i)
+		return
+	  end
+	end
+	  --// none material active
+	rendering.activeMats[objectID] = nil
+	rendering.spSetMaterialLastLOD(objectID, "opaque", 0)
+	SetLODCount(rendering, objectID, 0)
   end
 end
 

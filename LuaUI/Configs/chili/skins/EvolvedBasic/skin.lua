@@ -3,9 +3,9 @@
 
 local skin = {
   info = {
-    name    = "EvolvedBasic",
-    version = "0.3",
-    author  = "jK",
+	name    = "EvolvedBasic",
+	version = "0.3",
+	author  = "jK",
   }
 }
 
@@ -17,12 +17,12 @@ skin.general = {
   borderColor = {1.0, 1.0, 1.0, 1.0},
 
   font = {
-    font    = SKINDIR .. "fonts/n019003l.pfb",
-    color        = {1,1,1,1},
-    outlineColor = {0.05,0.05,0.05,0.9},
-    outline = false,
-    shadow  = true,
-    size    = 14,
+	font    = SKINDIR .. "fonts/n019003l.pfb",
+	color        = {1,1,1,1},
+	outlineColor = {0.05,0.05,0.05,0.9},
+	outline = false,
+	shadow  = true,
+	size    = 14,
   },
 
   --padding         = {5, 5, 5, 5}, --// padding: left, top, right, bottom
@@ -63,10 +63,8 @@ skin.option_button = {
   TileImageFG = ":cl:tech_button_action_fg.png",
   tiles = {22, 22, 22, 22}, --// tile widths: left,top,right,bottom
   padding = {10, 10, 10, 10},
-  
-  focusColor  = {0.21, 0.53, 0.60, 1},
-  
-  backgroundColor = {0.21, 0.53, 0.60, 0.75},
+	 focusColor  = {0.21, 0.53, 0.60, 1},
+	 backgroundColor = {0.21, 0.53, 0.60, 0.75},
   borderColor = {1,1,1,0},
 
   DrawControl = DrawButton,
@@ -79,8 +77,7 @@ skin.negative_button = {
   padding = {10, 10, 10, 10},
 
   focusColor  = {0.72, 0.05, 0.12, 1},
-  
-  backgroundColor = {0.72, 0.05, 0.12, 0.5},
+	 backgroundColor = {0.72, 0.05, 0.12, 0.5},
   borderColor = {1,1,1,0},
 
   DrawControl = DrawButton,
@@ -93,8 +90,7 @@ skin.disabled_button = {
   padding = {10, 10, 10, 10},
 
   focusColor  = {0.4, 0.4, 0.4, 0.25},
-  
-  backgroundColor = {0.4, 0.4, 0.4, 0.5},
+	 backgroundColor = {0.4, 0.4, 0.4, 0.5},
   borderColor = {1,1,1,0},
 
   DrawControl = DrawButton,
@@ -146,11 +142,9 @@ skin.checkbox = {
 
 skin.editbox = {
   hintFont = table.merge({color = {1,1,1,0.7}}, skin.general.font),
-  
-  backgroundColor = {0.1, 0.1, 0.1, 0},
+	 backgroundColor = {0.1, 0.1, 0.1, 0},
   cursorColor     = {1.0, 0.7, 0.1, 0.8},
-  
-  focusColor  = {1, 1, 1, 1},
+	 focusColor  = {1, 1, 1, 1},
   borderColor = {1, 1, 1, 0.6},
 
   TileImageBK = ":cl:panel2_bg.png",
@@ -218,7 +212,7 @@ skin.progressbar = {
   tiles       = {10, 10, 10, 10},
 
   font = {
-    shadow = true,
+	shadow = true,
   },
 
   backgroundColor = {0,0,0,0.5},
@@ -291,8 +285,8 @@ skin.window = {
   backgroundColor = {0.1, 0.1, 0.1, 0.7},
 
   boxes = {
-    resize = {-21, -21, -10, -10},
-    drag = {0, 0, "100%", 10},
+	resize = {-21, -21, -10, -10},
+	drag = {0, 0, "100%", 10},
   },
 
   NCHitTest = NCHitTestWithPadding,
@@ -318,8 +312,8 @@ skin.main_window = {
   backgroundColor = {0.1, 0.1, 0.1, 0.7},
 
   boxes = {
-    resize = {-21, -21, -10, -10},
-    drag = {0, 0, "100%", 10},
+	resize = {-21, -21, -10, -10},
+	drag = {0, 0, "100%", 10},
   },
 
   NCHitTest = NCHitTestWithPadding,
@@ -345,8 +339,8 @@ skin.overlay_window = {
   backgroundColor = {0.1, 0.1, 0.1, 0.7},
 
   boxes = {
-    resize = {-21, -21, -10, -10},
-    drag = {0, 0, "100%", 10},
+	resize = {-21, -21, -10, -10},
+	drag = {0, 0, "100%", 10},
   },
 
   NCHitTest = NCHitTestWithPadding,

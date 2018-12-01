@@ -59,17 +59,17 @@ function widget:Update()
 	if Spring.GetGameRulesParam("gameMode") ~= "develop" and controlledID ~= nil then
 		Spring.SelectUnitArray({controlledID})
 		Spring.SendCommands({"trackoff", "track"})
-        if(frist) then
-            Spring.SendCommands({"trackmode 1"});
-            frist = false
-        end
+		if(frist) then
+		Spring.SendCommands({"trackmode 1"});
+		frist = false
+		end
 		Spring.SelectUnitArray({})
 	end
 	local newGameMode = Spring.GetGameRulesParam("gameMode")
-    if gameMode ~= newGameMode then
-        gameMode = newGameMode
-        SetGameMode(gameMode)
-    end
+	if gameMode ~= newGameMode then
+		gameMode = newGameMode
+		SetGameMode(gameMode)
+	end
 end
 
 function widget:Initialize()
@@ -77,19 +77,18 @@ function widget:Initialize()
 		local unitDefID = Spring.GetUnitDefID(unitID)
 		widget:UnitCreated(unitID, unitDefID)
 	end
-    for k, v in pairs(Spring.GetCameraState()) do
-       print(k .. " = " .. tostring(v) .. ",")
-    end
-
-    gameMode = Spring.GetGameRulesParam("gameMode")
-    SetGameMode(gameMode)
+	for k, v in pairs(Spring.GetCameraState()) do
+	print(k .. " = " .. tostring(v) .. ",")
+	end
+	 gameMode = Spring.GetGameRulesParam("gameMode")
+	SetGameMode(gameMode)
 end
 
 function widget:Shutdown()
 end
 
 function widget:MouseWheel(up,value)
-    -- uncomment this to disable zoom/panning
+	-- uncomment this to disable zoom/panning
 	if Spring.GetGameRulesParam("gameMode") ~= "develop" and controlledID ~= nil then
 		return true
 	end

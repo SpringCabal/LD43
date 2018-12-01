@@ -7,17 +7,17 @@ SPRING_WRAPPER_CONNECTOR_DIR = "libs/spring-wrapper-connector/"
 
 -- Do NOT modify the following lines
 function widget:GetInfo()
-    return {
-        name      = "spring-wrapper-connector",
-        desc      = "Spring wrapper connection provider",
-        author    = "gajop",
-        license   = "MIT",
-        layer     = -10010,
+	return {
+		name      = "spring-wrapper-connector",
+		desc      = "Spring wrapper connection provider",
+		author    = "gajop",
+		license   = "MIT",
+		layer     = -10010,
 		enabled   = true,
 		handler   = true,
 		api       = true,
 		hidden    = true,
-    }
+	}
 end
 
 if Script.GetName() == "LuaUI" then

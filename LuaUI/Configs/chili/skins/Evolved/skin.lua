@@ -3,9 +3,9 @@
 
 local skin = {
   info = {
-    name    = "Evolved",
-    version = "0.3",
-    author  = "jK",
+	name    = "Evolved",
+	version = "0.3",
+	author  = "jK",
   }
 }
 
@@ -17,12 +17,12 @@ skin.general = {
   borderColor = {1.0, 1.0, 1.0, 1.0},
 
   font = {
-    font    = SKINDIR .. "fonts/n019003l.pfb",
-    color        = {1,1,1,1},
-    outlineColor = {0.05,0.05,0.05,0.9},
-    outline = false,
-    shadow  = true,
-    size    = 14,
+	font    = SKINDIR .. "fonts/n019003l.pfb",
+	color        = {1,1,1,1},
+	outlineColor = {0.05,0.05,0.05,0.9},
+	outline = false,
+	shadow  = true,
+	size    = 14,
   },
 
   --padding         = {5, 5, 5, 5}, --// padding: left, top, right, bottom
@@ -35,14 +35,14 @@ skin.icons = {
 
 local buttonPressedColor = {4, 4, 4, 4}
 function DrawMyButton(obj, ...)
-    if obj.state and obj.state.pressed then
-        local oldColor = obj.backgroundColor
-        obj.backgroundColor = buttonPressedColor
-        DrawButton(obj, ...)
-        obj.backgroundColor = oldColor
-    else
-        DrawButton(obj, ...)
-    end
+	if obj.state and obj.state.pressed then
+		local oldColor = obj.backgroundColor
+		obj.backgroundColor = buttonPressedColor
+		DrawButton(obj, ...)
+		obj.backgroundColor = oldColor
+	else
+		DrawButton(obj, ...)
+	end
 end
 
 skin.button = {
@@ -58,39 +58,36 @@ skin.button = {
 }
 
 function DrawMyToggleButton(obj, ...)
-    if obj.checked then
-        local oldColor = obj.backgroundColor
-        obj.backgroundColor = buttonPressedColor
-        DrawButton(obj, ...)
-        obj.backgroundColor = oldColor
-    else
-        DrawButton(obj, ...)
-    end
-    -- Draw custom toggle button (largely based on DrawCheckbox)
-    local boxSize = obj.boxsize
-    local cx, cy, cw, ch = unpack4(obj.clientArea)
-    local x = cx + cw      - boxSize
-    local y = cy + ch*0.5 - boxSize*0.5
-    local w = boxSize
-    local h = boxSize
-
-    local skLeft,skTop,skRight,skBottom = unpack4(obj.tilesCheckbox)
-
-    local TileImage, color
-    if obj.checked then
-        TileImage = obj.TileImageChecked
-        color = obj.checkedColor
-    else
-        TileImage = obj.TileImageUnchecked
-        color = obj.uncheckedColor
-    end
-    gl.Color(color)
-    TextureHandler.LoadTexture(0, TileImage, obj)
-      local texInfo = gl.TextureInfo(TileImage) or {xsize=1, ysize=1}
-      local tw,th = texInfo.xsize, texInfo.ysize
-
-      gl.BeginEnd(GL.TRIANGLE_STRIP, _DrawTiledTexture, x,y,w,h, skLeft,skTop,skRight,skBottom, tw,th, 0)
-    gl.Texture(0,false)
+	if obj.checked then
+		local oldColor = obj.backgroundColor
+		obj.backgroundColor = buttonPressedColor
+		DrawButton(obj, ...)
+		obj.backgroundColor = oldColor
+	else
+		DrawButton(obj, ...)
+	end
+	-- Draw custom toggle button (largely based on DrawCheckbox)
+	local boxSize = obj.boxsize
+	local cx, cy, cw, ch = unpack4(obj.clientArea)
+	local x = cx + cw      - boxSize
+	local y = cy + ch*0.5 - boxSize*0.5
+	local w = boxSize
+	local h = boxSize
+	 local skLeft,skTop,skRight,skBottom = unpack4(obj.tilesCheckbox)
+	 local TileImage, color
+	if obj.checked then
+		TileImage = obj.TileImageChecked
+		color = obj.checkedColor
+	else
+		TileImage = obj.TileImageUnchecked
+		color = obj.uncheckedColor
+	end
+	gl.Color(color)
+	TextureHandler.LoadTexture(0, TileImage, obj)
+	  local texInfo = gl.TextureInfo(TileImage) or {xsize=1, ysize=1}
+	  local tw,th = texInfo.xsize, texInfo.ysize
+	gl.BeginEnd(GL.TRIANGLE_STRIP, _DrawTiledTexture, x,y,w,h, skLeft,skTop,skRight,skBottom, tw,th, 0)
+	gl.Texture(0,false)
 end
 
 skin.toggle_button = {
@@ -123,30 +120,27 @@ skin.toggle_button = {
 }
 
 function DrawMyProgressButton(obj, ...)
-    if obj.state and obj.state.pressed then
-        local oldColor = obj.backgroundColor
-        obj.backgroundColor = buttonPressedColor
-        DrawButton(obj, ...)
-        obj.backgroundColor = oldColor
-
-        if obj.__progress then
-            local w = obj.width
-            local h = obj.height
-            local skLeft,skTop,skRight,skBottom = unpack4(obj.tiles)
-
-            gl.Color(obj.progressColor)
-            TextureHandler.LoadTexture(0,obj.TileImageBK,obj)
-              local texInfo = gl.TextureInfo(obj.TileImageBK) or {xsize=1, ysize=1}
-              local tw,th = texInfo.xsize, texInfo.ysize
-
-              gl.ClipPlane(1, -1,0,0, w * obj.__progress)
-              gl.BeginEnd(GL.TRIANGLE_STRIP, _DrawTiledTexture, 0,0,w,h, skLeft,skTop,skRight,skBottom, tw,th, 0)
-              gl.ClipPlane(1, false)
-            gl.Texture(0,false)
-        end
-    else
-        DrawButton(obj, ...)
-    end
+	if obj.state and obj.state.pressed then
+		local oldColor = obj.backgroundColor
+		obj.backgroundColor = buttonPressedColor
+		DrawButton(obj, ...)
+		obj.backgroundColor = oldColor
+		 if obj.__progress then
+		local w = obj.width
+		local h = obj.height
+		local skLeft,skTop,skRight,skBottom = unpack4(obj.tiles)
+		 gl.Color(obj.progressColor)
+		TextureHandler.LoadTexture(0,obj.TileImageBK,obj)
+	local texInfo = gl.TextureInfo(obj.TileImageBK) or {xsize=1, ysize=1}
+	local tw,th = texInfo.xsize, texInfo.ysize
+		gl.ClipPlane(1, -1,0,0, w * obj.__progress)
+	gl.BeginEnd(GL.TRIANGLE_STRIP, _DrawTiledTexture, 0,0,w,h, skLeft,skTop,skRight,skBottom, tw,th, 0)
+	gl.ClipPlane(1, false)
+		gl.Texture(0,false)
+		end
+	else
+		DrawButton(obj, ...)
+	end
 end
 
 skin.progress_button = {
@@ -163,9 +157,7 @@ skin.progress_button = {
 
   backgroundColor = {0, 0, 0, 0.7},
   borderColor = {1,1,1,0},
-
-
-  -- Checkbox specific properties
+	-- Checkbox specific properties
   -- TileImageBK = ":cl:tech_button_bright_small_bk.png",
   -- TileImageFG = ":cl:tech_button_bright_small_fg.png",
 
@@ -406,7 +398,7 @@ skin.progressbar = {
   tiles       = {10, 10, 10, 10},
 
   font = {
-    shadow = true,
+	shadow = true,
   },
 
   backgroundColor = {0,0,0,0.5},
@@ -479,8 +471,8 @@ skin.window = {
   backgroundColor = {0.1, 0.1, 0.1, 0.7},
 
   boxes = {
-    resize = {-21, -21, -10, -10},
-    drag = {0, 0, "100%", 10},
+	resize = {-21, -21, -10, -10},
+	drag = {0, 0, "100%", 10},
   },
 
   NCHitTest = NCHitTestWithPadding,
@@ -505,8 +497,8 @@ skin.sb_window = {
   backgroundColor = {0.1, 0.1, 0.1, 0.7},
 
   boxes = {
-    resize = {-21, -21, -10, -10},
-    drag = {0, 0, "100%", 10},
+	resize = {-21, -21, -10, -10},
+	drag = {0, 0, "100%", 10},
   },
 
   NCHitTest = NCHitTestWithPadding,

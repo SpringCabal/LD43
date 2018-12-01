@@ -14,7 +14,7 @@ local function ExecuteLuaCommand(luaCommandStr)
 		local success, msg = pcall(function()
 			local msg = {luaCommand()}
 			if #msg > 0 then
-				Spring.Echo(unpack(msg))
+	Spring.Echo(unpack(msg))
 			end
 		end)
 		if not success then

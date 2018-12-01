@@ -3,17 +3,17 @@
 
 function widget:GetInfo()
   return {
-    name      = "LibLobby API",
-    desc      = "LibLobby GUI Framework",
-    author    = "gajop",
-    date      = "WIP",
-    license   = "GPLv2",
-    version   = "0.2",
-    layer     = -1000,
-    enabled   = true,  --  loaded by default?
-    handler   = true,
-    api       = true,
-    hidden    = true,
+	name      = "LibLobby API",
+	desc      = "LibLobby GUI Framework",
+	author    = "gajop",
+	date      = "WIP",
+	license   = "GPLv2",
+	version   = "0.2",
+	layer     = -1000,
+	enabled   = true,  --  loaded by default?
+	handler   = true,
+	api       = true,
+	hidden    = true,
   }
 end
 
@@ -36,11 +36,9 @@ function widget:Initialize()
   Wrapper = VFS.Include(LIB_LOBBY_DIRNAME .. "wrapper.lua", nil, VFS.RAW_FIRST)
 
   self.lobby = Wrapper()
-
-
-  --// Export Widget Globals
+	--// Export Widget Globals
   WG.LibLobby = {
-      lobby = self.lobby -- instance (singleton)
+	  lobby = self.lobby -- instance (singleton)
   }
 
 end

@@ -4,11 +4,11 @@ end
 
 function gadget:GetInfo()
    return {
-      name      = "Blood Magic",
-      author    = "gajop",
-      date      = "December 2018",
-      layer     = 0,
-      enabled   = true
+	  name      = "Blood Magic",
+	  author    = "gajop",
+	  date      = "December 2018",
+	  layer     = 0,
+	  enabled   = true
    }
 end
 

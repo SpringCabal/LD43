@@ -27,7 +27,7 @@ local	resources = {
 			laserfalloff		= 'laserfalloff.tga',
 			randdots			= 'randdots.tga',
 			smoketrail			= 'smoketrail.tga',
-            smoke               = 'smoke.png',
+		smoke               = 'smoke.png',
 			wake				= 'wake.tga',
 			flare				= 'flare.tga',
 			explo				= 'explo.tga',
@@ -51,11 +51,11 @@ local function AutoAdd(subDir, map, filter)
 			local subTable = resources["graphics"][subDir] or {}
 			resources["graphics"][subDir] = subTable
 			if not filter or filter == ext then
-				if not map then
-					table.insert(subTable, path)
-				else -- a mapped subtable
-					subTable[key] = path
-				end
+	if not map then
+		table.insert(subTable, path)
+	else -- a mapped subtable
+		subTable[key] = path
+	end
 			end
 		end
 	end

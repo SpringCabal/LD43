@@ -134,10 +134,10 @@ local function UpdatePausedReload(unitID, unitDefID, gameFrame)
 			local reloadTime  = spGetUnitWeaponState(unitID, i , 'reloadTime')
 			local newReload = 100000 -- set a high reload time so healthbars don't judder. NOTE: math.huge is TOO LARGE
 			if reloadState < 0 then -- unit is already reloaded, so set unit to almost reloaded
-				spSetUnitWeaponState(unitID, i, {reloadTime = newReload, reloadState = gameFrame+UPDATE_PERIOD+1})
+	spSetUnitWeaponState(unitID, i, {reloadTime = newReload, reloadState = gameFrame+UPDATE_PERIOD+1})
 			else
-				local nextReload = gameFrame+(reloadState-gameFrame)*newReload/reloadTime
-				spSetUnitWeaponState(unitID, i, {reloadTime = newReload, reloadState = nextReload+UPDATE_PERIOD})
+	local nextReload = gameFrame+(reloadState-gameFrame)*newReload/reloadTime
+	spSetUnitWeaponState(unitID, i, {reloadTime = newReload, reloadState = nextReload+UPDATE_PERIOD})
 			end
 		end
 	end
@@ -159,13 +159,13 @@ local function UpdateWeapons(unitID, ud, speedFactor, rangeFactor, gameFrame)
 			local wd = WeaponDefs[ud.weapons[i].weaponDef]
 			local reload = wd.reload
 			state.weapon[i] = {
-				reload = reload,
-				burstRate = wd.salvoDelay,
-				oldReloadFrames = floor(reload*30),
-				range = wd.range,
+	reload = reload,
+	burstRate = wd.salvoDelay,
+	oldReloadFrames = floor(reload*30),
+	range = wd.range,
 			}
 			if wd.type == "BeamLaser" then
-				state.weapon[i].burstRate = false -- beamlasers go screwy if you mess with their burst length
+	state.weapon[i].burstRate = false -- beamlasers go screwy if you mess with their burst length
 			end
 		end
 
@@ -180,27 +180,27 @@ local function UpdateWeapons(unitID, ud, speedFactor, rangeFactor, gameFrame)
 		local reloadTime  = spGetUnitWeaponState(unitID, i , 'reloadTime')
 		if speedFactor <= 0 then
 			if not unitReloadPaused[unitID] then
-				local newReload = 100000 -- set a high reload time so healthbars don't judder. NOTE: math.huge is TOO LARGE
-				unitReloadPaused[unitID] = unitDefID
-				if reloadState < gameFrame then -- unit is already reloaded, so set unit to almost reloaded
-					spSetUnitWeaponState(unitID, i, {reloadTime = newReload, reloadState = gameFrame+UPDATE_PERIOD+1})
-				else
-					local nextReload = gameFrame+(reloadState-gameFrame)*newReload/reloadTime
-					spSetUnitWeaponState(unitID, i, {reloadTime = newReload, reloadState = nextReload+UPDATE_PERIOD})
-				end
-				-- add UPDATE_PERIOD so that the reload time never advances past what it is now
+	local newReload = 100000 -- set a high reload time so healthbars don't judder. NOTE: math.huge is TOO LARGE
+	unitReloadPaused[unitID] = unitDefID
+	if reloadState < gameFrame then -- unit is already reloaded, so set unit to almost reloaded
+		spSetUnitWeaponState(unitID, i, {reloadTime = newReload, reloadState = gameFrame+UPDATE_PERIOD+1})
+	else
+		local nextReload = gameFrame+(reloadState-gameFrame)*newReload/reloadTime
+		spSetUnitWeaponState(unitID, i, {reloadTime = newReload, reloadState = nextReload+UPDATE_PERIOD})
+	end
+	-- add UPDATE_PERIOD so that the reload time never advances past what it is now
 			end
 		else
 			if unitReloadPaused[unitID] then
-				unitReloadPaused[unitID] = nil
-				spSetUnitRulesParam(unitID, "reloadPaused", -1, INLOS_ACCESS)
+	unitReloadPaused[unitID] = nil
+	spSetUnitRulesParam(unitID, "reloadPaused", -1, INLOS_ACCESS)
 			end
 			local newReload = w.reload/speedFactor
 			local nextReload = gameFrame+(reloadState-gameFrame)*newReload/reloadTime
 			if w.burstRate then
-				spSetUnitWeaponState(unitID, i, {reloadTime = newReload, reloadState = nextReload, burstRate = w.burstRate/speedFactor})
+	spSetUnitWeaponState(unitID, i, {reloadTime = newReload, reloadState = nextReload, burstRate = w.burstRate/speedFactor})
 			else
-				spSetUnitWeaponState(unitID, i, {reloadTime = newReload, reloadState = nextReload})
+	spSetUnitWeaponState(unitID, i, {reloadTime = newReload, reloadState = nextReload})
 			end
 		end
 		Spring.Echo("w.range*rangeFactor", w.range*rangeFactor)
@@ -249,13 +249,12 @@ local function UpdateMovementSpeed(unitID, ud, speedFactor, turnAccelFactor, max
 		if x then
 			local h = Spring.GetGroundHeight(x, z)
 			if h and h >= y then
-				Spring.SetUnitVelocity(unitID, 0,0,0)
-
-				-- Perhaps attributes should do this:
-				--local env = Spring.UnitScript.GetScriptEnv(unitID)
-				--if env and env.script.StopMoving then
-				--	Spring.UnitScript.CallAsUnit(unitID,env.script.StopMoving, hx, hy, hz)
-				--end
+	Spring.SetUnitVelocity(unitID, 0,0,0)
+		-- Perhaps attributes should do this:
+	--local env = Spring.UnitScript.GetScriptEnv(unitID)
+	--if env and env.script.StopMoving then
+	--	Spring.UnitScript.CallAsUnit(unitID,env.script.StopMoving, hx, hy, hz)
+	--end
 			end
 		end
 	end
@@ -273,33 +272,33 @@ local function UpdateMovementSpeed(unitID, ud, speedFactor, turnAccelFactor, max
 	if spMoveCtrlGetTag(unitID) == nil then
 		if state.movetype == 0 then
 			local attribute = {
-				maxSpeed        = state.origSpeed       *speedFactor,
-				maxAcc          = state.origMaxAcc      *maxAccelerationFactor, --(speedFactor > 0.001 and speedFactor or 0.001)
+	maxSpeed        = state.origSpeed       *speedFactor,
+	maxAcc          = state.origMaxAcc      *maxAccelerationFactor, --(speedFactor > 0.001 and speedFactor or 0.001)
 			}
 			spSetAirMoveTypeData (unitID, attribute)
 			spSetAirMoveTypeData (unitID, attribute)
 		elseif state.movetype == 1 then
 			local attribute =  {
-				maxSpeed        = state.origSpeed       *speedFactor,
-				turnRate        = state.origTurnRate    *turnFactor,
-				accRate         = state.origMaxAcc      *maxAccelerationFactor,
-				decRate         = state.origMaxDec      *maxAccelerationFactor
+	maxSpeed        = state.origSpeed       *speedFactor,
+	turnRate        = state.origTurnRate    *turnFactor,
+	accRate         = state.origMaxAcc      *maxAccelerationFactor,
+	decRate         = state.origMaxDec      *maxAccelerationFactor
 			}
 			spSetGunshipMoveTypeData (unitID, attribute)
 		elseif state.movetype == 2 then
 			local accRate = state.origMaxAcc*maxAccelerationFactor
 			if isSlowed and accRate > speedFactor then
-				-- Clamp acceleration to mitigate prevent brief speedup when executing new order
-				-- 1 is here as an arbitary factor, there is no nice conversion which means that 1 is a good value.
-				accRate = speedFactor
+	-- Clamp acceleration to mitigate prevent brief speedup when executing new order
+	-- 1 is here as an arbitary factor, there is no nice conversion which means that 1 is a good value.
+	accRate = speedFactor
 			end
 			local attribute =  {
-				maxSpeed        = state.origSpeed       *speedFactor,
-				maxReverseSpeed = (isSlowed and 0) or state.origReverseSpeed, --disallow reverse while slowed
-				turnRate        = state.origTurnRate    *turnFactor,
-				accRate         = accRate,
-				decRate         = state.origMaxDec      *decFactor,
-				turnAccel       = state.origTurnRate    *turnAccelFactor*1.2,
+	maxSpeed        = state.origSpeed       *speedFactor,
+	maxReverseSpeed = (isSlowed and 0) or state.origReverseSpeed, --disallow reverse while slowed
+	turnRate        = state.origTurnRate    *turnFactor,
+	accRate         = accRate,
+	decRate         = state.origMaxDec      *decFactor,
+	turnAccel       = state.origTurnRate    *turnAccelFactor*1.2,
 			}
 			spSetGroundMoveTypeData (unitID, attribute)
 		end
