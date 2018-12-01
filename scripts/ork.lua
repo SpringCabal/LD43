@@ -6,6 +6,6 @@ function script.QueryWeapon()
 end
 
 function script.AimWeapon()
-    Spring.Echo("QUERY")
-    return handRight
+    Spring.Echo("AIM")
+    return true
 end

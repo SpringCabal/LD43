@@ -6,11 +6,10 @@ local Axe = Weapon:New {
     name                  = "Axe",
     impactOnly            = true,
     noSelfDamage          = true,
-    range                 = 200,
+    range                 = 700,
     weaponVelocity        = 1000,
     reloadTime            = 3.0,
     tolerance             = 6000,
-    damage                = 1000,
 
     -- collision & avoidance
     avoidFriendly         = true,
@@ -25,6 +24,10 @@ local Axe = Weapon:New {
 
     soundStart            = [[SpearThrow]],
     soundHit              = [[Hit]],
+
+    damage                = {
+        default = 1000,
+    }
 }
 
 return {
