@@ -196,40 +196,13 @@ function HandleLuaMessage(msg)
 				z = z
 			}
 		end
-	end
-
-	if msg_table[1] == 'inc_heightmap' then --LMB
-		local x = tonumber(msg_table[2])
-		local y = tonumber(msg_table[3])
-		local z = tonumber(msg_table[4])
-		local height = tonumber(msg_table[5])
-
--- 		ChangeHeightmap(x, z, HEIGHT_CHANGE_PER_FRAME, 64, height)
-	elseif msg_table[1] == 'dec_heightmap' then -- RMB
-		local x = tonumber(msg_table[2])
-		local y = tonumber(msg_table[3])
-		local z = tonumber(msg_table[4])
-		local height = tonumber(msg_table[5])
-
--- 		ChangeHeightmap(x, z, -HEIGHT_CHANGE_PER_FRAME, 64, height)
-	elseif msg_table[1] == 'switch_form' then
-		local formChangeFrame = Spring.GetGameRulesParam("formChangeFrame") or 0
-		local frame = Spring.GetGameFrame()
-		if frame - formChangeFrame > FORM_CHANGE_COOLDOWN and Spring.GetGameRulesParam("has_eyes") == 1 then
-			Spring.SetGameRulesParam("formChangeFrame", frame)
-
-			Spring.SetGameRulesParam("spiritMode", 1 - Spring.GetGameRulesParam("spiritMode"))
-			local x, y, z = Spring.GetUnitPosition(controlledID)
-			Spring.PlaySoundFile("sounds/changestate.ogg", 1, 'sfx')
+	elseif msg_table[1] == 'spell' then
+		table.remove(msg_table, 1)
+		for i = 1, #msg_table do
+			msg_table[i] = tonumber(msg_table[i])
+			Spring.Echo(msg_table[1])
 		end
-	elseif msg_table[1] == 'pull_lever' then
-		local unitID = tonumber(msg_table[2])
-		local active = Spring.GetUnitStates(unitID).active
-		if active then
-			Spring.GiveOrderToUnit(unitID, CMD.ONOFF, { 0 }, {})
-		else
-			Spring.GiveOrderToUnit(unitID, CMD.ONOFF, { 1 }, {})
-		end
+		GG.UseSpell(controlledID, unpack(msg_table))
 	end
 end
 

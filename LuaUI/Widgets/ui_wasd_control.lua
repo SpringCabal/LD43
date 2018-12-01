@@ -172,11 +172,9 @@ function widget:KeyPress(key, mods, isRepeat)
 			keyControl = true
 			return true
 		end
-		if key == SPACE then
-			Spring.SendLuaRulesMsg('switch_form')
-			if pressSpace == 2 then
-				pressSpace = 3
-			end
+		if key >= KEYSYMS.N_1 and key <= KEYSYMS.N_3 then
+			local num = key - KEYSYMS.N_1 + 1
+			Spring.SendLuaRulesMsg('spell|' .. tostring(num))
 		end
 	end
 
