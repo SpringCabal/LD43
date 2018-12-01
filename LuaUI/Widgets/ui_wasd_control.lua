@@ -84,9 +84,9 @@ local function MovementControl()
 end
 
 function widget:MousePress(mx, my, button)
-	-- if Spring.GetGameRulesParam("gameMode") == "develop" then
-	-- 	return false
-	-- end
+	if Spring.GetGameRulesParam("gameMode") == "develop" then
+		return false
+	end
 
 	if Spring.IsAboveMiniMap(mx, my) then
 		return false
@@ -151,6 +151,10 @@ end
 
 -- handles weapon switching and abilities
 function widget:KeyPress(key, mods, isRepeat)
+	if Spring.GetGameRulesParam("gameMode") == "develop" then
+		return false
+	end
+
 	if not controlledID then
 		return
 	end
