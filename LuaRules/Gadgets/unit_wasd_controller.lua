@@ -202,9 +202,8 @@ function HandleLuaMessage(msg)
 		-- TODO:
 		-- Reload time check
 		-- attack in mouse direction
-		Spring.Echo(Spring.GetUnitWeaponState(controlledID, 1, "reloadTime"))
 		Spring.UnitWeaponFire(controlledID, 1)
-		Spring.Echo(Spring.GetUnitWeaponState(controlledID, 1, "reloadTime"))
+		Spring.Echo("Attack")
 	elseif msg_table[1] == 'spell' then
 		table.remove(msg_table, 1)
 		for i = 1, #msg_table do
