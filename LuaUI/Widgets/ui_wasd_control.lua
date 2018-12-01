@@ -84,44 +84,28 @@ local function MovementControl()
 end
 
 function widget:MousePress(mx, my, button)
-	if Spring.GetGameRulesParam("gameMode") == "develop" then
+	-- if Spring.GetGameRulesParam("gameMode") == "develop" then
+	-- 	return false
+	-- end
+
+	if Spring.IsAboveMiniMap(mx, my) then
 		return false
 	end
 
 	local alt, ctrl, meta, shift = Spring.GetModKeyState()
-	if not Spring.IsAboveMiniMap(mx, my) then
-		if button == 1 then
-			if Spring.GetGameRulesParam("has_arms") == 1 and Spring.GetGameRulesParam("spiritMode") == 0 then
-				local traceType, unitID = Spring.TraceScreenRay(mx, my)
-				if traceType == "unit" and UnitDefs[Spring.GetUnitDefID(unitID)].name == "lever" then
-					local x, _, z = Spring.GetUnitPosition(unitID)
-					local wx, _, wz = Spring.GetUnitPosition(controlledID)
-					local dx, dz = x - wx, z - wz
-					if dx * dx + dz * dz < 100*100 then
-						Spring.SendLuaRulesMsg('pull_lever|' .. unitID)
-						return true
-					end
-				end
-			end
-			local x,y,z = getMouseCoordinate(mx,my)
-			height = Spring.GetGroundHeight(x, z)
-			if (x) then
-				Spring.SendLuaRulesMsg('inc_heightmap|' .. x .. '|' .. y .. '|' .. z .. "|" .. height)
-				mouseControl1 = true
-				return true
-			else
-				return false
-			end
-		elseif button == 3 then
-			local x,y,z = getMouseCoordinate(mx,my)
-			height = Spring.GetGroundHeight(x, z)
-			if (x) then
-				Spring.SendLuaRulesMsg('dec_heightmap|' .. x .. '|' .. y .. '|' .. z .. "|" .. height)
-				mouseControl3 = true
-				return true
-			else
-				return false
-			end
+	if button == 1 then
+		local x,y,z = getMouseCoordinate(mx,my)
+		Spring.SendLuaRulesMsg('attack|' .. x .. '|' .. y .. '|' .. z)
+		return true
+	elseif button == 3 then
+		local x,y,z = getMouseCoordinate(mx,my)
+		height = Spring.GetGroundHeight(x, z)
+		if (x) then
+			Spring.SendLuaRulesMsg('dec_heightmap|' .. x .. '|' .. y .. '|' .. z .. "|" .. height)
+			mouseControl3 = true
+			return true
+		else
+			return false
 		end
 	end
 end
@@ -167,17 +151,19 @@ end
 
 -- handles weapon switching and abilities
 function widget:KeyPress(key, mods, isRepeat)
-	if controlledID then
-		if key == LEFT or key == RIGHT or key == UP or key == DOWN or key == W or key == A or key == S or key == D then
-			keyControl = true
-			return true
-		end
-		if key >= KEYSYMS.N_1 and key <= KEYSYMS.N_3 then
-			local num = key - KEYSYMS.N_1 + 1
-			Spring.SendLuaRulesMsg('spell|' .. tostring(num))
-		end
+	if not controlledID then
+		return
 	end
 
+	if key == LEFT or key == RIGHT or key == UP or key == DOWN or key == W or key == A or key == S or key == D then
+		keyControl = true
+	elseif key >= KEYSYMS.N_1 and key <= KEYSYMS.N_3 then
+		local num = key - KEYSYMS.N_1 + 1
+		Spring.SendLuaRulesMsg('spell|' .. tostring(num))
+	else
+		return
+	end
+	return true
 end
 
 function widget:KeyRelease(key)

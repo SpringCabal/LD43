@@ -20,7 +20,7 @@ local Spear = Weapon:New {
 
     -- targeting & accuracy
     accuracy              = 0.1,
-    model                 = 'spear.dae',
+    -- model                 = 'spear.dae',
 
     soundStart            = [[SpearThrow]],
     soundHit              = [[Hit]],

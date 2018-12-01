@@ -177,6 +177,8 @@ end
 -- Handling messages
 -------------------------------------------------------------------
 
+local controlledWeaponDefID = WeaponDefNames["spear"].id
+
 function HandleLuaMessage(msg)
 	if not controlledID or Spring.GetGameRulesParam("game_over") == 1 then
 		return
@@ -196,11 +198,17 @@ function HandleLuaMessage(msg)
 				z = z
 			}
 		end
+	elseif msg_table[1] == 'attack' then
+		-- TODO:
+		-- Reload time check
+		-- attack in mouse direction
+		Spring.Echo(Spring.GetUnitWeaponState(controlledID, 1, "reloadTime"))
+		Spring.UnitWeaponFire(controlledID, 1)
+		Spring.Echo(Spring.GetUnitWeaponState(controlledID, 1, "reloadTime"))
 	elseif msg_table[1] == 'spell' then
 		table.remove(msg_table, 1)
 		for i = 1, #msg_table do
 			msg_table[i] = tonumber(msg_table[i])
-			Spring.Echo(msg_table[1])
 		end
 		GG.UseSpell(controlledID, unpack(msg_table))
 	end
