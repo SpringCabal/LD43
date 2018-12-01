@@ -1,8 +1,8 @@
 local modinfo = {
-	name = "SkeletonGame",
-	shortname = "SKEL",
+	name = "Ludum Dare 43",
+	shortname = "LD43",
 	version = "$VERSION",
-	description = "LD Skeleton game",
+	description = "LD43 game",
 
 	modtype = "1",
 	depend = {

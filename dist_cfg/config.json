@@ -1,5 +1,5 @@
 {
-    "title" : "SkeletonGame",
+    "title" : "LudumDare 43",
     "setups" : [  
       {
         "package": {
@@ -13,7 +13,7 @@
         "auto_start" : false,
         "no_downloads" : true,
         "launch": {
-          "game": "SkeletonGame $VERSION",
+          "game": "Ludum Dare 43 $VERSION",
           "map": "Obsidian_1.5"
         }
       }
