@@ -21,8 +21,15 @@ local spSetGroundMoveTypeData  = Spring.MoveCtrl.SetGroundMoveTypeData
 local getMovetype              = Spring.Utilities.getMovetype
 local spMoveCtrlGetTag         = Spring.MoveCtrl.GetTag
 
+local blacklistedUnits = {
+  [UnitDefNames["house"].id] = true,
+}
+
 function gadget:UnitCreated(unitID, unitDefID, teamID, cmdID, cmdParams, cmdOptions)
-	local ud = UnitDefs[unitDefID]
+  local ud = UnitDefs[unitDefID]
+  if blacklistedUnits[ud.id] then
+    return
+  end
 	if getMovetype(ud) == 2 and spMoveCtrlGetTag(unitID) == nil  then -- Ground/Sea
 		spSetGroundMoveTypeData(unitID, "turnAccel", ud.turnRate*1.2)
 	end
