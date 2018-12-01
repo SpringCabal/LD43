@@ -95,7 +95,7 @@ function loadWindow()
     local curr_x = 0
     local widthStr = ('%f%%'):format(el_size)
     local heightStr = "12%"
-    local padding = 2
+    local padding = 1
 
     Chili.Button:New{
         parent = window,
@@ -231,6 +231,34 @@ function loadWindow()
         caption = "hide/show (f8)",
         OnClick = {function() window:SetVisibility(not window.visible) end}
     }
+
+    curr_x = curr_x + el_size + padding
+    local dbgBtn
+
+    dbgBtn = Chili.Button:New{
+        parent = window,
+        x = ('%f%%'):format(curr_x),
+        bottom = 0,
+        width = widthStr,
+        height = heightStr,
+        tooltip = '',
+        caption = "DebugMode: ",
+        OnClick = {function()
+            if Spring.GetGameRulesParam("gameMode") == "develop" then
+                Spring.SendLuaRulesMsg("setGameMode|test")
+                dbgBtn:SetCaption("DebugMode: Turn on")
+            else
+                Spring.SendLuaRulesMsg("setGameMode|develop")
+                dbgBtn:SetCaption("DebugMode: Turn off")
+            end
+        end
+        }
+    }
+    if Spring.GetGameRulesParam("gameMode") == "develop" then
+        dbgBtn:SetCaption("DebugMode: Turn off")
+    else
+        dbgBtn:SetCaption("DebugMode: Turn on")
+    end
 end
 
 function CheatIfNeeded()
