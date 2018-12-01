@@ -58,6 +58,8 @@ local function UpdateGameMode()
         Spring.SendCommands("bindkeyset enter chat")
         Spring.SendCommands("bind f1 showelevation")
         Spring.SendCommands("bind f2 showpathtraversability")
+        Spring.SendCommands("bind Alt+n debug")
+        Spring.SendCommands("bind Alt+b debugcolvol")
     end
     SetBindings()
 end
