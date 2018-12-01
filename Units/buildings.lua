@@ -39,7 +39,7 @@ local House = Unit:New {
     maxDamage           = 1600,
     onoffable           = true,
     script              = "house.lua",
-	objectName 			= "buildingLP.dae",
+	objectName 			= "House.dae",
 }
 
 return {
