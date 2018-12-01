@@ -1,7 +1,7 @@
 function widget:GetInfo()
 	return {
 		name 	= "Mouse lights",
-		desc	= "Sends controlled unit actions from LuaUI to LuaRules",
+		desc	= "Display light around the mouse",
 		author	= "gajop",
 		date	= "December 2018",
 		license	= "GNU GPL, v2 or later",
@@ -33,66 +33,16 @@ local function GetMouseLight(beamLights, beamLightCount, pointLights, pointLight
 	return beamLights, beamLightCount, pointLights, pointLightCount
 end
 
--- local lights = {}
--- local lightDefID = UnitDefNames["light"].id
-function widget:UnitCreated(unitID, unitDefID, unitTeam)
-	if unitDefID == controlledDefID then
-		controlledID = unitID
-	end
-	if lightDefID == unitDefID then
-		lights[unitID] = true
-	end
-end
-
-function widget:UnitDestroyed(unitID)
-	if controlledID == unitID then
-		controlledID = nil
-	end
-	if lightDefID == unitDefID then
-		lights[unitID] = nil
-	end
-end
-
-local function GetWispLight(beamLights, beamLightCount, pointLights, pointLightCount)
-	if controlledID and Spring.GetGameRulesParam("spiritMode") == 1 then
-		local x, y, z = Spring.GetUnitPosition(controlledID)
-		pointLightCount = pointLightCount + 1
-		pointLights[pointLightCount] = {px = x, py = y + 50, pz = z, param = {r = 4, g = 4, b = 4, radius = 2000}, colMult = 1}
-	end
-
-	return beamLights, beamLightCount, pointLights, pointLightCount
-end
-
--- local function GetLight(beamLights, beamLightCount, pointLights, pointLightCount)
--- 	for lightID, _ in pairs(lights) do
--- 		if Spring.ValidUnitID(lightID) then
--- 			local x, y, z = Spring.GetUnitPosition(lightID)
--- 			pointLightCount = pointLightCount + 1
--- 			pointLights[pointLightCount] = {px = x, py = y + 50, pz = z, param = {r = 0.5, g = 1, b = 1, radius = 1500}, colMult = 1}
--- 		end
--- 	end
-
--- 	return beamLights, beamLightCount, pointLights, pointLightCount
--- end
-
 function widget:Initialize()
 	vsx, vsy = Spring.GetViewGeometry()
 
-	for _, unitID in ipairs(Spring.GetAllUnits()) do
-		local unitDefID = Spring.GetUnitDefID(unitID)
-		widget:UnitCreated(unitID, unitDefID)
-	end
-
 	if WG.DeferredLighting_RegisterFunction then
 		WG.DeferredLighting_RegisterFunction(GetMouseLight)
-		WG.DeferredLighting_RegisterFunction(GetWispLight)
-		-- WG.DeferredLighting_RegisterFunction(GetLight)
 	end
 end
 
--- function widget:Initialize()
--- -- 	if WG.DeferredLighting_RegisterFunction then
--- -- 		WG.DeferredLighting_RegisterFunction(GetMouseLight)
--- -- 		WG.DeferredLighting_RegisterFunction(GetWispLight)
--- -- 	end
--- end
+function widget:Shutdown()
+	if WG.DeferredLighting_RegisterFunction then
+		WG.DeferredLighting_UnregisterFunction(GetMouseLight)
+	end
+end

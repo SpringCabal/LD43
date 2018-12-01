@@ -256,6 +256,16 @@ local function DeferredLighting_RegisterFunction(func)
 	collectionFunctions[collectionFunctionCount] = func
 end
 
+local function DeferredLighting_UnregisterFunction(func)
+	for indx, f in ipairs(collectionFunctions) do
+		if f == func then
+			table.remove(collectionFunctions, indx)
+			collectionFunctionCount = collectionFunctionCount - 1
+			return
+		end
+	end
+end
+
 function widget:Initialize()
 	if not initialized then
 		initialized = true
@@ -426,6 +436,7 @@ function widget:Initialize()
 			end
 
 			WG.DeferredLighting_RegisterFunction = DeferredLighting_RegisterFunction
+			WG.DeferredLighting_UnregisterFunction = DeferredLighting_UnregisterFunction
 		end
 		screenratio = vsy / vsx --so we dont overdraw and only always draw a square
 	else

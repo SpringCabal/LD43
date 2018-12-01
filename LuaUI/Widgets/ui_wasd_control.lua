@@ -25,7 +25,7 @@ local A = KEYSYMS.A
 local D = KEYSYMS.D
 local SPACE = KEYSYMS.SPACE
 
-local controlledUnitDefID = UnitDefNames["bloodmage"].id
+local controlledDefID = UnitDefNames["bloodmage"].id
 local controlledID = nil
 
 local height
@@ -189,7 +189,7 @@ function widget:KeyRelease(key)
 end
 
 function widget:UnitCreated(unitID, unitDefID, unitTeam)
-	if unitDefID == controlledUnitDefID then
+	if unitDefID == controlledDefID then
 		controlledID = unitID
 	end
 end
