@@ -7,38 +7,27 @@ local House = Unit:New {
 --     canPatrol           = false,
 --     canRepeat           = false,
 	 --pushResistant       = true,
+	customParams = {
+		hscale = 0.4,
+		vscale = 0.22,
+	},
 	 collisionVolumeScales   = '37 40 37',
 	collisionVolumeTest     = 1,
-	collisionVolumeType     = 'CylY',
-	footprintX          = 20,
-	footprintZ          = 20,
+	collisionVolumeType     = 'Box',
+	footprintX          = 10,
+	footprintZ          = 10,
 	yardmap =
 [[
-oooooooooooooooooooo
-oooooooooooooooooooo
-oooooooooooooooooooo
-oooooooooooooooooooo
-oooooooooooooooooooo
-oooooooooooooooooooo
-oooooooooooooooooooo
-oooooooooooooooooooo
-oooooooooooooooooooo
-oooooooooooooooooooo
-oooooooooooooooooooo
-oooooooooooooooooooo
-oooooooooooooooooooo
-oooooooooooooooooooo
-oooooooooooooooooooo
-oooooooooooooooooooo
-oooooooooooooooooooo
-oooooooooooooooooooo
-oooooooooooooooooooo
-oooooooooooooooooooo
-oooooooooooooooooooo
-oooooooooooooooooooo
-oooooooooooooooooooo
-oooooooooooooooooooo
-oooooooooooooooooooo
+oooooooooo
+oooooooooo
+oooooooooo
+oooooooooo
+oooooooooo
+oooooooooo
+oooooooooo
+oooooooooo
+oooooooooo
+oooooooooo
 ]],
 	 mass                = 50,
 	minCollisionSpeed   = 1,
@@ -48,7 +37,6 @@ oooooooooooooooooooo
 	upright             = true,
 	  name                = "House",
 	activateWhenBuilt   = true,
-	customParams = {   },
 	 idletime					= 120, --in simframes
 	idleautoheal 				= 50,
 	autoheal 					= 1,

@@ -125,8 +125,8 @@ function widget:KeyPress(key, mods, isRepeat)
 		return
 	end
 
-	if key == LEFT or key == RIGHT or key == UP or key == DOWN or key == W or key == A or key == S or key == D then
-		keyControl = true
+	if key == S then
+		Spring.SendLuaRulesMsg('stop')
 	elseif key >= KEYSYMS.N_1 and key <= KEYSYMS.N_3 then
 		local num = key - KEYSYMS.N_1 + 1
 		Spring.SendLuaRulesMsg('spell|' .. tostring(num))

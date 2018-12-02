@@ -35,9 +35,7 @@ local HEIGHT_CHANGE_PER_FRAME = 7
 
 local controlledDefID = UnitDefNames["bloodmage"].id
 local controlledID = nil
-local wispMoving
-
-local FORM_CHANGE_COOLDOWN = 30*2
+local moveGoal = nil
 
 local movementMessage
 
@@ -69,7 +67,9 @@ local function GiveClampedMoveGoal(unitID, x, z, radius)
 	local cy = Spring.GetGroundHeight(cx, cz)
 	local _, height, _ = Spring.GetUnitPosition(unitID)
 	Spring.SetUnitMoveGoal(unitID, cx, cy, cz, 10, nil, true)
-	return true
+	moveGoal = moveGoal or {}
+	moveGoal.x = cx
+	moveGoal.z = cz
 end
 
 local function MoveUnit(unitID, x, z, range, radius)
@@ -82,6 +82,17 @@ local function MoveUnit(unitID, x, z, range, radius)
 	GiveClampedMoveGoal(unitID, x, z, radius)
 end
 
+local function ClearMove(unitID)
+	Spring.ClearUnitGoal(unitID)
+	moveGoal = nil
+end
+
+local function UpdateMoveGoal(unitID)
+	local x, _, z = Spring.GetUnitPosition(unitID)
+	if moveGoal and Vector.DistSq(x, z, moveGoal.x, moveGoal.z) < 400 then
+		ClearMove(unitID)
+	end
+end
 
 function gadget:UnitCreated(unitID, unitDefID, unitTeam)
 	if unitDefID == controlledDefID then
@@ -129,6 +140,10 @@ function HandleLuaMessage(msg)
 				z = z
 			}
 		end
+	elseif msg_table[1] == 'stop' then
+		if controlledID then
+			ClearMove(controlledID)
+		end
 	elseif msg_table[1] == 'attack' then
 		-- TODO:
 		-- Reload time check
@@ -153,11 +168,8 @@ function gadget:GameFrame(frame)
 		local x, y, z = Spring.GetUnitPosition(controlledID)
 		if (movementMessage and movementMessage.frame + 2 > frame) then
 			MoveUnit(controlledID, movementMessage.x, movementMessage.z)
-			wispMoving = true
-		else
-			Spring.GiveOrderToUnit(controlledID, CMD.STOP,{},{})
-			local vx, _, vz = Spring.GetUnitVelocity(controlledID)
 		end
+		UpdateMoveGoal(controlledID)
 	end
 end
 

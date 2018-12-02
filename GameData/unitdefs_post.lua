@@ -25,3 +25,8 @@ for name, ud in pairs(UnitDefs) do
 	ReplaceStrings(ud, ud.unitname or name)
 	Spring.Echo(name)
 end
+
+-- customParams is always defined.
+for name, ud in pairs(UnitDefs) do
+	ud.customParams = ud.customParams or {}
+end

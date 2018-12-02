@@ -16,11 +16,16 @@ local Humanoid = Unit:New {
 	canRepeat           = false,
 	fireState           = 2,       -- Should auto-attack by default.
 
+	customParams = {
+		hscale = 0.5,
+		vscale = 0.5,
+	},
+	
 	-- Movement & Placement
 	-- Wiki: (this section should be split into building and non-building parts)
 	-- Maybe even needs to be split differently for ships/air/ground
-	footprintX          = 4,		-- 1 seems a bad default (too small!)
-	footprintZ          = 4,
+	footprintX          = 2, -- 1 seems a bad default (too small!)
+	footprintZ          = 2,
 	upright             = true,
 	minCollisionSpeed   = 1000000,
 	pushResistant       = true,

@@ -36,7 +36,7 @@ local gameMode
 function SetGameMode(gameMode)
 	if Spring.GetGameRulesParam("gameMode") ~= "develop" then
 		s = {
-			dist = 2018.541626,
+			dist = 1200.541626,
 			px = 10.2821,
 			py = 436.300781,
 			pz = 271.06079,
