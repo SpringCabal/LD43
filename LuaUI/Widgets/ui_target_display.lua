@@ -151,6 +151,12 @@ function display(unitID, name)
 	if targetUnitDefID ~= unitDefID then
 		targetUnitDefID = unitDefID
 		lblName:SetCaption(UnitDefs[unitDefID].humanName)
+		local teamID = Spring.GetUnitTeam(unitID)
+		if teamID == Spring.GetMyTeamID() then
+			lblName:SetColor(0, 1, 0, 1)
+		else
+			lblName:SetColor(1, 0, 0, 1)
+		end
 	end
 
 	if window.hidden then
