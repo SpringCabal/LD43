@@ -42,6 +42,9 @@ local playerName = ""
 local nameBox, restartButton, submitButton, lblUpload
 local gameOverTime
 
+local controlledDefID = UnitDefNames["bloodmage"].id
+local controlledID = nil
+
 local function ShowEndGameWindow()
 	screen0:AddChild(window_endgame)
 end
@@ -63,7 +66,7 @@ local function SetupControls()
 		draggable = false,
 		resizable = false,
 	}
-	 local score = Spring.GetGameRulesParam("score") or 0
+	local score = Spring.GetGameRulesParam("score") or 0
 	local survialTime = Spring.GetGameRulesParam("survivalTime") or 0
 	local rabbitKills = Spring.GetGameRulesParam("rabbits_killed") or 0
 
@@ -81,115 +84,120 @@ local function SetupControls()
 		y = 100,
 		width = 100,
 		parent = window_endgame,
-		caption = "Score: " .. score,
-		fontsize = 40,
-		textColor = {1,0,0,1},
-	}
-	Chili.Label:New{
-		x = 114,
-		y = 155,
-		width = 100,
-		parent = window_endgame,
-		caption = "Time: " .. survialTime .. "s",
-		fontsize = 32,
-		textColor = {1,0,0,1},
-	}
-	Chili.Label:New{
-		x = 128,
-		y = 200,
-		width = 100,
-		parent = window_endgame,
-		caption = rabbitKills .. " 🐰",
-		fontsize = 32,
-		textColor = {1,0,0,1},
-	}
-
-	nameBox = Chili.EditBox:New{
-		parent = window_endgame,
-		x = 50,
-		y = 255,
-		width = 290,
-		height = 30,
-		fontsize = 22,
-		hint = "Leaderboard Name",
-		text = playerName,
-	}
-
-	submitButton = Button:New {
-		parent   = window_endgame,
-		bottom   = 30;
-		width    = 90;
-		x        = 40;
-		height   = 55;
+		caption = "Thanks for playing!",
+		-- caption = "Score: " .. score,
 		fontsize = 20,
-		caption = "Submit",
-		OnClick = { function()
-			if not nameBox then
-	return
-			end
-			playerName = nameBox.text
-			if playerName == "" then
-	return
-			end
-	nameBox:Dispose()
-			nameBox = nil
-			lblUpload = Chili.Label:New {
-	parent = window_endgame,
-	x = 130,
-	y = 255,
-	width = 260,
-	height = 30,
-	caption = "Uploading...",
-	fontsize = 26,
-			}
-	if WG.analytics and WG.analytics.SendEvent then
-	-- sending it with a fake timestamp so it belongs to the previous game
-	WG.analytics:SendEvent("player_name", playerName, gameOverTime)
-	lblUpload:SetCaption("Score sent \255\0\255\0✔\b")
-			else
-	lblUpload:SetCaption("Upload Error \255\255\0\0✗\b")
-			end
-		end},
+		textColor = {1,1,1,1},
 	}
-	 restartButton = Button:New{
-		bottom  = 30;
-		width   = 90;
-		x       = 150;
-		height  = 55;
+	-- Chili.Label:New{
+	-- 	x = 114,
+	-- 	y = 155,
+	-- 	width = 100,
+	-- 	parent = window_endgame,
+	-- 	caption = "Time: " .. survialTime .. "s",
+	-- 	fontsize = 32,
+	-- 	textColor = {1,0,0,1},
+	-- }
+	-- Chili.Label:New{
+	-- 	x = 128,
+	-- 	y = 200,
+	-- 	width = 100,
+	-- 	parent = window_endgame,
+	-- 	caption = rabbitKills .. " 👹",
+	-- 	fontsize = 32,
+	-- 	textColor = {1,0,0,1},
+	-- }
+
+	-- nameBox = Chili.EditBox:New{
+	-- 	parent = window_endgame,
+	-- 	x = 50,
+	-- 	y = 255,
+	-- 	width = 290,
+	-- 	height = 30,
+	-- 	fontsize = 22,
+	-- 	hint = "Leaderboard Name",
+	-- 	text = playerName,
+	-- }
+
+	-- submitButton = Button:New {
+	-- 	parent   = window_endgame,
+	-- 	bottom   = 30;
+	-- 	width    = 90;
+	-- 	x        = 40;
+	-- 	height   = 55;
+	-- 	fontsize = 20,
+	-- 	caption = "Submit",
+	-- 	OnClick = { function()
+	-- 		if not nameBox then
+	-- 			return
+	-- 		end
+	-- 		playerName = nameBox.text
+	-- 		if playerName == "" then
+	-- 			return
+	-- 		end
+	-- 		nameBox:Dispose()
+	-- 		nameBox = nil
+	-- 		lblUpload = Chili.Label:New {
+	-- 			parent = window_endgame,
+	-- 			x = 130,
+	-- 			y = 255,
+	-- 			width = 260,
+	-- 			height = 30,
+	-- 			caption = "Uploading...",
+	-- 			fontsize = 26,
+	-- 		}
+	-- 		if WG.analytics and WG.analytics.SendEvent then
+	-- 			-- sending it with a fake timestamp so it belongs to the previous game
+	-- 			WG.analytics:SendEvent("player_name", playerName, gameOverTime)
+	-- 			lblUpload:SetCaption("Score sent \255\0\255\0✔\b")
+	-- 		else
+	-- 			lblUpload:SetCaption("Upload Error \255\255\0\0✗\b")
+	-- 		end
+	-- 	end},
+	-- }
+	restartButton = Button:New{
+		bottom  = 30,
+		width   = 90,
+		x       = 50,
+		height  = 55,
 		caption = "Restart",
 		fontsize = 20,
 		OnClick = {
 			function()
-	nameBox = nil
-	restartButton = nil
-	submitButton = nil
-	Spring.SendCommands("cheat", "luarules reload", "cheat")
-		window_endgame:Dispose()
-		window_endgame = nil
-		frame_delay = Spring.GetGameFrame()
-		end
-		};
-		parent = window_endgame;
+				nameBox = nil
+				restartButton = nil
+				submitButton = nil
+				Spring.SendCommands("cheat", "luarules reload", "cheat")
+				window_endgame:Dispose()
+				window_endgame = nil
+				frame_delay = Spring.GetGameFrame()
+			end
+		},
+		parent = window_endgame,
 	}
 	Button:New{
-		bottom  = 30;
-		width   = 90;
-		x       = 260;
-		height  = 55;
+		bottom  = 30,
+		width   = 80,
+		x       = 260,
+		height  = 55,
 		caption = "Exit",
 		fontsize = 20,
 		OnClick = {
 			function()
-	nameBox = nil
-	restartButton = nil
-	Spring.SendCommands("quit","quitforce")
+				nameBox = nil
+				restartButton = nil
+				Spring.SendCommands("quit", "quitforce")
 			end
-		};
-		parent = window_endgame;
+		},
+		parent = window_endgame,
 	}
 
 	screen0:AddChild(window_endgame)
 
+	for _, unitID in ipairs(Spring.GetAllUnits()) do
+		local unitDefID = Spring.GetUnitDefID(unitID)
+		widget:UnitCreated(unitID, unitDefID)
+	end
 end
 
 --------------------------------------------------------------------------------
@@ -228,6 +236,12 @@ function widget:Initialize()
 
 end
 
+function widget:Shutdown()
+	if window_endgame then
+		window_endgame:Dispose()
+	end
+end
+
 function widget:GameFrame()
 	local carrotCount = Spring.GetGameRulesParam("carrot_count") or -1
 	local survivalTime = Spring.GetGameRulesParam("survivalTime") or 0
@@ -263,15 +277,15 @@ function widget:GameOver(winningAllyTeams)
 		WG.analytics:SendEvent("mines", minesPlaced)
 		WG.analytics:SendEvent("game_end")
 	end
-	 local myAllyTeamID = Spring.GetMyAllyTeamID()
+	local myAllyTeamID = Spring.GetMyAllyTeamID()
 	for _, winningAllyTeamID in pairs(winningAllyTeams) do
 		if myAllyTeamID == winningAllyTeamID then
-		Spring.SendCommands("endgraph 0")
-		SetupControls()
-		caption:SetCaption("You win!");
-		caption.font.color={0,1,0,1};
-		ShowEndGameWindow()
-		return
+			Spring.SendCommands("endgraph 0")
+			SetupControls()
+			caption:SetCaption("You win!");
+			caption.font.color={0,1,0,1};
+			ShowEndGameWindow()
+			return
 		end
 	end
 	Spring.SendCommands("endgraph 0")
@@ -279,4 +293,17 @@ function widget:GameOver(winningAllyTeams)
 	ShowEndGameWindow()
 end
 
+function widget:UnitCreated(unitID, unitDefID, unitTeam)
+	if unitDefID == controlledDefID then
+		controlledID = unitID
+	end
+end
 
+function widget:UnitDestroyed(unitID, unitDefID, unitTeam)
+	if controlledID == unitID then
+		controlledID = nil
+		if Spring.GetGameRulesParam("gameMode") ~= "develop" then
+			widget:GameOver({})
+		end
+	end
+end
