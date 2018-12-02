@@ -142,7 +142,6 @@ function display(unitID, name)
 
 	local ratio = math.floor(100 * h/mh)
 	if meter[name].ratio ~= ratio then
-		Spring.Echo('diff ratio', ratio)
 		SetBarValue('Health', h, mh)
 		SetBarColor('Health', ratio / 100)
 		meter[name].ratio = ratio
