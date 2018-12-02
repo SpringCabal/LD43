@@ -28,7 +28,7 @@ local BloodMage = Raw:New {
 	upright             = true,
 	minCollisionSpeed   = 1000000,
 	pushResistant       = false,
-	maxVelocity         = 8,
+	maxVelocity         = 10,
 	turnInPlace         = false,
 	turnInPlaceSpeedLimit = 0,
 	-- maxVelocity's default value of "0" is odd, unless the default is a "building"?

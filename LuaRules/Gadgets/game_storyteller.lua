@@ -68,7 +68,7 @@ function GetStory()
 		{ -- Night 1
 			name = "spawn",
 			units = {
-				orksmall = 15
+				orksmall = 35
 			},
 			team = enemyTeam,
 			time = 1,
@@ -76,16 +76,16 @@ function GetStory()
 		{
 			name = "intro",
 			about = "{Wave has spawned text.}",
-			time = 5,
+			time = 12,
 		},
 		{  -- Night 2
 			name = "spawn",
 			units = {
-				orksmall = 15,
+				orksmall = 50,
 				orkbig = 3,
 			},
 			team = enemyTeam,
-			time = 10,
+			time = 20,
 		},
 		{
 			name = "intro",
@@ -100,8 +100,8 @@ function GetStory()
 		{ -- Night 3
 			name = "spawn",
 			units = {
-				orksmall = 30,
-				orkbig = 4,
+				orksmall = 70,
+				orkbig = 10,
 			},
 			team = enemyTeam,
 			time = 10,
@@ -120,7 +120,7 @@ function GetStory()
 		{  -- Night 4
 			name = "spawn",
 			units = {
-				orksmall = 20,
+				orksmall = 50,
 				orkbig = 10,
 			},
 			team = enemyTeam,
@@ -138,7 +138,7 @@ function GetStory()
 		{  -- Night 6
 			name = "spawn",
 			units = {
-				orksmall = 200,
+				orksmall = 150,
 			},
 			team = enemyTeam,
 			time = 10,
@@ -146,7 +146,7 @@ function GetStory()
 		{  -- Night 7
 			name = "spawn",
 			units = {
-				orksmall = 50,
+				orksmall = 100,
 				orkbig = 20,
 				orkboss = 1,
 			},
