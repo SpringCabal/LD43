@@ -44,7 +44,6 @@ end
 
 local function MouseControl()
 	local mx, my, lmb, mmb, rmb = Spring.GetMouseState()
-Spring.Echo(mx, my)
 	if lmb and mouseControl1 then
 		local x,y,z = getMouseCoordinate(mx,my)
 		if (x) then
@@ -72,17 +71,10 @@ function widget:MousePress(mx, my, button)
 	local alt, ctrl, meta, shift = Spring.GetModKeyState()
 	if button == 1 then
 		local x,y,z = getMouseCoordinate(mx,my)
-		Spring.SendLuaRulesMsg('attack|' .. x .. '|' .. y .. '|' .. z)
-		return true
-	elseif button == 3 then
-		local x,y,z = getMouseCoordinate(mx,my)
-		height = Spring.GetGroundHeight(x, z)
+		mouseControl1 = true
 		if (x) then
-			Spring.SendLuaRulesMsg('dec_heightmap|' .. x .. '|' .. y .. '|' .. z .. "|" .. height)
-			mouseControl3 = true
+			Spring.SendLuaRulesMsg('movement|' .. x .. '|' .. z)
 			return true
-		else
-			return false
 		end
 	end
 end

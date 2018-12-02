@@ -2351,9 +2351,9 @@ function widget:Update(dt)
 	else
 		if (options.tooltip_delay.value > 0) and not Spring.GetKeyState(KEYSYMS.BACKQUOTE) then
 			if not mousemoved then
-	stillCursorTime = stillCursorTime + dt
+				stillCursorTime = stillCursorTime + dt
 			else
-	stillCursorTime = 0
+				stillCursorTime = 0
 			end
 			show_cursortip = stillCursorTime > options.tooltip_delay.value
 		end
