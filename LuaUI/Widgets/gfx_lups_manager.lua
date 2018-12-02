@@ -23,8 +23,6 @@ function widget:GetInfo()
   }
 end
 
-
-
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
 
@@ -410,15 +408,15 @@ function widget:Update()
   widget.UnitLeftLos    = UnitLeftLos
   widget.GameFrame      = GameFrame
   widget.PlayerChanged  = PlayerChanged
-  widgetHandler:UpdateWidgetCallIn("UnitFinished",widget)
-  widgetHandler:UpdateWidgetCallIn("UnitDestroyed",widget)
-  widgetHandler:UpdateWidgetCallIn("UnitEnteredLos",widget)
-  widgetHandler:UpdateWidgetCallIn("UnitLeftLos",widget)
-  widgetHandler:UpdateWidgetCallIn("GameFrame",widget)
-  widgetHandler:UpdateWidgetCallIn("PlayerChanged",widget)
+  -- widgetHandler:UpdateWidgetCallIn("UnitFinished",widget)
+  -- widgetHandler:UpdateWidgetCallIn("UnitDestroyed",widget)
+  -- widgetHandler:UpdateWidgetCallIn("UnitEnteredLos",widget)
+  -- widgetHandler:UpdateWidgetCallIn("UnitLeftLos",widget)
+  -- widgetHandler:UpdateWidgetCallIn("GameFrame",widget)
+  -- widgetHandler:UpdateWidgetCallIn("PlayerChanged",widget)
 
   widget.Update = CheckForExistingUnits
-  widgetHandler:UpdateWidgetCallIn("Update",widget)
+  -- widgetHandler:UpdateWidgetCallIn("Update",widget)
 end
 
 --------------------------------------------------------------------------------
