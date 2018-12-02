@@ -56,6 +56,8 @@ local function UpdateGameMode()
 		Spring.SendCommands("bind Ctrl+d selfd")
 		Spring.SendCommands("bind Alt+numpad+ speedup")
 		Spring.SendCommands("bind Alt+numpad- slowdown")
+		Spring.SendCommands("bind any++ speedup")
+		Spring.SendCommands("bind any+- slowdown")
 	end
 	SetBindings()
 end

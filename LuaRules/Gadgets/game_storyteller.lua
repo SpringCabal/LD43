@@ -27,6 +27,8 @@ local lastStepFrame
 local waitFrames
 local spawnAreas
 
+local DEV_NO_RUN = false
+
 -- ugh
 local killed = {}
 function gadget:Initialize()
@@ -259,20 +261,22 @@ end
 
 local lastGameMode = nil
 function gadget:GameFrame()
-	local currentGameMode = Spring.GetGameRulesParam("gameMode")
-	if lastGameMode ~= currentGameMode then
-		lastGameMode = currentGameMode
-
-		if currentGameMode ~= "develop" then
-			self:Initialize()
+	if DEV_NO_RUN then
+		local currentGameMode = Spring.GetGameRulesParam("gameMode")
+		if lastGameMode ~= currentGameMode then
+			lastGameMode = currentGameMode
+		
+			if currentGameMode ~= "develop" then
+				self:Initialize()
+			end
+			return
 		end
-		return
+		if currentGameMode == "develop" then
+			return
+		end
 	end
-	if currentGameMode == "develop" then
-		return
-	end
-	 local frame = Spring.GetGameFrame()
-	 if IsNextStepTime() then
+	local frame = Spring.GetGameFrame()
+	if IsNextStepTime() then
 		NextStep()
 	end
 end

@@ -10,8 +10,11 @@ function widget:GetInfo()
 	}
 end
 
+--if true then return end
+
 local houseDefID = UnitDefNames["house"].id
 local houses = {}
+
 
 local minx, maxx, minz, maxz
 
