@@ -6,7 +6,7 @@ local modRules = {
 		allowCrushingAlliedUnits  = false,
 		allowUnitCollisionDamage  = true,
 		allowUnitCollisionOverlap = false,
-		allowGroundUnitGravity    = true,
+		allowGroundUnitGravity    = false,
 		allowDirectionalPathing   = true,
 	},
 	system = {
