@@ -9,9 +9,7 @@ function gadget:GetInfo()
 		enabled = true
 	}
 end
-
-
-if (gadgetHandler:IsSyncedCode()) then
+	if (gadgetHandler:IsSyncedCode()) then
 --------------------------------------------------------------------------------
 -- SYNCED
 --------------------------------------------------------------------------------
@@ -30,20 +28,17 @@ local function GetUnitExtents(unitID, ud)
 	local xsize = (ud.xsize)*4
 	local zsize = (ud.ysize or ud.zsize)*4
 	local minx, minz, maxx, maxz
-	
 	if ((face == 0) or (face == 2)) then
 		if xsize%16 == 0 then
 			ux = math.floor((ux+8)/16)*16
 		else
 			ux = math.floor(ux/16)*16+8
 		end
-
-		if zsize%16 == 0 then
+	if zsize%16 == 0 then
 			uz = math.floor((uz+8)/16)*16
 		else
 			uz = math.floor(uz/16)*16+8
 		end
-		
 		minx = ux - xsize
 		minz = uz - zsize
 		maxx = ux + xsize
@@ -54,14 +49,12 @@ local function GetUnitExtents(unitID, ud)
 		else
 			uz = math.floor(uz/16)*16+8
 		end
-
-		if zsize%16 == 0 then
+	if zsize%16 == 0 then
 			ux = math.floor((ux+8)/16)*16
 		else
 			ux = math.floor(ux/16)*16+8
 		end
-
-		minx = ux - zsize
+	minx = ux - zsize
 		minz = uz - xsize
 		maxx = ux + zsize
 		maxz = uz + xsize
@@ -73,9 +66,9 @@ local function SetTypemapSquare(minx, minz, maxx, maxz, value)
 	for x = minx, maxx, 8 do
 		for z = minz, maxz, 8 do
 			if value == IMPASSIBLE_TERRAIN and (x < minx + PLAYER_FUDGE or x > maxx - PLAYER_FUDGE or z < minz + PLAYER_FUDGE or z > maxz - PLAYER_FUDGE) then
-				Spring.SetMapSquareTerrainType(x, z, value)
+	Spring.SetMapSquareTerrainType(x, z, value)
 			else
-				Spring.SetMapSquareTerrainType(x, z, value)
+	Spring.SetMapSquareTerrainType(x, z, value)
 			end
 		end
 	end

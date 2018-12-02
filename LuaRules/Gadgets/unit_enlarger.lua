@@ -24,9 +24,7 @@ if (gadgetHandler:IsSyncedCode()) then
 
 local spGetUnitDefID      = Spring.GetUnitDefID
 local spSetUnitRulesParam = Spring.SetUnitRulesParam
-
-
-local LOS_ACCESS = { inlos = true }
+	local LOS_ACCESS = { inlos = true }
 
 local unitData = {}
 
@@ -47,9 +45,7 @@ function gadget:UnitCreated(unitID, unitDefID)
 		spSetUnitRulesParam( unitID, "scale_horizontal", tonumber(UnitDefs[unitDefID].customParams.hscale) or 1, LOS_ACCESS)
 	end
 end
-
-
---------------------------------------------------------------------------------
+	--------------------------------------------------------------------------------
 -- SYNCED
 --------------------------------------------------------------------------------
 else
@@ -72,7 +68,6 @@ end
 
 function gadget:Initialize()
 	Spring.UnitRendering.SetUnitLuaDraw (1, true)
-	
 	local allUnits = Spring.GetAllUnits()
 	for i = 1, #allUnits do
 		local unitID = allUnits[i]
@@ -94,7 +89,6 @@ function gadget:DrawUnit(unitID, drawMode)
 	if not (vScale or hScale) then
 		return
 	end
-	
 	--local bx, by, bz = spGetUnitPosition(unitID)
 	--glTranslate( -bx, -by, -bz )
 	glScale(hScale, vScale, hScale)

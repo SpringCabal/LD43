@@ -3,15 +3,15 @@ if not gadgetHandler:IsSyncedCode() then
 end
 
 function gadget:GetInfo()
-   return {
-      name      = "storyteller",
-      desc      = "",
-      author    = "gajop",
-      date      = "LD43",
-      license   = "GPL-v2",
-      layer     = 0,
-      enabled   = true
-   }
+	return {
+		name      = "storyteller",
+		desc      = "",
+		author    = "gajop",
+		date      = "LD43",
+		license   = "GPL-v2",
+		layer     = 0,
+		enabled   = true
+	}
 end
 
 local LOG_SECTION = "Storyteller"
@@ -34,7 +34,7 @@ function gadget:Initialize()
 	spawnAreas = loadSpawnAreas()
 	lastStepFrame = -math.huge
 	waitFrames = 0
-    story = GetStory()
+	story = GetStory()
 	s11n = GG.s11n:GetUnitBridge()
 
 	for _, unitID in pairs(Spring.GetAllUnits()) do
@@ -46,44 +46,44 @@ function gadget:Initialize()
 end
 
 function GetStory()
-    -- Spawn a few pirates
-    -- Spawn a drilling boat
-    -- Introduce food and healing
-    -- Spawn pirates and a drilling boat
-    -- Introduce selling
-    -- Spawn stuff
-    -- Introduce heat
-    -- Spawn stuff
-    -- Introduce global warming ("It's getting warmer")
-    -- Spawn stuff
-    return {
+	-- Spawn a few pirates
+	-- Spawn a drilling boat
+	-- Introduce food and healing
+	-- Spawn pirates and a drilling boat
+	-- Introduce selling
+	-- Spawn stuff
+	-- Introduce heat
+	-- Spawn stuff
+	-- Introduce global warming ("It's getting warmer")
+	-- Spawn stuff
+	return {
 		-- {
-        --     name = "intro",
+		--     name = "intro",
 		-- 	about = "Some introductory text.",
 		-- 	time = 5,
 		-- },
 		{ -- Night 1
-            name = "spawn",
-            units = {
+			name = "spawn",
+			units = {
 				orksmall = 15
 			},
 			team = enemyTeam,
 			time = 1,
-        },
+		},
 		{
-            name = "intro",
+			name = "intro",
 			about = "{Wave has spawned text.}",
 			time = 5,
-        },
-        {  -- Night 2
-            name = "spawn",
+		},
+		{  -- Night 2
+			name = "spawn",
 			units = {
 				orksmall = 15,
 				orkbig = 3,
 			},
 			team = enemyTeam,
 			time = 10,
-        },
+		},
 		{
 			name = "intro",
 			about = "Some more info.",
@@ -95,14 +95,14 @@ function GetStory()
 			time = 1,
 		},
 		{ -- Night 3
-            name = "spawn",
+			name = "spawn",
 			units = {
 				orksmall = 30,
 				orkbig = 4,
 			},
 			team = enemyTeam,
 			time = 10,
-        },
+		},
 		{
 			name = "intro",
 			-- about = "food_healing",
@@ -110,13 +110,13 @@ function GetStory()
 			time = 1,
 		},
 		{
-            name = "intro",
-            about = "MORE WAVES.",
+		name = "intro",
+		about = "MORE WAVES.",
 			time = 3,
 		},
 		{  -- Night 4
-            name = "spawn",
-            units = {
+			name = "spawn",
+			units = {
 				orksmall = 20,
 				orkbig = 10,
 			},
@@ -124,8 +124,8 @@ function GetStory()
 			time = 10,
 		},
 		{  -- Night 5
-            name = "spawn",
-            units = {
+			name = "spawn",
+			units = {
 				orksmall = 50,
 				orkbig = 10,
 			},
@@ -133,27 +133,27 @@ function GetStory()
 			time = 10,
 		},
 		{  -- Night 6
-            name = "spawn",
-            units = {
+			name = "spawn",
+			units = {
 				orksmall = 200,
 			},
 			team = enemyTeam,
 			time = 10,
 		},
 		{  -- Night 7
-            name = "spawn",
-            units = {
+			name = "spawn",
+			units = {
 				orksmall = 50,
 				orkbig = 20,
 				orkboss = 1,
 			},
 			team = enemyTeam,
 			time = 1,
-        },
-        {
-            name = "outro",
-        },
-    }
+		},
+		{
+		name = "outro",
+		},
+	}
 end
 
 local function findPosition(defName)
@@ -181,7 +181,7 @@ function SpawnUnits(units, team)
 				isProjectileCollidable = false,
 				isRaySegmentCollidable = false,
 				isSolidObjectCollidable = true,
-	        }
+			}
 		end
 
 		for i = 1, count do
@@ -207,20 +207,20 @@ function DoOutro()
 end
 
 function DoStep(step)
-    if step.name == "spawn" then
-        SpawnUnits(step.units, step.team)
-    elseif step.name == "intro" then
-        DoIntro(step.about)
-    elseif step.name == "outro" then
-        DoOutro()
-    end
+	if step.name == "spawn" then
+		SpawnUnits(step.units, step.team)
+	elseif step.name == "intro" then
+		DoIntro(step.about)
+	elseif step.name == "outro" then
+		DoOutro()
+	end
 end
 
 function NextStep()
 	Spring.Log(LOG_SECTION, LOG.NOTICE, "Next step")
-    local step = story[1]
-    DoStep(step)
-    table.remove(story, 1)
+	local step = story[1]
+	DoStep(step)
+	table.remove(story, 1)
 	if step.time then
 		waitFrames = step.time * GAME_FRAME_PER_SEC
 	elseif step.name == "spawn" then
@@ -271,12 +271,10 @@ function gadget:GameFrame()
 	if currentGameMode == "develop" then
 		return
 	end
-
-    local frame = Spring.GetGameFrame()
-
-    if IsNextStepTime() then
-        NextStep()
-    end
+	 local frame = Spring.GetGameFrame()
+	 if IsNextStepTime() then
+		NextStep()
+	end
 end
 
 GG.NextStep = NextStep

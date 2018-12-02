@@ -135,9 +135,9 @@ function HandleLuaMessage(msg)
 			movementMessage = false
 		else
 			movementMessage = {
-				frame = Spring.GetGameFrame(),
-				x = x,
-				z = z
+	frame = Spring.GetGameFrame(),
+	x = x,
+	z = z
 			}
 		end
 	elseif msg_table[1] == 'stop' then
