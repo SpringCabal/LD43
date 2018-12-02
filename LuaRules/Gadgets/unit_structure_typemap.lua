@@ -99,7 +99,7 @@ function gadget:UnitDestroyed(unitID, unitDefID)
 end
 
 function gadget:Initialize()
-	Spring.SetTerrainTypeData(IMPASSIBLE_TERRAIN, 0, 0, 0, 0)
+	Spring.SetTerrainTypeData(IMPASSIBLE_TERRAIN, 0.6, 0, 0, 0) -- Player is less affected.
 	local allUnits = Spring.GetAllUnits()
 	for i = 1, #allUnits do
 		local unitID = allUnits[i]

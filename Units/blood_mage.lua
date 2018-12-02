@@ -59,7 +59,7 @@ local BloodMage = Raw:New {
 
 	-- General
 	name                = "BloodMage",
-	movementClass       = "Defender",
+	movementClass       = "Player",
 	objectName 			= "BloodMage.dae",
 	script              = "blood_mage.lua",
 	maxDamage           = 1600,
