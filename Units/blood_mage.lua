@@ -15,7 +15,7 @@ local BloodMage = Raw:New {
 	canPatrol           = false,
 	canGuard            = false,
 	canRepeat           = false,
-	fireState           = 2,       -- Should auto-attack by default.
+	fireState           = 0,       -- Should auto-attack by default.
 
 	customParams = {
 		hscale = 0.5,
@@ -24,15 +24,18 @@ local BloodMage = Raw:New {
 	-- Movement & Placement
 	-- Wiki: (this section should be split into building and non-building parts)
 	-- Maybe even needs to be split differently for ships/air/ground
-	footprintX          = 4,		-- 1 seems a bad default (too small!)
-	footprintZ          = 4,
+	footprintX          = 2,		-- 1 seems a bad default (too small!)
+	footprintZ          = 2,
 	upright             = true,
 	minCollisionSpeed   = 1000000,
 	pushResistant       = false,
-	maxVelocity         = 10,
+	maxVelocity         = 9,
+	turnInPlace         = false,
+	turnInPlaceSpeedLimit = 0,
 	-- maxVelocity's default value of "0" is odd, unless the default is a "building"?
 	-- then again, acceleration is not 0 by default..
-	brakeRate           = 0.4,
+	acceleration        = 1.8,
+	brakeRate           = 1,
 	turnRate            = 1000 / 0.16,
 	-- degrees per seconds = 0.16 * turnRate
 	-- what a bizarre calculation, is this turnRate / (2 * pi)?
@@ -64,11 +67,6 @@ local BloodMage = Raw:New {
 	script              = "blood_mage.lua",
 	maxDamage           = 1600,
 	-- mass                = 50, -- does this even matter?
-
-	maxVelocity         = 5,
-	brakeRate           = 0.6,
-	turnRate            = 760 / 0.16,
-	 fireState           = 0,
 
 	weapons = {
 		{

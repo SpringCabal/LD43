@@ -133,7 +133,7 @@ local function SpawnHouses()
 	for i = 1, #housePos do
 		local x = math.floor(housePos[i][1]/16)*16
 		local z = math.floor(housePos[i][2]/16)*16
-		Spring.CreateUnit(houseDefID, x, Spring.GetGroundHeight(x, z), z, 0, 0, false, false)
+		Spring.CreateUnit(houseDefID, x, Spring.GetGroundHeight(x, z), z, math.floor(math.random()*4), 0, false, false)
 	end
 end
 
