@@ -22,6 +22,7 @@ end
 function script.StartBuilding(heading, pitch)
 	SetUnitValue(COB.INBUILDSTANCE, 1)
 end
+
 local moveBob = include("moveBob.lua")
 function script.Create()
 	moveBob.Init(Torso, 3)
@@ -36,8 +37,8 @@ function script.StopMoving()
 end
 
 function script.FireWeapon()
-	Spring.ClearUnitGoal(unitID)
 	moveBob.Attack()
+	Spring.ClearUnitGoal(unitID)
 	StartThread(AttackAnimation)
 	return true
 end
