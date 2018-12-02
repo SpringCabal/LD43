@@ -18,8 +18,6 @@ local BloodMage = Raw:New {
 	fireState           = 0,       -- Should auto-attack by default.
 
 	customParams = {
-		hscale = 0.5,
-		vscale = 0.5,
 	},
 	-- Movement & Placement
 	-- Wiki: (this section should be split into building and non-building parts)
