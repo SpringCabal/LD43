@@ -23,7 +23,6 @@ if (gadgetHandler:IsSyncedCode()) then
 --------------------------------------------------------------------------------
 
 local spGetUnitDefID      = Spring.GetUnitDefID
-local spGetUnitTeam       = Spring.GetUnitTeam
 local spSetUnitRulesParam = Spring.SetUnitRulesParam
 
 
@@ -38,11 +37,11 @@ function gadget:Initialize()
 	local allUnits = Spring.GetAllUnits()
 	for i = 1, #allUnits do
 		local unitID = allUnits[i]
-		gadget:UnitCreated(unitID)
+		gadget:UnitCreated(unitID, spGetUnitDefID(unitID))
 	end
 end
 
-function gadget:UnitCreated(unitID, unitDefID, team)
+function gadget:UnitCreated(unitID, unitDefID)
 	if UnitDefs[unitDefID].customParams.hscale or UnitDefs[unitDefID].customParams.vscale then
 		spSetUnitRulesParam( unitID, "scale_vertical", tonumber(UnitDefs[unitDefID].customParams.vscale) or 1, LOS_ACCESS)
 		spSetUnitRulesParam( unitID, "scale_horizontal", tonumber(UnitDefs[unitDefID].customParams.hscale) or 1, LOS_ACCESS)

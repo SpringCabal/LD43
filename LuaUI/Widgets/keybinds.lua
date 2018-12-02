@@ -27,19 +27,6 @@ local function SetBindings()
 		"ctrl+q quitforce",
 
 		"f12 screenshot",
-
-		"Any+up moveforward ",
-		"Any+left moveleft ",
-		"Any+right moveright",
-		"Any+down moveback",
-
-		"Any+w moveforward ",
-		"Any+a moveleft ",
-		"Any+d moveright",
-		"Any+s moveback",
-
-		"Any+pageup moveup",
-		"Any+pagedown movedown",
 	}
 	 for _,binding in pairs(binds) do
 		Spring.SendCommands("bind ".. binding)
@@ -59,6 +46,9 @@ local function UpdateGameMode()
 		Spring.SendCommands("bind f2 showpathtraversability")
 		Spring.SendCommands("bind Alt+n debug")
 		Spring.SendCommands("bind Alt+b debugcolvol")
+		Spring.SendCommands("bind a fight")
+		Spring.SendCommands("bind ` drawinmap")
+		Spring.SendCommands("bind Ctrl+d selfd")
 	end
 	SetBindings()
 end
