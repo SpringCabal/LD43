@@ -93,7 +93,7 @@ end
 
 local function UpdateMoveGoal(unitID)
 	local x, _, z = Spring.GetUnitPosition(unitID)
-	if moveGoal and Vector.DistSq(x, z, moveGoal.x, moveGoal.z) < 400 then
+	if moveGoal and Vector.DistSq(x, z, moveGoal.x, moveGoal.z) < 1000 then
 		ClearMove(unitID)
 	end
 end

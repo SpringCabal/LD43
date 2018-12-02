@@ -23,7 +23,7 @@ local BloodMage = Raw:New {
 	-- Movement & Placement
 	-- Wiki: (this section should be split into building and non-building parts)
 	-- Maybe even needs to be split differently for ships/air/ground
-	footprintX          = 2,		-- 1 seems a bad default (too small!)
+	footprintX          = 2,
 	footprintZ          = 2,
 	upright             = true,
 	minCollisionSpeed   = 1000000,

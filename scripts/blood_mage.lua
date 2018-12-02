@@ -1,3 +1,5 @@
+local moveBob = include("moveBob.lua")
+
 local Hand_Right = piece("Hand_Right")
 local Hand_Left = piece("Hand_Left")
 local Torso = piece("Torso")
@@ -19,6 +21,19 @@ end
 function script.AimWeapon()
 	return true
 end
+
+function script.Create()
+	moveBob.Init(Torso)
+end
+
+function script.StartMoving()
+	moveBob.StartMoving()
+end
+
+function script.StopMoving()
+	moveBob.StopMoving()
+end
+
 
 function script.FireWeapon()
 	Spring.ClearUnitGoal(unitID)

@@ -16,6 +16,8 @@ local Humanoid = Unit:New {
 	canPatrol           = true,
 	canGuard            = true,
 	canRepeat           = false,
+	footprintX          = 2,
+	footprintZ          = 2,
 	fireState           = 2,       -- Should auto-attack by default.
 	mass                = 50,
 
@@ -25,7 +27,6 @@ local Humanoid = Unit:New {
 	},
 	
 	-- Movement & Placement
-	footprintZ          = 2,
 	upright             = true,
 	minCollisionSpeed   = 1000000,
 	pushResistant       = false,
