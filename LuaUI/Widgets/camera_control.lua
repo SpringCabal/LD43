@@ -34,23 +34,7 @@ end
 
 local gameMode
 function SetGameMode(gameMode)
-	if Spring.GetGameRulesParam("gameMode") ~= "develop" then
-		s = {
-			dist = 1000,
-			px = 10.2821,
-			py = 436.300781,
-			pz = 271.06079,
-			rz = 0,
-			dx = 0,
-			dy = -0.8283768,
-			dz = -0.5601712,
-			fov = 45,
-			ry = 0.00,
-			mode = 2,
-			rx = 2.5,
-		}
-		Spring.SetCameraState(s, 0)
-	else
+	if Spring.GetGameRulesParam("gameMode") == "develop" then
 		s = {
 			dist = 2018.541626,
 			px = 10.2821,
@@ -64,6 +48,22 @@ function SetGameMode(gameMode)
 			ry = 0.00,
 			mode = 1,
 			rx = 2.54700017,
+		}
+		Spring.SetCameraState(s, 0)
+	else
+		s = {
+			dist = 1000,
+			px = 10.2821,
+			py = 436.300781,
+			pz = 271.06079,
+			rz = 0,
+			dx = 0,
+			dy = -0.8283768,
+			dz = -0.5601712,
+			fov = 45,
+			ry = 0.00,
+			mode = 2,
+			rx = 2.5,
 		}
 		Spring.SetCameraState(s, 0)
 	end
@@ -83,6 +83,7 @@ function widget:Update()
 	local newGameMode = Spring.GetGameRulesParam("gameMode")
 	if gameMode ~= newGameMode then
 		gameMode = newGameMode
+		Spring.Echo("Set Game Mode: " .. gameMode)
 		SetGameMode(gameMode)
 	end
 end

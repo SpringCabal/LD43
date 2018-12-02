@@ -2,7 +2,7 @@
 
 local modRules = {
 	movement = {
-		allowPushingEnemyUnits    = true,
+		allowPushingEnemyUnits    = false,
 		allowCrushingAlliedUnits  = false,
 		allowUnitCollisionDamage  = true,
 		allowUnitCollisionOverlap = false,
