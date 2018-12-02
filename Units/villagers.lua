@@ -23,7 +23,7 @@ units.Crossbowman = Humanoid:New {
 	name                = "Crossbowman",
 	movementClass       = "Defender",
 	objectName 			= "HumanCrossbow.dae",
-	script              = "defender.lua",
+	script              = "crossbowman.lua",
 	maxDamage           = 400,
 
 	collisionVolumeScales    = '37 64 37',
@@ -41,7 +41,7 @@ units.Swordsman = Humanoid:New {
 	name                = "Swordsman",
 	movementClass       = "Defender",
 	objectName 			= "Swordsman.dae",
-	script              = "defender.lua",
+	script              = "swordsman.lua",
 	maxDamage           = 600,
 	moveState           = 2,
 

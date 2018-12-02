@@ -1,6 +1,5 @@
 local Hand_Right = piece("Hand_Right")
-local Hand_Left = piece("Hand_Left")
-local Torso = piece("Torso")
+
 
 local function AttackAnimation()
 	Move(Hand_Right, y_axis, -30, 1000)
@@ -13,11 +12,15 @@ local function AttackAnimation()
 end
 
 function script.QueryWeapon()
-	return Torso
+	return Hand_Right
 end
 
 function script.AimWeapon()
 	return true
+end
+
+function script.StartBuilding(heading, pitch)
+	SetUnitValue(COB.INBUILDSTANCE, 1)
 end
 
 function script.FireWeapon()
