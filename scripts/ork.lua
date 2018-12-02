@@ -20,22 +20,27 @@ function script.AimWeapon()
 	return true
 end
 
-local moveBob = include("moveBob.lua")
+local shared = include("shared.lua")
 function script.Create()
-	moveBob.Init(Torso, 3)
+	shared.Init(Torso, 3)
 end
 
 function script.StartMoving()
-	moveBob.StartMoving()
+	shared.StartMoving()
 end
 
 function script.StopMoving()
-	moveBob.StopMoving()
+	shared.StopMoving()
+end
+
+function script.BlockShot(num, targetID)
+	shared.FaceTarget(targetID)
+	return false
 end
 
 function script.FireWeapon(num)
 	if num == 1 then
-		moveBob.Attack()
+		shared.AttackBob()
 		Spring.ClearUnitGoal(unitID)
 	end
 	--StartThread(AttackAnimation) -- Broken

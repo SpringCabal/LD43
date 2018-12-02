@@ -14,17 +14,17 @@ function script.StartBuilding(heading, pitch)
 	SetUnitValue(COB.INBUILDSTANCE, 1)
 end
 
-local moveBob = include("moveBob.lua")
+local shared = include("shared.lua")
 function script.Create()
-	moveBob.Init(Torso, 3)
+	shared.Init(Torso, 3)
 end
 
 function script.StartMoving()
-	moveBob.StartMoving()
+	shared.StartMoving()
 end
 
 function script.StopMoving()
-	moveBob.StopMoving()
+	shared.StopMoving()
 end
 
 function script.BlockShot(num, targetID)

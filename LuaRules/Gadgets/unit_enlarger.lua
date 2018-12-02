@@ -40,9 +40,11 @@ function gadget:Initialize()
 end
 
 function gadget:UnitCreated(unitID, unitDefID)
-	if UnitDefs[unitDefID].customParams.hscale or UnitDefs[unitDefID].customParams.vscale then
-		spSetUnitRulesParam( unitID, "scale_vertical", tonumber(UnitDefs[unitDefID].customParams.vscale) or 1, LOS_ACCESS)
-		spSetUnitRulesParam( unitID, "scale_horizontal", tonumber(UnitDefs[unitDefID].customParams.hscale) or 1, LOS_ACCESS)
+	local hscale = (UnitDefs[unitDefID].customParams.hscale and tonumber(UnitDefs[unitDefID].customParams.hscale)) or 1
+	local vscale = (UnitDefs[unitDefID].customParams.vscale and tonumber(UnitDefs[unitDefID].customParams.vscale)) or 1
+	if hscale ~= 1 or vscale ~= 1 then
+		spSetUnitRulesParam( unitID, "scale_vertical", vscale, LOS_ACCESS)
+		spSetUnitRulesParam( unitID, "scale_horizontal", hscale, LOS_ACCESS)
 	end
 end
 	--------------------------------------------------------------------------------

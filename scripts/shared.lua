@@ -1,4 +1,4 @@
-local moveBob = {}
+local sharedFunc = {}
 local SIG_MOVE = 1
 local bobScale = 2
 
@@ -24,7 +24,7 @@ local function Bob()
 	end
 end
 
-function moveBob.Attack()
+function sharedFunc.AttackBob()
 	Move(bobPiece, y_axis, -20, 500)
 	Turn(bobPiece, y_axis, -math.rad(20), math.rad(200))
 	Sleep(100)
@@ -32,18 +32,28 @@ function moveBob.Attack()
 	Turn(bobPiece, y_axis, math.rad(0), math.rad(120))
 end
 
-function moveBob.Init(_bobPiece, _bobScale)
+function sharedFunc.Init(_bobPiece, _bobScale)
 	bobPiece = _bobPiece
 	bobScale = _bobScale or bobScale
 end
 
-function moveBob.StartMoving()
+function sharedFunc.StartMoving()
 	StartThread(Bob)
 end
 
-function moveBob.StopMoving()
+function sharedFunc.StopMoving()
 	Signal(SIG_MOVE)
 	Move(bobPiece, y_axis, 0, 10)
 end
 
-return moveBob
+function sharedFunc.FaceTarget(targetID)
+	if not targetID then
+		return
+	end
+	local ux, uy, uz = Spring.GetUnitPosition(unitID)
+	local tx, ty, tz = Spring.GetUnitPosition(targetID)
+	local angle = Spring.Utilities.Vector.Angle(tx - ux, tz - uz)
+	Spring.MoveCtrl.SetHeading(unitID, angle)
+end
+
+return sharedFunc

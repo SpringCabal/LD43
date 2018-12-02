@@ -1,5 +1,5 @@
 local Hand_Right = piece("Hand_Right")
-
+local Torso = piece("Torso")
 
 local function AttackAnimation()
 	Move(Hand_Right, y_axis, -30, 1000)
@@ -17,6 +17,19 @@ end
 
 function script.AimWeapon()
 	return true
+end
+
+local shared = include("shared.lua")
+function script.Create()
+	shared.Init(Torso, 3)
+end
+
+function script.StartMoving()
+	shared.StartMoving()
+end
+
+function script.StopMoving()
+	shared.StopMoving()
 end
 
 function script.StartBuilding(heading, pitch)

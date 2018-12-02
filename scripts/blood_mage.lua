@@ -1,4 +1,4 @@
-local moveBob = include("moveBob.lua")
+
 
 local Hand_Right = piece("Hand_Right")
 local Hand_Left = piece("Hand_Left")
@@ -22,18 +22,23 @@ function script.AimWeapon()
 	return true
 end
 
+local shared = include("shared.lua")
 function script.Create()
-	moveBob.Init(Torso)
+	shared.Init(Torso)
 end
 
 function script.StartMoving()
-	moveBob.StartMoving()
+	shared.StartMoving()
 end
 
 function script.StopMoving()
-	moveBob.StopMoving()
+	shared.StopMoving()
 end
 
+function script.BlockShot(num, targetID)
+	shared.FaceTarget(targetID)
+	return false
+end
 
 function script.FireWeapon()
 	Spring.ClearUnitGoal(unitID)

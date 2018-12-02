@@ -22,8 +22,8 @@ local OrkSmall = Humanoid:New {
 
 	customParams = {
 		ork = true,
-		hscale = 0.8,
-		vscale = 0.8,
+		hscale = 1,
+		vscale = 1,
 	},
 
 	weapons = {
