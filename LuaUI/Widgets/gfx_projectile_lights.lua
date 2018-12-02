@@ -175,21 +175,21 @@ local function GetLightsFromUnitDefs()
 			--AircraftBomb
 			--Shield
 			--TorpedoLauncher
-	local weaponDef = WeaponDefs[weaponDefID]
+		local weaponDef = WeaponDefs[weaponDefID]
 		local customParams = weaponDef.customParams or {}
-	local r = weaponDef.visuals.colorR + 0.2
+		local r = weaponDef.visuals.colorR + 0.2
 		local g = weaponDef.visuals.colorG + 0.2
 		local b = weaponDef.visuals.colorB + 0.2
-	local weaponData = {r = r, g = g, b = b, radius = 100}
-	if (weaponDef.type == 'Cannon') then
+		local weaponData = {r = r, g = g, b = b, radius = 100}
+		if (weaponDef.type == 'Cannon') then
 			if customParams.single_hit then
-	weaponData.beamOffset = 1
-	weaponData.beam = true
-	r = 1
-	g = 2
-	b = 2
+				weaponData.beamOffset = 1
+				weaponData.beam = true
+				r = 1
+				g = 2
+				b = 2
 			else
-	weaponData.radius = 10 + 90 * weaponDef.size
+				weaponData.radius = 10 + 90 * weaponDef.size
 			end
 		elseif (weaponDef.type == 'LaserCannon') then
 			weaponData.radius = 150 * weaponDef.size
@@ -205,10 +205,10 @@ local function GetLightsFromUnitDefs()
 		elseif (weaponDef.type == 'BeamLaser') then
 			weaponData.radius = math.min(weaponDef.range, 150)
 			weaponData.beam = true
-			if weaponDef.beamTTL > 2 then
-	weaponData.fadeTime = weaponDef.beamTTL
-			end
+		if weaponDef.beamTTL > 2 then
+			weaponData.fadeTime = weaponDef.beamTTL
 		end
+	end
 	if customParams.light_fade_time and customParams.light_fade_offset then
 			weaponData.fadeTime = tonumber(customParams.light_fade_time)
 			weaponData.fadeOffset = tonumber(customParams.light_fade_offset)

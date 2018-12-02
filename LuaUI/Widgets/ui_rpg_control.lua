@@ -55,11 +55,11 @@ local function HoldLeftMouse(mx, my)
 			return
 		end
 	end
-	
+
 	if traceType ~= "ground" then
 		traceType, pos = Spring.TraceScreenRay(mx, my, true)
 	end
-	
+
 	if pos and pos[1] then
 		Spring.SendLuaRulesMsg('movement|' .. pos[1] .. '|' .. pos[3])
 	end
@@ -102,7 +102,7 @@ function widget:GameFrame()
 	if pressSpace == 4 and Spring.GetGameRulesParam("game_end") == 0 and Spring.GetGameRulesParam("has_eyes") == 0 then
 		pressSpace = 1
 	end
-	
+
 	if mouseControl1 or mouseControl3 then
 		MouseControl()
 	end
