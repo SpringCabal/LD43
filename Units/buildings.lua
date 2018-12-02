@@ -44,8 +44,8 @@ oooooooooooo
 	name                = "House",
 	activateWhenBuilt   = true,
 	idletime            = 120, --in simframes
-	idleautoheal        = 50,
-	autoheal            = 1,
+	idleautoheal        = 0,
+	autoheal            = 0,
 	maxDamage           = 1600,
 	onoffable           = true,
 	script              = "house.lua",

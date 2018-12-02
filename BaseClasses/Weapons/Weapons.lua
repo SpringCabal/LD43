@@ -17,6 +17,7 @@ weapons.MeleeWeapon = Weapon:New {
 	collideFeature        = false,
 	targetBorder            = true,
 	 -- targeting & accuracy
+	turret               = true,
 	accuracy              = 0.9,
 	 -- soundStart            = [[SpearThrow]],
 	soundHit              = [[Hit]],

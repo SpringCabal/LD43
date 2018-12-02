@@ -309,9 +309,6 @@ local function SpawnHouses()
 		local x = math.floor(housePos[i][1]/16)*16
 		local z = math.floor(housePos[i][2]/16)*16
 		local unitID = Spring.CreateUnit(houseDefID, x, Spring.GetGroundHeight(x, z), z, math.floor(math.random()*4), 0, false, false)
-		if math.random() < 0.2 then
-			Spring.SetUnitRulesParam(unitID, "on_fire", 1)
-		end
 	end
 end
 
