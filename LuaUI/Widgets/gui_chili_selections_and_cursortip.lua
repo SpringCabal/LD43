@@ -2332,9 +2332,13 @@ function widget:Update(dt)
 	end
 	--UNIT.STATUS end
 	--TOOLTIP start
+	local offscreen
 	old_mx, old_my = mx,my
 	alt,_,meta,_ = spGetModKeyState()
-	mx,my = spGetMouseState()
+	mx,my,_,_,_,offscreen = spGetMouseState()
+	if offscreen then
+		return
+	end
 	local mousemoved = (mx ~= old_mx or my ~= old_my)
 
 	local show_cursortip = true

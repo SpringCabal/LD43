@@ -22,7 +22,10 @@ end
 
 -- Custom lighting
 local function GetMouseLight(beamLights, beamLightCount, pointLights, pointLightCount)
-	local mx, my, lmb, mmb, rmb = Spring.GetMouseState()
+	local mx, my, lmb, mmb, rmb, offscreen = Spring.GetMouseState()
+	if offscreen then
+		return beamLights, beamLightCount, pointLights, pointLightCount
+	end
 	local x,y,z = getMouseCoordinate(mx,my)
 
 	if x then
