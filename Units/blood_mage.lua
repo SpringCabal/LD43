@@ -68,7 +68,7 @@ local BloodMage = Raw:New {
 
 	weapons = {
 		{
-			name = "Axe",
+			name = "Staff",
 		}
 	},
 }

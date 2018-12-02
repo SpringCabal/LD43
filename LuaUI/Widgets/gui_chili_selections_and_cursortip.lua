@@ -1363,7 +1363,7 @@ local function PlaceToolTipWindow2(x,y)
 	window_tooltip2:SetPos(x,y)
 	AdjustWindow(window_tooltip2)
 
-	window_tooltip2:BringToFront()
+	window_tooltip2:SendToBack()
 end
 
 local function UpdateMorphControl(morph_data)

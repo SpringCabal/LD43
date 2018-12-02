@@ -25,6 +25,8 @@ local A = KEYSYMS.A
 local D = KEYSYMS.D
 local SPACE = KEYSYMS.SPACE
 
+local ENEMY_TEAM = 1
+
 local controlledDefID = UnitDefNames["bloodmage"].id
 local controlledID = nil
 
@@ -32,30 +34,31 @@ local height
 
 local pressSpace = 1
 
-local function getMouseCoordinate(mx,my)
-	local traceType, pos = Spring.TraceScreenRay(mx, my, true)
-	if not pos then return false end
-	local x, y, z = pos[1], pos[2], pos[3]
--- 	if x<2048 or z<2048 or x>8192 or z>8192 then
--- 		return false
--- 	end
-	return x,y,z
+local function HoldLeftMouse(mx, my)
+	local traceType, pos = Spring.TraceScreenRay(mx, my)
+	if not pos then
+		return false
+	end
+	if traceType == "unit" then
+		if Spring.GetUnitTeam(pos) == ENEMY_TEAM then
+			Spring.SendLuaRulesMsg('attack|' .. pos)
+			return
+		end
+	end
+	
+	if traceType ~= "ground" then
+		traceType, pos = Spring.TraceScreenRay(mx, my, true)
+	end
+	
+	if pos and pos[1] then
+		Spring.SendLuaRulesMsg('movement|' .. pos[1] .. '|' .. pos[3])
+	end
 end
 
 local function MouseControl()
 	local mx, my, lmb, mmb, rmb = Spring.GetMouseState()
 	if lmb and mouseControl1 then
-		local x,y,z = getMouseCoordinate(mx,my)
-		if (x) then
-			Spring.SendLuaRulesMsg('movement|' .. x .. '|' .. z)
-			return true
-		end
-	elseif rmb and mouseControl3 then
-		local x,y,z = getMouseCoordinate(mx,my)
-		if (x) then
-			Spring.SendLuaRulesMsg('movement|' .. x .. '|' .. z)
-			return true
-		end
+		HoldLeftMouse(mx, my)
 	end
 end
 
@@ -70,12 +73,8 @@ function widget:MousePress(mx, my, button)
 
 	local alt, ctrl, meta, shift = Spring.GetModKeyState()
 	if button == 1 then
-		local x,y,z = getMouseCoordinate(mx,my)
 		mouseControl1 = true
-		if (x) then
-			Spring.SendLuaRulesMsg('movement|' .. x .. '|' .. z)
-			return true
-		end
+		HoldLeftMouse(mx, my)
 	end
 end
 
@@ -93,7 +92,7 @@ function widget:GameFrame()
 	if pressSpace == 4 and Spring.GetGameRulesParam("game_end") == 0 and Spring.GetGameRulesParam("has_eyes") == 0 then
 		pressSpace = 1
 	end
-
+	
 	if mouseControl1 or mouseControl3 then
 		MouseControl()
 	end
@@ -137,7 +136,7 @@ function widget:KeyPress(key, mods, isRepeat)
 end
 
 function widget:KeyRelease(key)
-	if not (Spring.GetKeyState(A) or Spring.GetKeyState(LEFT) or Spring.GetKeyState(D) or Spring.GetKeyState(RIGHT) or Spring.GetKeyState(W) or Spring.GetKeyState(UP) or Spring.GetKeyState(S) or Spring.GetKeyState(DOWN)) then
+	if not (Spring.GetKeyState(S)) then
 		keyControl = false
 	end
 end

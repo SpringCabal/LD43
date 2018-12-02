@@ -72,12 +72,10 @@ local function GiveClampedMoveGoal(unitID, x, z, radius)
 	moveGoal.z = cz
 end
 
-local function MoveUnit(unitID, x, z, range, radius)
+local function MoveUnit(unitID, x, z)
 	if not (unitID and Spring.ValidUnitID(unitID)) then
 		return
 	end
-	local speed = Spring.GetUnitRulesParam(unitID, "selfMoveSpeedChange") or 1
-	range = (range or 500)*speed
 
 	GiveClampedMoveGoal(unitID, x, z, radius)
 end
@@ -92,6 +90,16 @@ local function UpdateMoveGoal(unitID)
 	if moveGoal and Vector.DistSq(x, z, moveGoal.x, moveGoal.z) < 400 then
 		ClearMove(unitID)
 	end
+end
+
+local function AttackTarget(unitID, targetID)
+	if not targetID then
+		return
+	end
+	if moveGoal then
+		ClearMove(unitID)
+	end
+	Spring.GiveOrderToUnit(unitID, CMD.ATTACK, {targetID}, {})
 end
 
 function gadget:UnitCreated(unitID, unitDefID, unitTeam)
@@ -135,9 +143,9 @@ function HandleLuaMessage(msg)
 			movementMessage = false
 		else
 			movementMessage = {
-	frame = Spring.GetGameFrame(),
-	x = x,
-	z = z
+				frame = Spring.GetGameFrame(),
+				x = x,
+				z = z
 			}
 		end
 	elseif msg_table[1] == 'stop' then
@@ -145,11 +153,8 @@ function HandleLuaMessage(msg)
 			ClearMove(controlledID)
 		end
 	elseif msg_table[1] == 'attack' then
-		-- TODO:
-		-- Reload time check
-		-- attack in mouse direction
-		Spring.UnitWeaponFire(controlledID, 1)
-		Spring.Echo("Attack")
+		local targetID = tonumber(msg_table[2])
+		AttackTarget(controlledID, targetID)
 	elseif msg_table[1] == 'spell' then
 		table.remove(msg_table, 1)
 		for i = 1, #msg_table do

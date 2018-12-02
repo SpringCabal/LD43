@@ -1,4 +1,6 @@
-local MeleeWeapon = Weapon:New {
+local weapons = {}
+
+weapons.MeleeWeapon = Weapon:New {
 	-- general
 	weaponType            = "Melee",
 	impactOnly            = true,
@@ -21,6 +23,29 @@ local MeleeWeapon = Weapon:New {
 	}
 }
 
-return {
-	MeleeWeapon = MeleeWeapon
+weapons.FancyMeleeWeapon = Weapon:New {
+	-- general
+	weaponType            = "BeamLaser",
+	impactOnly            = true,
+	noSelfDamage          = true,
+	range                 = 100,
+	reloadTime            = 1.0,
+	tolerance             = 6000,
+	 -- collision & avoidance
+	avoidFriendly         = false,
+	avoidFeature          = false,
+	 collideFriendly       = false,
+	collideFeature        = false,
+	 -- targeting & accuracy
+	impulseBoost            = 0,
+	impulseFactor           = 2,
+	accuracy                = 0.9,
+	targetborder            = 1,
+	thickness               = 0,
+	soundHit              = [[Hit]],
+	 damage                = {
+		default = 100,
+	}
 }
+
+return weapons

@@ -9,6 +9,7 @@ local Humanoid = Unit:New {
 
 	-- Commands
 	canMove             = true,
+	canAttack           = true,
 	-- All these canX properties shouldn't be on by default:
 	-- 	should they even be part of the engine? Lua it!
 	canPatrol           = true,

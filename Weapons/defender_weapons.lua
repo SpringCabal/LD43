@@ -1,6 +1,7 @@
 -- Comments on the right are my grievances with the format
+local weapons = {}
 
-local CrossBow = Weapon:New {
+weapons.CrossBow = Weapon:New {
 	-- general
 	weaponType            = "Cannon", -- there's a default, but honestly, why?
 	name                  = "Spear",
@@ -26,7 +27,7 @@ local CrossBow = Weapon:New {
 	}
 }
 
-local DefenderSword = MeleeWeapon:New {
+weapons.DefenderSword = MeleeWeapon:New {
 	name                  = "DefenderSword",
 	range                 = 100,
 	reloadTime            = 2.0,
@@ -39,7 +40,7 @@ local DefenderSword = MeleeWeapon:New {
 	}
 }
 
-local DefenderSpear = MeleeWeapon:New {
+weapons.DefenderSpear = MeleeWeapon:New {
 	name                  = "DefenderSpear",
 	range                 = 100,
 	reloadTime            = 1.5,
@@ -52,8 +53,13 @@ local DefenderSpear = MeleeWeapon:New {
 	}
 }
 
-return {
-	DefenderSword = DefenderSword,
-	DefenderSpear = DefenderSpear,
-	CrossBow = CrossBow
+weapons.Staff = MeleeWeapon:New {
+	name                  = "Staff",
+	range                 = 100,
+	reloadTime            = 1.5,
+	 damage                = {
+		default = 100,
+	}
 }
+
+return weapons
