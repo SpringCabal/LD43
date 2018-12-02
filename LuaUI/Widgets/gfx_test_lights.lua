@@ -32,7 +32,7 @@ local function SetupLights()
 		vz = 0,
 		colMult = 3,
 		param = {
-		radius = 500,
+		radius = 1000,
 		r = math.random(),
 		g = math.random(),
 		b = math.random(),
@@ -54,13 +54,13 @@ function RenderLights(beamLights, beamLightCount, pointLights, pointLightCount)
 		light.vx = light.vx + (centerx - light.px) / 10000
 		light.vy = light.vy + (centery - light.py) / 10000
 		light.vz = light.vz + (centerz - light.pz) / 10000
-		 light.px = light.px + light.vx
+		light.px = light.px + light.vx
 		light.py = light.py + light.vy
 		light.pz = light.pz + light.vz
-		 pointLightCount = pointLightCount + 1
+		pointLightCount = pointLightCount + 1
 		pointLights[pointLightCount] = light
 	end
-	 return beamLights, beamLightCount, pointLights, pointLightCount
+	return beamLights, beamLightCount, pointLights, pointLightCount
 end
 
 local disabled = true
