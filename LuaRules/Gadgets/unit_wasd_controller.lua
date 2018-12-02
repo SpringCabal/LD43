@@ -176,8 +176,6 @@ end
 -- Handling messages
 -------------------------------------------------------------------
 
-local controlledWeaponDefID = WeaponDefNames["spear"].id
-
 function HandleLuaMessage(msg)
 	if not controlledID or Spring.GetGameRulesParam("game_over") == 1 then
 		return

@@ -60,6 +60,7 @@ function gadget:RecvLuaMsg(msg)
 	local msg_table = explode('|', msg)
 	if msg_table[1] == "setGameMode" then
 		Spring.SetGameRulesParam("gameMode", msg_table[2])
+		Spring.Echo("gameMode: ", msg_table[2])
 	end
 end
 

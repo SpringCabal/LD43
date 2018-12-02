@@ -222,22 +222,22 @@ function loadWindow()
 		width = widthStr,
 		height = heightStr,
 		tooltip = '',
-		caption = "DebugMode: ",
+		caption = "Debug ",
 		OnClick = {function()
-		if Spring.GetGameRulesParam("gameMode") == "develop" then
-		Spring.SendLuaRulesMsg("setGameMode|test")
-		dbgBtn:SetCaption("DebugMode: Turn on")
-		else
-		Spring.SendLuaRulesMsg("setGameMode|develop")
-		dbgBtn:SetCaption("DebugMode: Turn off")
-		end
+			if Spring.GetGameRulesParam("gameMode") == "develop" then
+				Spring.SendLuaRulesMsg("setGameMode|test")
+				dbgBtn:SetCaption("Debug Off")
+			else
+				Spring.SendLuaRulesMsg("setGameMode|develop")
+				dbgBtn:SetCaption("Debug On")
+			end
 		end
 		}
 	}
 	if Spring.GetGameRulesParam("gameMode") == "develop" then
-		dbgBtn:SetCaption("DebugMode: Turn off")
+		dbgBtn:SetCaption("Debug On")
 	else
-		dbgBtn:SetCaption("DebugMode: Turn on")
+		dbgBtn:SetCaption("Debug Off")
 	end
 end
 
