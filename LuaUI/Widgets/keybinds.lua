@@ -50,6 +50,8 @@ local function UpdateGameMode()
 		Spring.SendCommands("bind p patrol")
 		Spring.SendCommands("bind ` drawinmap")
 		Spring.SendCommands("bind Ctrl+d selfd")
+		Spring.SendCommands("bind Alt+numpad+ speedup")
+		Spring.SendCommands("bind Alt+numpad- slowdown")
 	end
 	SetBindings()
 end
