@@ -55,10 +55,9 @@ weapons.DefenderSpear = MeleeWeapon:New {
 
 weapons.Staff = MeleeWeapon:New {
 	name                  = "Staff",
-	range                 = 200,
-	reloadTime            = 0.5,
+	reloadTime            = 0.8,
 	 damage                = {
-		default = 100,
+		default = 200,
 	}
 }
 

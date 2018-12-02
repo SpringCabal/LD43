@@ -19,6 +19,7 @@ local House = Unit:New {
 	collisionVolumeType     = 'Box',
 	footprintX          = 12,
 	footprintZ          = 12,
+	category            = "HOUSE",
 	yardmap =
 [[
 oooooooooooo
@@ -34,18 +35,18 @@ oooooooooooo
 oooooooooooo
 oooooooooooo
 ]],
-	 mass                = 50,
+	mass                = 50,
 	minCollisionSpeed   = 1,
-	 repairable          = false,
+	repairable          = false,
 	sightDistance       = 800,
-	  stealth             = true,
+	stealth             = true,
 	upright             = true,
-	  name                = "House",
+	name                = "House",
 	activateWhenBuilt   = true,
-	 idletime					= 120, --in simframes
-	idleautoheal 				= 50,
-	autoheal 					= 1,
-	 maxDamage           = 1600,
+	idletime            = 120, --in simframes
+	idleautoheal        = 50,
+	autoheal            = 1,
+	maxDamage           = 1600,
 	onoffable           = true,
 	script              = "house.lua",
 	objectName 			= "House.dae",

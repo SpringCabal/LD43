@@ -7,6 +7,7 @@ local BloodMage = Raw:New {
 	buildPic 			= "",
 	-- Sensors
 	sightDistance       = 800,
+	mass                = 50,
 
 	-- Commands
 	canMove             = true,
@@ -27,13 +28,13 @@ local BloodMage = Raw:New {
 	upright             = true,
 	minCollisionSpeed   = 1000000,
 	pushResistant       = false,
-	maxVelocity         = 9,
+	maxVelocity         = 8,
 	turnInPlace         = false,
 	turnInPlaceSpeedLimit = 0,
 	-- maxVelocity's default value of "0" is odd, unless the default is a "building"?
 	-- then again, acceleration is not 0 by default..
-	acceleration        = 1.8,
-	brakeRate           = 1,
+	acceleration        = 8,
+	brakeRate           = 8,
 	turnRate            = 1000 / 0.16,
 	-- degrees per seconds = 0.16 * turnRate
 	-- what a bizarre calculation, is this turnRate / (2 * pi)?
@@ -61,14 +62,14 @@ local BloodMage = Raw:New {
 	-- General
 	name                = "BloodMage",
 	movementClass       = "Player",
-	objectName 			= "BloodMage.dae",
+	objectName          = "BloodMage.dae",
 	script              = "blood_mage.lua",
 	maxDamage           = 1600,
-	-- mass                = 50, -- does this even matter?
 
 	weapons = {
 		{
 			name = "Staff",
+			onlyTargetCategory = [[INFANTRY HOUSE]],
 		}
 	},
 }

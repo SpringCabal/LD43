@@ -16,6 +16,7 @@ local Humanoid = Unit:New {
 	canGuard            = true,
 	canRepeat           = false,
 	fireState           = 2,       -- Should auto-attack by default.
+	mass                = 50,
 
 	customParams = {
 		hscale = 0.5,

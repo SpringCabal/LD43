@@ -27,7 +27,8 @@ local lastStepFrame
 local waitFrames
 local spawnAreas
 
-local DEV_NO_RUN = false
+local DEV_NO_RUN = true
+local NEVER_RUN = true
 
 -- ugh
 local killed = {}
@@ -261,6 +262,9 @@ end
 
 local lastGameMode = nil
 function gadget:GameFrame()
+	if NEVER_RUN then
+		return
+	end
 	if DEV_NO_RUN then
 		local currentGameMode = Spring.GetGameRulesParam("gameMode")
 		if lastGameMode ~= currentGameMode then

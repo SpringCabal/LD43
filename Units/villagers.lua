@@ -5,7 +5,6 @@ local Peasant = Humanoid:New {
 	objectName 			= "HumanWithStick.dae",
 	script              = "defender.lua",
 	maxDamage           = 1600,
-	-- mass                = 50, -- does this even matter?
 
 	collisionVolumeScales    = '37 43 37',
 
@@ -24,7 +23,6 @@ local Crossbowman = Humanoid:New {
 	objectName 			= "HumanCrossbow.dae",
 	script              = "defender.lua",
 	maxDamage           = 1600,
-	-- mass                = 50, -- does this even matter?
 
 	collisionVolumeScales    = '37 64 37',
 
@@ -43,7 +41,6 @@ local Builder = Humanoid:New {
 	objectName 			= "HumanCrossbow.dae",
 	script              = "defender.lua",
 	maxDamage           = 1600,
-	-- mass                = 50, -- does this even matter?
 	builder = true,
 	workerTime = 10000,
 	buildOptions = {"house"},
@@ -66,7 +63,6 @@ local Swordsman = Humanoid:New {
 	objectName 			= "Swordsman.dae",
 	script              = "defender.lua",
 	maxDamage           = 1600,
-	-- mass                = 50, -- does this even matter?
 
 	collisionVolumeScales    = '37 64 37',
 	maxVelocity         = 3,
