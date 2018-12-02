@@ -68,24 +68,21 @@ local function Fireball(unitID, tx, ty, tz)
 	local mana = DrainNearbyUnits(unitID)
 	Spring.Echo("Fireball! Mana: ", mana)
 
-	ty = Spring.GetGroundHeight(tx, tz) + 50
+	ty = Spring.GetGroundHeight(tx, tz) + 20
 	local x, y, z = Spring.GetUnitPosition(unitID)
-	local vx = tx - x
-	local vy = ty - y
-	local vz = tz - z
-	local d = math.sqrt(vx*vx + vy*vy + vz*vz)
-	local SPEED = 40
-	local multiplier = SPEED / (d + 0.0001)
-	vx = vx * multiplier
-	vy = vy * multiplier
-	vz = vz * multiplier
-	Spring.SpawnProjectile(fireballDefID, {
+	y = y + 20
+	local dx, dy, dz = tx - x, ty - y, tz - z
+	local flyTime = 10 + math.floor(math.sqrt(dx*dx + dz*dz)/45)
+	local gravity = 0.2
+	
+	local vx, vy, vz = dx/flyTime, flyTime*gravity/2 + dy/flyTime, dz/flyTime
+	local proID = Spring.SpawnProjectile(fireballDefID, {
 		pos = { x, y, z },
 		speed = { vx, vy, vz },
-		ttl = 30,
-		-- ["end"] = { tx, ty, tz },
+		ttl = flyTime,
 		owner = unitID,
 	})
+	Spring.SetProjectileGravity(proID, -gravity)
 end
 
 local function Slow(unitID, tx, ty, tz)
@@ -93,7 +90,7 @@ local function Slow(unitID, tx, ty, tz)
 	Spring.Echo("Slow! Mana: ", mana)
 
 
-	ty = Spring.GetGroundHeight(tx, tz) + 50
+	ty = Spring.GetGroundHeight(tx, tz)
 	local x, y, z = Spring.GetUnitPosition(unitID)
 	local vx = tx - x
 	local vy = ty - y

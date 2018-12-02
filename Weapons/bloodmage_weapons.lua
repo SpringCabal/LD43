@@ -4,15 +4,15 @@ local RangedSpell = Weapon:New {
 	impactOnly            = true,
 	noSelfDamage          = true,
 	range                 = 1000,
-	weaponVelocity        = 2000,
+	weaponVelocity        = 500,
 	reloadTime            = 3.0,
 	tolerance             = 6000,
 	 -- collision & avoidance
-	avoidFriendly         = true,
-	avoidFeature          = true,
-	collideFriendly       = true,
-	collideFeature        = true,
-	impulseFactor = 0,
+	avoidFriendly         = false,
+	avoidFeature          = false,
+	collideFriendly       = false,
+	collideFeature        = false,
+	impulseFactor         = 0,
 	 -- targeting & accuracy
 	accuracy              = 1.0,
 	-- model                 = 'spear.dae',
@@ -36,7 +36,7 @@ local Fireball = RangedSpell:New {
 	},
 
 	customParams = {
-		light_radius = 500,
+		light_radius = 350,
 		light_fade_time = 1,
 		light_fade_offset = 10,
 	}
