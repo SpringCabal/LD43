@@ -160,6 +160,12 @@ function widget:UnitCreated(unitID, unitDefID, unitTeam)
 	end
 end
 
+function widget:UnitDestroyed(unitID, unitDefID, unitTeam)
+	if controlledID == unitID then
+		controlledID = nil
+	end
+end
+
 function widget:Initialize()
 	vsx, vsy = Spring.GetViewGeometry()
 
