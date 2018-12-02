@@ -48,8 +48,8 @@ function widget:UnitDestroyed(unitID)
 
 	houses[unitID] = nil
 	for i = 0, 3 do
-		houseLights[hlIndx - i] = houseLights[#houseLIghts - i]
-		table.remove(houseLights, #houseLIghts - i)
+		houseLights[hlindx - i] = houseLights[#houseLights - i]
+		table.remove(houseLights, #houseLights - i)
 	end
 end
 
