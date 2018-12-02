@@ -30,7 +30,11 @@ local OrkSmall = Humanoid:New {
 		{
 			name = "Bite",
 			onlyTargetCategory = [[INFANTRY]],
-		}
+		},
+		{
+			name = "Firebomb",
+			onlyTargetCategory = [[HOUSE]],
+		},
 	},
 }
 

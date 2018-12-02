@@ -33,9 +33,10 @@ function script.StopMoving()
 	moveBob.StopMoving()
 end
 
-function script.FireWeapon()
-	moveBob.Attack()
-	Spring.ClearUnitGoal(unitID)
+function script.FireWeapon(num)
+	if num == 1 then
+		moveBob.Attack()
+		Spring.ClearUnitGoal(unitID)
+	end
 	--StartThread(AttackAnimation) -- Broken
-	return true
 end
