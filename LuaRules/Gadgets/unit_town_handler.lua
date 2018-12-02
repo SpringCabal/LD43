@@ -251,12 +251,45 @@ local villagerArea = {
 	{
 		x = 5680,
 		z = 5750,
+		width = 1200,
+		height = 1200,
+		units = {
+			swordsman = 3,
+			crossbowman = 1,
+			peasant = 80,
+		}
+	},
+	{
+		x = 5110,
+		z = 6500,
+		width = 700,
+		height = 700,
+		units = {
+			swordsman = 3,
+			crossbowman = 1,
+			peasant = 30,
+		}
+	},
+	{
+		x = 6130,
+		z = 6740,
 		width = 900,
 		height = 900,
 		units = {
 			swordsman = 3,
 			crossbowman = 1,
-			peasant = 60,
+			peasant = 30,
+		}
+	},
+	{
+		x = 5500,
+		z = 4950,
+		width = 1600,
+		height = 600,
+		units = {
+			swordsman = 3,
+			crossbowman = 1,
+			peasant = 40,
 		}
 	},
 }
