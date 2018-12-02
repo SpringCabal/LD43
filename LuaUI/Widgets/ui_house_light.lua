@@ -14,37 +14,50 @@ end
 
 local houseDefID = UnitDefNames["house"].id
 local houses = {}
+local houseLights = {}
+
 
 
 local minx, maxx, minz, maxz
 
 function widget:UnitCreated(unitID, unitDefID, unitTeam)
-	if unitDefID == houseDefID then
-		houses[unitID] = true
+	if unitDefID ~= houseDefID then
+		return
 	end
+
+	local x, y, z = Spring.GetUnitPosition(unitID)
+	hlCount = #houseLights
+	local hlindx = hlCount + 4
+	for _, dx in ipairs({minx, maxx}) do
+		for _, dz in ipairs({minz, maxz}) do
+			local light = {py = y + 50, param = {r = 0.7, g = 0.7, b = 0.4, radius = 500}, colMult = 1}
+			light.px = x + dx
+			light.pz = z + dz
+			hlCount = hlCount + 1
+			houseLights[hlCount] = light
+		end
+	end
+	houses[unitID] = hlindx
 end
 
 function widget:UnitDestroyed(unitID)
-	if controlledID == unitID then
-		houses[unitID] = nil
+	local hlindx = houses[unitID]
+	if not hlindx then
+		return
+	end
+
+	houses[unitID] = nil
+	for i = 0, 3 do
+		houseLights[hlIndx - i] = houseLights[#houseLIghts - i]
+		table.remove(houseLights, #houseLIghts - i)
 	end
 end
 
 local function GetLight(beamLights, beamLightCount, pointLights, pointLightCount)
-	for houseID, _ in pairs(houses) do
-		local x, y, z = Spring.GetUnitPosition(houseID)
-		if x then
-			for _, dx in ipairs({minx, maxx}) do
-				for _, dz in ipairs({minz, maxz}) do
-					local light = {py = y + 50, param = {r = 0.7, g = 0.7, b = 0.4, radius = 500}, colMult = 1}
-					pointLightCount = pointLightCount + 1
-					light.px = x + dx
-					light.pz = z + dz
-					pointLights[pointLightCount] = light
-				end
-			end
-		end
+	for i = 1, #houseLights do
+		pointLights[pointLightCount + i] = houseLights[i]
 	end
+	pointLightCount = pointLightCount + #houseLights
 	return beamLights, beamLightCount, pointLights, pointLightCount
 end
 
