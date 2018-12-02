@@ -19,6 +19,8 @@ if (gadgetHandler:IsSyncedCode()) then
 local spGetUnitDefID      = Spring.GetUnitDefID
 local IMPASSIBLE_TERRAIN = 137 -- Hope that this does not conflict with any maps
 
+local PLAYER_FUDGE = 8
+
 -------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
 
@@ -70,7 +72,7 @@ end
 local function SetTypemapSquare(minx, minz, maxx, maxz, value)
 	for x = minx, maxx, 8 do
 		for z = minz, maxz, 8 do
-			if value == IMPASSIBLE_TERRAIN and (x <= minx + 8 or x >= maxx - 8 or z <= minz + 8 or z >= maxz - 8) then
+			if value == IMPASSIBLE_TERRAIN and (x <= minx + PLAYER_FUDGE or x >= maxx - PLAYER_FUDGE or z <= minz + PLAYER_FUDGE or z >= maxz - PLAYER_FUDGE) then
 				Spring.SetMapSquareTerrainType(x, z, value + 1)
 			else
 				Spring.SetMapSquareTerrainType(x, z, value)

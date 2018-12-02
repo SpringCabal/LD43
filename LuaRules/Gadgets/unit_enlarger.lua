@@ -5,7 +5,7 @@ function gadget:GetInfo()
 		author  = "Rafal",
 		date    = "May 2015",
 		license = "GNU LGPL, v2.1 or later",
-		layer   = 0,
+		layer   = 20,
 		enabled = true
 	}
 end
@@ -45,7 +45,6 @@ function gadget:UnitCreated(unitID, unitDefID)
 	if UnitDefs[unitDefID].customParams.hscale or UnitDefs[unitDefID].customParams.vscale then
 		spSetUnitRulesParam( unitID, "scale_vertical", tonumber(UnitDefs[unitDefID].customParams.vscale) or 1, LOS_ACCESS)
 		spSetUnitRulesParam( unitID, "scale_horizontal", tonumber(UnitDefs[unitDefID].customParams.hscale) or 1, LOS_ACCESS)
-		SendToUnsynced( "Enlarger_SetUnitLuaDraw", unitID, true )
 	end
 end
 
@@ -67,23 +66,31 @@ local glScale     = gl.Scale
 
 --------------------------------------------------------------------------------
 
-local function SetUnitLuaDraw(_, unitID, enabled)
-	spurSetUnitLuaDraw (unitID, enabled)
+local function SetUnitLuaDraw(unitID, enabled)
+	spurSetUnitLuaDraw(unitID, enabled)
 end
 
 function gadget:Initialize()
-	Spring.UnitRendering.SetUnitLuaDraw (1, true);
-	gadgetHandler:AddSyncAction("Enlarger_SetUnitLuaDraw", SetUnitLuaDraw)
+	Spring.UnitRendering.SetUnitLuaDraw (1, true)
+	
+	local allUnits = Spring.GetAllUnits()
+	for i = 1, #allUnits do
+		local unitID = allUnits[i]
+		gadget:UnitCreated(unitID, Spring.GetUnitDefID(unitID))
+	end
 end
 
-function gadget:Shutdown()
-	gadgetHandler.RemoveSyncAction("Enlarger_SetUnitLuaDraw")
+function gadget:UnitCreated(unitID, unitDefID)
+	local vScale = spGetUnitRulesParam( unitID, "scale_vertical")
+	local hScale = spGetUnitRulesParam( unitID, "scale_horizontal")
+	if vScale or hScale then
+		SetUnitLuaDraw(unitID, true)
+	end
 end
-
 
 function gadget:DrawUnit(unitID, drawMode)
-	local vScale = spGetUnitRulesParam( unitID, "scale_vertical");
-	local hScale = spGetUnitRulesParam( unitID, "scale_horizontal");
+	local vScale = spGetUnitRulesParam( unitID, "scale_vertical")
+	local hScale = spGetUnitRulesParam( unitID, "scale_horizontal")
 	if not (vScale or hScale) then
 		return
 	end
