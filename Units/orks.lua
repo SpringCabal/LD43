@@ -9,12 +9,12 @@ local OrkSmall = Humanoid:New {
 	-- mass                = 50, -- does this even matter?
 	footprintX          = 2,
 	footprintZ          = 2,
-	
+
 	maxVelocity         = 4,
 	acceleration        = 2,
 	brakeRate           = 2,
 	turnRate            = 1600 / 0.16,
-	
+
 	selectionVolumeOffsets = [[0 0 0]],
 	selectionVolumeScales  = [[50 50 50]],
 	selectionVolumeType    = [[ellipsoid]],
@@ -53,7 +53,7 @@ local OrkBig = Humanoid:New {
 	footprintZ          = 2,
 
 	collisionVolumeType      = 'CylY',
-	collisionVolumeScales    = '149 119 149',
+	collisionVolumeScales    = '102.0 69.0 102.0',
 
 	customParams = {
 		ork = true,

@@ -45,14 +45,14 @@ units.Crossbowman = Humanoid:New {
 	script              = "crossbowman.lua",
 	maxDamage           = 400,
 
-	collisionVolumeScales    = '37 64 37',
+	collisionVolumeScales    = '37 46 37',
 	maxVelocity         = 3,
 
 	customParams = {
 		hscale = 1,
 		vscale = 1,
 	},
-	
+
 	weapons = {
 		{
 			name = "CrossBow",
@@ -69,7 +69,7 @@ units.Swordsman = Humanoid:New {
 	maxDamage           = 600,
 	moveState           = 2,
 
-	collisionVolumeScales    = '37 64 37',
+	collisionVolumeScales    = '23 34 23',
 	maxVelocity         = 3,
 	footprintX 			= 2,
 	footprintZ 			= 2,

@@ -1,7 +1,7 @@
 model = {
-	radius = 42.0,
-	height = 50.0,
-	midpos = {0,30,0},
+	radius = 24.0,
+	height = 20.0,
+	midpos = {0,16,1},
 	tex1 = "HumanCrossbowTexture.png",
 }
 return model
