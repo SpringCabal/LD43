@@ -9,7 +9,11 @@ local OrkSmall = Humanoid:New {
 	-- mass                = 50, -- does this even matter?
 	footprintX 			= 2,
 	footprintZ 			= 2,
-	maxVelocity         = 3,
+	maxVelocity         = 6,
+
+	customParams = {
+		ork = true,
+	},
 
 	weapons = {
 		{
@@ -27,11 +31,17 @@ local OrkBig = Humanoid:New {
 	maxDamage           = 1000,
 	-- mass                = 50, -- does this even matter?
 
+	maxVelocity         = 4,
+
 	footprintX 			= 8,
 	footprintZ 			= 8,
 
 	collisionVolumeType      = 'CylY',
 	collisionVolumeScales    = '149 119 149',
+
+	customParams = {
+		ork = true,
+	},
 
 	weapons = {
 		{
@@ -49,11 +59,17 @@ local OrkBoss = Humanoid:New {
 	maxDamage           = 1600,
 	-- mass                = 50, -- does this even matter?
 
+	maxVelocity         = 5.1,
+
 	footprintX 			= 12,
 	footprintZ 			= 12,
 
 	collisionVolumeType      = 'CylY',
 	collisionVolumeScales    = '320 235 320',
+
+	customParams = {
+		ork = true,
+	},
 
 	weapons = {
 		{

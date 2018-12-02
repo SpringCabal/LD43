@@ -36,8 +36,9 @@ function gadget:Initialize()
 	waitFrames = 0
     story = GetStory()
 	s11n = GG.s11n:GetUnitBridge()
+
 	for _, unitID in pairs(Spring.GetAllUnits()) do
-		Spring.DestroyUnit(unitID, false, true)
+		-- Spring.DestroyUnit(unitID, false, true)
 		killed[unitID] = true
 	end
 
