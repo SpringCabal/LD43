@@ -1,6 +1,9 @@
 local House = Unit:New {
 	buildPic            = "",
-	 --buildCostMetal        = 65, -- used only for power XP calcs
+	buildCostMetal        = 0.1, -- used only for power XP calcs
+	buildCostEnergy       = 0.1, -- used only for power XP calcs
+	buildTime             = 0.1, -- used only for power XP calcs
+	maxSlope = 100,
 	canMove             = false,
 	maxVelocity         = 0,
 --     canGuard            = false,

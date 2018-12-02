@@ -7,3 +7,7 @@ end
 function script.AimWeapon()
 	return true
 end
+
+function script.StartBuilding(heading, pitch)
+	SetUnitValue(COB.INBUILDSTANCE, 1)
+end

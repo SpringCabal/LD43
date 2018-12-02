@@ -35,6 +35,30 @@ local Crossbowman = Humanoid:New {
 	},
 }
 
+local Builder = Humanoid:New {
+
+	-- General
+	name                = "Builder",
+	movementClass       = "Defender",
+	objectName 			= "HumanCrossbow.dae",
+	script              = "defender.lua",
+	maxDamage           = 1600,
+	-- mass                = 50, -- does this even matter?
+	builder = true,
+	workerTime = 10000,
+	buildOptions = {"house"},
+	buildDistance = 1000000,
+	terraformSpeed = 100000000,
+
+	collisionVolumeScales    = '37 64 37',
+
+	weapons = {
+		{
+			name = "CrossBow",
+		}
+	},
+}
+
 local Swordsman = Humanoid:New {
 	-- General
 	name                = "Swordsman",
@@ -59,5 +83,6 @@ local Swordsman = Humanoid:New {
 return {
 	Swordsman   = Swordsman,
 	Crossbowman = Crossbowman,
-	Peasant     = Peasant
+	Peasant     = Peasant,
+	Builder     = Builder,
 }
