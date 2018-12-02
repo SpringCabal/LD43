@@ -13,9 +13,15 @@ end
 local controlledDefID = UnitDefNames["bloodmage"].id
 local controlledID = nil
 
+local STATIC_FLICKER_RATIO = 0.5
+
+local staffX, staffY, staffZ
+
 function widget:UnitCreated(unitID, unitDefID, unitTeam)
 	if unitDefID == controlledDefID then
 		controlledID = unitID
+		staffX, staffY, staffZ = Spring.GetUnitPiecePosition(unitID,
+									Spring.GetUnitPieceMap(unitID)["Hand_Right"])
 	end
 end
 
@@ -26,10 +32,24 @@ function widget:UnitDestroyed(unitID)
 end
 
 local function GetLight(beamLights, beamLightCount, pointLights, pointLightCount)
+	flicker = math.sin(os.clock() * 3) / 3.14 * STATIC_FLICKER_RATIO
 	if controlledID then
-		local x, y, z = Spring.GetUnitPosition(controlledID)
+		local x, y, z = Spring.GetUnitViewPosition(controlledID)
+
+		Spring.Echo(staffX, staffY, staffZ)
 		pointLightCount = pointLightCount + 1
-		pointLights[pointLightCount] = {px = x, py = y + 50, pz = z, param = {r = 4, g = 1, b = 1, radius = 2000}, colMult = 1}
+		pointLights[pointLightCount] = {
+			px = x + staffX,
+			py = y + staffY + 5,
+			pz = z + staffZ,
+			param = {
+				r = 4,
+				g = 1,
+				b = 1,
+				radius = 1000
+			},
+			colMult = 2 * (1 + flicker),
+		}
 	end
 
 	return beamLights, beamLightCount, pointLights, pointLightCount
