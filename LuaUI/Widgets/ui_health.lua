@@ -31,21 +31,25 @@ local meter = {}
 local hpcolormap      = { {1.0, 0.0, 0.0, 1.0},  {0.8, 0.60, 0.0, 1.0}, {0.0, 0.75, 0.0, 1.0} }
 
 function GetColor(colormap,slider)
-  local coln = #colormap
-  if (slider>=1) then
-    local col = colormap[coln]
-    return col[1],col[2],col[3],col[4]
-  end
-  if (slider<0) then slider=0 elseif(slider>1) then slider=1 end
-  local posn  = 1+(coln-1) * slider
-  local iposn = math.floor(posn)
-  local aa    = posn - iposn
-  local ia    = 1-aa
+	local coln = #colormap
+	if (slider>=1) then
+	local col = colormap[coln]
+		return col[1],col[2],col[3],col[4]
+	end
+	if (slider < 0) then
+	slider = 0
+		elseif (slider>1) then
+		slider = 1
+	end
+	local posn  = 1+(coln-1) * slider
+	local iposn = math.max(1, math.min(coln - 1, math.floor(posn)))
+	local aa    = posn - iposn
+	local ia    = 1-aa
 
-  local col1,col2 = colormap[iposn],colormap[iposn+1]
+	local col1,col2 = colormap[iposn],colormap[iposn+1]
 
-  return col1[1]*ia + col2[1]*aa, col1[2]*ia + col2[2]*aa,
-         col1[3]*ia + col2[3]*aa, col1[4]*ia + col2[4]*aa
+	return col1[1]*ia + col2[1]*aa, col1[2]*ia + col2[2]*aa,
+	       col1[3]*ia + col2[3]*aa, col1[4]*ia + col2[4]*aa
 end
 
 -------------------------------------------

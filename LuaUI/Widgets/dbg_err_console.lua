@@ -27,7 +27,7 @@ local cfg = {
 }
 local fontSize = 16
 
-local onlyErrorsAndWarnings = true
+local onlyErrorsAndWarnings = false
 
 ---------------------
 
