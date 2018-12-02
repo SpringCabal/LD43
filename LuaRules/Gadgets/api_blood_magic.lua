@@ -3,58 +3,76 @@ if not gadgetHandler:IsSyncedCode() then
 end
 
 function gadget:GetInfo()
-   return {
-	  name      = "Blood Magic",
-	  author    = "gajop",
-	  date      = "December 2018",
-	  layer     = 0,
-	  enabled   = true
-   }
+	return {
+		name      = "Blood Magic",
+		author    = "gajop",
+		date      = "December 2018",
+		layer     = 0,
+		enabled   = true
+	}
 end
 
+local houseDefID = UnitDefNames["house"].id
 local BLOOD_MAGIC_RANGE = 500
-local MAX_DRAIN_PER_UNIT = 100
+local MAX_DRAIN_PER_UNIT = 10000
+local FIREBALL_COST = 700
 
 local fireballDefID = WeaponDefNames["fireball"].id
 local webDefID = WeaponDefNames["web"].id
+local CEG_SPAWN = [[feature_poof_spawner]]
 
-local function GetNearbyUnits(unitID)
-	local x, _, z = Spring.GetUnitPosition(unitID)
-	local units = Spring.GetUnitsInCylinder(x, z, BLOOD_MAGIC_RANGE)
-	for i = 1, #units do
-		if units[i] == unitID then
-			table.remove(units, i)
-			break
-		end
-	end
-	return units
+local function SpawnBloodEffect(unitID)
+	local x, _, z, _, y = Spring.GetUnitPosition(unitID, true)
+	Spring.SpawnCEG(CEG_SPAWN,
+		x,y,z,
+		0,0,0,
+		20, 20
+	)
 end
 
-local function DrainUnits(units)
-	local total = 0
-	for _, unitID in pairs(units) do
-		local hp = Spring.GetUnitHealth(unitID)
-		local drained = MAX_DRAIN_PER_UNIT
-		if hp < drained then
-			drained = hp
-			hp = -1
+local function DrainNearbyUnits(collectorID, required)
+	local toKill = {}
+	local toUnNeutral = {}
+	for i = 1, 20 do
+		local unitID = Spring.GetUnitNearestAlly(collectorID, BLOOD_MAGIC_RANGE)
+		if not unitID then
+			return false
+		end
+		if Spring.GetUnitDefID(unitID) == houseDefID then
+			Spring.SetUnitNeutral(unitID, true)
+			toUnNeutral[#toUnNeutral + 1] = unitID
 		else
-			hp = hp - drained
+			local hp = Spring.GetUnitHealth(unitID)
+			if hp > required then
+				SpawnBloodEffect(unitID)
+				Spring.SetUnitHealth(unitID, hp - required)
+				required = 0
+				
+				for i = 1, #toKill do
+					SpawnBloodEffect(toKill[i])
+					Spring.DestroyUnit(toKill[i], true)
+				end
+				
+				for i = 1, #toUnNeutral do
+					Spring.SetUnitNeutral(toUnNeutral[i], false)
+				end
+				
+				return true
+			else
+				toKill[#toKill + 1] = unitID
+				required = required - hp
+			end
 		end
-		total = total + drained
-		Spring.SetUnitHealth(unitID, hp)
-		Spring.Echo("drained", unitID, drained, hp)
 	end
-	return total
-end
-
-local function DrainNearbyUnits(unitID)
-	return DrainUnits(GetNearbyUnits(unitID))
+	
+	return false
 end
 
 local function Haste(unitID)
-	local mana = DrainNearbyUnits(unitID)
-	Spring.Echo("Haste! Mana: ", mana)
+	local manaFound = DrainNearbyUnits(unitID, 200)
+	if not manaFound then
+		return
+	end
 	-- GG.Attributes.AddEffect(unitID, "somekey?", {
 	-- 	accel = 1.5,
 	-- 	move = 1.5
@@ -63,10 +81,14 @@ end
 
 
 local function Fireball(unitID, tx, ty, tz)
-	if tx == nil then return end
+	if tx == nil then
+		return
+	end
 
-	local mana = DrainNearbyUnits(unitID)
-	Spring.Echo("Fireball! Mana: ", mana)
+	local manaFound = DrainNearbyUnits(unitID, FIREBALL_COST)
+	if not manaFound then
+		return
+	end
 
 	ty = Spring.GetGroundHeight(tx, tz) + 20
 	local x, y, z = Spring.GetUnitPosition(unitID)
@@ -86,8 +108,10 @@ local function Fireball(unitID, tx, ty, tz)
 end
 
 local function Slow(unitID, tx, ty, tz)
-	local mana = DrainNearbyUnits(unitID)
-	Spring.Echo("Slow! Mana: ", mana)
+	local manaFound = DrainNearbyUnits(unitID, FIREBALL_COST)
+	if not manaFound then
+		return
+	end
 
 
 	ty = Spring.GetGroundHeight(tx, tz)

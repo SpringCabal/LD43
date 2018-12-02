@@ -27,7 +27,7 @@ local	resources = {
 			laserfalloff		= 'laserfalloff.tga',
 			randdots			= 'randdots.tga',
 			smoketrail			= 'smoketrail.tga',
-		smoke               = 'smoke.png',
+			smoke               = 'smoke.png',
 			wake				= 'wake.tga',
 			flare				= 'flare.tga',
 			explo				= 'explo.tga',
@@ -37,6 +37,7 @@ local	resources = {
 			muzzleside			= 'muzzleside.tga',
 			muzzlefront			= 'muzzlefront.tga',
 			largebeam			= 'largelaserfalloff.tga',
+			fireball            = 'FireBall.png',
 		},
 	}
 }
