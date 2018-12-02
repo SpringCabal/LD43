@@ -15,6 +15,9 @@ end
 local BLOOD_MAGIC_RANGE = 500
 local MAX_DRAIN_PER_UNIT = 100
 
+local fireballDefID = WeaponDefNames["fireball"].id
+local webDefID = WeaponDefNames["web"].id
+
 local function GetNearbyUnits(unitID)
 	local x, _, z = Spring.GetUnitPosition(unitID)
 	local units = Spring.GetUnitsInCylinder(x, z, BLOOD_MAGIC_RANGE)
@@ -58,14 +61,56 @@ local function Haste(unitID)
 	-- })
 end
 
-local function Fireball(unitID)
+
+local function Fireball(unitID, tx, ty, tz)
+	if tx == nil then return end
+
 	local mana = DrainNearbyUnits(unitID)
 	Spring.Echo("Fireball! Mana: ", mana)
+
+	ty = Spring.GetGroundHeight(tx, tz) + 50
+	local x, y, z = Spring.GetUnitPosition(unitID)
+	local vx = tx - x
+	local vy = ty - y
+	local vz = tz - z
+	local d = math.sqrt(vx*vx + vy*vy + vz*vz)
+	local SPEED = 40
+	local multiplier = SPEED / (d + 0.0001)
+	vx = vx * multiplier
+	vy = vy * multiplier
+	vz = vz * multiplier
+	Spring.SpawnProjectile(fireballDefID, {
+		pos = { x, y, z },
+		speed = { vx, vy, vz },
+		ttl = 30,
+		-- ["end"] = { tx, ty, tz },
+		owner = unitID,
+	})
 end
 
-local function Slow(unitID)
+local function Slow(unitID, tx, ty, tz)
 	local mana = DrainNearbyUnits(unitID)
 	Spring.Echo("Slow! Mana: ", mana)
+
+
+	ty = Spring.GetGroundHeight(tx, tz) + 50
+	local x, y, z = Spring.GetUnitPosition(unitID)
+	local vx = tx - x
+	local vy = ty - y
+	local vz = tz - z
+	local d = math.sqrt(vx*vx + vy*vy + vz*vz)
+	local SPEED = 40
+	local multiplier = SPEED / (d + 0.0001)
+	vx = vx * multiplier
+	vy = vy * multiplier
+	vz = vz * multiplier
+	Spring.SpawnProjectile(webDefID, {
+		pos = { x, y, z },
+		speed = { vx, vy, vz },
+		ttl = 30,
+		-- ["end"] = { tx, ty, tz },
+		owner = unitID,
+	})
 end
 
 -- ID mapping as well
