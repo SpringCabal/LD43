@@ -8,26 +8,28 @@ local House = Unit:New {
 --     canRepeat           = false,
 	 --pushResistant       = true,
 	customParams = {
-		hscale = 0.4,
-		vscale = 0.22,
+		hscale = 0.5,
+		vscale = 0.2,
 	},
-	 collisionVolumeScales   = '37 40 37',
+	 collisionVolumeScales   = '192 50 192',
 	collisionVolumeTest     = 1,
 	collisionVolumeType     = 'Box',
-	footprintX          = 10,
-	footprintZ          = 10,
+	footprintX          = 12,
+	footprintZ          = 12,
 	yardmap =
 [[
-oooooooooo
-oooooooooo
-oooooooooo
-oooooooooo
-oooooooooo
-oooooooooo
-oooooooooo
-oooooooooo
-oooooooooo
-oooooooooo
+oooooooooooo
+oooooooooooo
+oooooooooooo
+oooooooooooo
+oooooooooooo
+oooooooooooo
+oooooooooooo
+oooooooooooo
+oooooooooooo
+oooooooooooo
+oooooooooooo
+oooooooooooo
 ]],
 	 mass                = 50,
 	minCollisionSpeed   = 1,

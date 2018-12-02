@@ -70,7 +70,11 @@ end
 local function SetTypemapSquare(minx, minz, maxx, maxz, value)
 	for x = minx, maxx, 8 do
 		for z = minz, maxz, 8 do
-			Spring.SetMapSquareTerrainType(x, z, value)
+			if value == IMPASSIBLE_TERRAIN and (x <= minx + 8 or x >= maxx - 8 or z <= minz + 8 or z >= maxz - 8) then
+				Spring.SetMapSquareTerrainType(x, z, value + 1)
+			else
+				Spring.SetMapSquareTerrainType(x, z, value)
+			end
 		end
 	end
 end
@@ -99,7 +103,8 @@ function gadget:UnitDestroyed(unitID, unitDefID)
 end
 
 function gadget:Initialize()
-	Spring.SetTerrainTypeData(IMPASSIBLE_TERRAIN, 0.6, 0, 0, 0) -- Player is less affected.
+	Spring.SetTerrainTypeData(IMPASSIBLE_TERRAIN, 0, 0, 0, 0)
+	Spring.SetTerrainTypeData(IMPASSIBLE_TERRAIN + 1, 0.5, 0, 0, 0)
 	local allUnits = Spring.GetAllUnits()
 	for i = 1, #allUnits do
 		local unitID = allUnits[i]

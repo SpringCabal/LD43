@@ -47,6 +47,7 @@ local function UpdateGameMode()
 		Spring.SendCommands("bind Alt+n debug")
 		Spring.SendCommands("bind Alt+b debugcolvol")
 		Spring.SendCommands("bind a fight")
+		Spring.SendCommands("bind p patrol")
 		Spring.SendCommands("bind ` drawinmap")
 		Spring.SendCommands("bind Ctrl+d selfd")
 	end
