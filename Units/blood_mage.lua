@@ -65,7 +65,7 @@ local BloodMage = Raw:New {
 	maxDamage           = 1600,
 	-- mass                = 50, -- does this even matter?
 
-	maxVelocity         = 50,
+	maxVelocity         = 5,
 	brakeRate           = 0.6,
 	turnRate            = 760 / 0.16,
 	 fireState           = 0,
