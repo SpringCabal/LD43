@@ -36,10 +36,19 @@ local function GetLight(beamLights, beamLightCount, pointLights, pointLightCount
 	if controlledID then
 		local x, y, z = Spring.GetUnitViewPosition(controlledID)
 
+		local castingFreeze = Spring.GetGameRulesParam("castingFreeze")
+		local multi = 1
+		if castingFreeze and Spring.GetGameFrame() < castingFreeze then
+			multi = math.min(
+						10,
+						(castingFreeze - Spring.GetGameFrame()) + 1
+					) / 5
+		end
+
 		pointLightCount = pointLightCount + 1
 		pointLights[pointLightCount] = {
 			px = x + staffX,
-			py = y + staffY + 5,
+			py = y + staffY + 15,
 			pz = z + staffZ,
 			param = {
 				r = 4,
@@ -47,7 +56,7 @@ local function GetLight(beamLights, beamLightCount, pointLights, pointLightCount
 				b = 1,
 				radius = 1000
 			},
-			colMult = 2 * (1 + flicker),
+			colMult = 2 * multi * (1 + flicker),
 		}
 	end
 

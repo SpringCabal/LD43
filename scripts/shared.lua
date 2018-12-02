@@ -7,7 +7,7 @@ local bobPiece
 local function Bob()
 	Signal(SIG_MOVE)
 	SetSignalMask(SIG_MOVE)
-	
+
 	while true do
 		Move(bobPiece, z_axis, 3*bobScale, 20*bobScale)
 		Sleep(166)

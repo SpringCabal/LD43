@@ -2206,6 +2206,10 @@ end
 --callins
 
 function widget:Update(dt)
+	if Spring.GetGameRulesParam("gameMode") ~= "develop" then
+		return
+	end
+
 	if widgetHandler.InTweakMode and widgetHandler:InTweakMode() then
 		tweakShow = true
 		Show(real_window_corner)

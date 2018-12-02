@@ -24,6 +24,12 @@ end
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
 
+local orksmall = UnitDefNames["orksmall"].id
+local orkbig = UnitDefNames["orkbig"].id
+local orkboss = UnitDefNames["orkboss"].id
+local defs = { orksmall, orkbig, orkboss }
+local ENEMY_TEAM = 1
+
 local initializeFrame = 0
 
 function gadget:Initialize()
@@ -31,15 +37,10 @@ function gadget:Initialize()
 	Spring.SetGameRulesParam("gameEnd", "start")
 end
 
-local orksmall = UnitDefNames["orksmall"].id
-local orkbig = UnitDefNames["orkbig"].id
-local orkboss = UnitDefNames["orkboss"].id
-local defs = { orksmall, orkbig, orkboss }
-
 function gadget:GameFrame(frame)
 	if frame > initializeFrame + 2 and Spring.GetGameRulesParam("gameEnd") == "victoryPossible" then
 		for _, defID in pairs(defs) do
-			if Spring.GetTeamUnitDefCount(1, defID) > 0 then
+			if Spring.GetTeamUnitDefCount(ENEMY_TEAM, defID) > 0 then
 				return
 			end
 		end

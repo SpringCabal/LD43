@@ -17,6 +17,8 @@ local BLOOD_MAGIC_RANGE = 500
 local MAX_DRAIN_PER_UNIT = 10000
 local FIREBALL_COST = 700
 
+local CASTING_TIME = 1 * 33
+
 local fireballDefID = WeaponDefNames["fireball"].id
 local webDefID = WeaponDefNames["web"].id
 local CEG_SPAWN = [[feature_poof_spawner]]
@@ -47,16 +49,16 @@ local function DrainNearbyUnits(collectorID, required)
 				SpawnBloodEffect(unitID)
 				Spring.SetUnitHealth(unitID, hp - required)
 				required = 0
-				
+
 				for i = 1, #toKill do
 					SpawnBloodEffect(toKill[i])
 					Spring.DestroyUnit(toKill[i], true)
 				end
-				
+
 				for i = 1, #toUnNeutral do
 					Spring.SetUnitNeutral(toUnNeutral[i], false)
 				end
-				
+
 				return true
 			else
 				toKill[#toKill + 1] = unitID
@@ -64,7 +66,7 @@ local function DrainNearbyUnits(collectorID, required)
 			end
 		end
 	end
-	
+
 	return false
 end
 
@@ -77,6 +79,8 @@ local function Haste(unitID)
 	-- 	accel = 1.5,
 	-- 	move = 1.5
 	-- })
+
+	return true
 end
 
 
@@ -96,7 +100,7 @@ local function Fireball(unitID, tx, ty, tz)
 	local dx, dy, dz = tx - x, ty - y, tz - z
 	local flyTime = 10 + math.floor(math.sqrt(dx*dx + dz*dz)/45)
 	local gravity = 0.2
-	
+
 	local vx, vy, vz = dx/flyTime, flyTime*gravity/2 + dy/flyTime, dz/flyTime
 	local proID = Spring.SpawnProjectile(fireballDefID, {
 		pos = { x, y, z },
@@ -105,6 +109,8 @@ local function Fireball(unitID, tx, ty, tz)
 		owner = unitID,
 	})
 	Spring.SetProjectileGravity(proID, -gravity)
+
+	return true
 end
 
 local function Slow(unitID, tx, ty, tz)
@@ -132,15 +138,22 @@ local function Slow(unitID, tx, ty, tz)
 		-- ["end"] = { tx, ty, tz },
 		owner = unitID,
 	})
+
+	return true
 end
 
 -- ID mapping as well
 local spells = { Haste, Fireball, Slow }
 
 local function UseSpell(unitID, spellID, ...)
-	Spring.Echo(spellID, unitID)
+	Spring.Echo('Casting spell: ', spellID, unitID)
 	local spell = spells[spellID]
-	spell(unitID, ...)
+	if spell(unitID, ...) then
+		Spring.SetGameRulesParam("castingFreeze", Spring.GetGameFrame() + CASTING_TIME)
+		Spring.ClearUnitGoal(unitID)
+		local env = Spring.UnitScript.GetScriptEnv(unitID)
+		Spring.UnitScript.CallAsUnit(unitID, env.script.CastAnimation)
+	end
 end
 
 function gadget:Initialize()

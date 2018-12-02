@@ -141,6 +141,12 @@ function HandleLuaMessage(msg)
 	end
 	local msg_table = explode('|', msg)
 
+	local frame = Spring.GetGameFrame()
+	local castingFreeze = Spring.GetGameRulesParam("castingFreeze")
+	if castingFreeze and castingFreeze > frame then
+		return
+	end
+
 	if msg_table[1] == 'movement' then
 		local x = tonumber(msg_table[2])
 		local z = tonumber(msg_table[3])
@@ -149,7 +155,7 @@ function HandleLuaMessage(msg)
 			movementMessage = false
 		else
 			movementMessage = {
-				frame = Spring.GetGameFrame(),
+				frame = frame,
 				x = x,
 				z = z
 			}
