@@ -36,7 +36,7 @@ local Fireball = RangedSpell:New {
 	},
 
 	customParams = {
-		light_radius = 1000,
+		light_radius = 500,
 		light_fade_time = 1,
 		light_fade_offset = 10,
 	}
@@ -49,8 +49,12 @@ local Web = RangedSpell:New {
         default = 0,
 	},
 
+	rgbColor = {
+		0.3, 0.0, 0.6,
+	},
+
 	customParams = {
-		light_radius = 1000,
+		light_radius = 100,
 		light_fade_time = 1,
 		light_fade_offset = 10,
 	}
