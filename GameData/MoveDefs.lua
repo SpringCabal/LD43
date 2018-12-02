@@ -4,12 +4,13 @@
 local moveDefs  =    {
 	{
 		name            =   "Defender",
-		footprintX      =   2,
-		footprintZ      =   2,
+		footprintX      =   4,
+		footprintZ      =   4,
 		maxWaterDepth   =   10,
 		maxSlope        =   20,
 		crushStrength   =   5,
 		heatmapping     =   false,
+		allowRawMovement = true,
 	},
 }
 
