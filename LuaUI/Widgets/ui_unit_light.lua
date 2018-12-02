@@ -36,7 +36,6 @@ local function GetLight(beamLights, beamLightCount, pointLights, pointLightCount
 	if controlledID then
 		local x, y, z = Spring.GetUnitViewPosition(controlledID)
 
-		Spring.Echo(staffX, staffY, staffZ)
 		pointLightCount = pointLightCount + 1
 		pointLights[pointLightCount] = {
 			px = x + staffX,

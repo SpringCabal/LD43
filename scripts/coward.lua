@@ -39,4 +39,5 @@ function script.BlockShot(num, targetID)
 	local cy = Spring.GetGroundHeight(cx, cz)
 	
 	Spring.GiveOrderToUnit(unitID, CMD.MOVE, {cx, cy, cz}, {})
+	return true
 end
