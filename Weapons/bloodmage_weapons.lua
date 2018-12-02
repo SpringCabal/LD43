@@ -27,8 +27,10 @@ local Fireball = RangedSpell:New {
 	name = "Fireball",
 
 	impactOnly = false,
-	areaOfEffect = 500,
-	impulseFactor = 1,
+	areaOfEffect = 300,
+	craterAreaOfEffect = 350,
+	impulseFactor = 0.2,
+	explosionSpeed = 30,
 	craterBoost = 100,
 
     damage = {
