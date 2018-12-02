@@ -15,7 +15,7 @@ local BloodMage = Raw:New {
 	canPatrol           = false,
 	canGuard            = false,
 	canRepeat           = false,
-	fireState           = 0,       -- Should auto-attack by default.
+	fireState           = 0,
 
 	customParams = {
 	},

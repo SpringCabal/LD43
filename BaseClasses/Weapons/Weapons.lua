@@ -34,16 +34,17 @@ weapons.FancyMeleeWeapon = Weapon:New {
 	 -- collision & avoidance
 	avoidFriendly         = false,
 	avoidFeature          = false,
-	 collideFriendly       = false,
+	 collideFriendly      = false,
 	collideFeature        = false,
+	turret                = true,
 	 -- targeting & accuracy
-	impulseBoost            = 0,
-	impulseFactor           = 2,
-	accuracy                = 0.9,
-	targetborder            = 1,
-	thickness               = 0,
+	impulseBoost          = 0,
+	impulseFactor         = 2,
+	accuracy              = 0.9,
+	targetborder          = 1,
+	thickness             = 2,
 	soundHit              = [[Hit]],
-	 damage                = {
+	 damage               = {
 		default = 100,
 	}
 }

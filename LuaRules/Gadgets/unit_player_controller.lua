@@ -76,7 +76,13 @@ local function MoveUnit(unitID, x, z)
 	if not (unitID and Spring.ValidUnitID(unitID)) then
 		return
 	end
-
+	Spring.Echo("Spring.GetUnitCommands(unitID, 0)", Spring.GetUnitCommands(unitID, 0))
+	if Spring.GetUnitCommands(unitID, 0) > 0 then
+		local cmds = Spring.GetUnitCommands(unitID, -1)
+		for i = 1, #cmds do
+			Spring.GiveOrderToUnit(unitID, CMD.REMOVE, {cmds[i].tag}, {})
+		end
+	end
 	GiveClampedMoveGoal(unitID, x, z, radius)
 end
 
