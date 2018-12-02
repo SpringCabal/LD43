@@ -23,14 +23,6 @@ end
 
 local houseDefID = UnitDefNames["house"].id
 
-local townDefs = {
-	[UnitDefNames["house"].id] = true,
-	[UnitDefNames["crossbowman"].id] = true,
-	[UnitDefNames["swordsman"].id] = true,
-	[UnitDefNames["peasant"].id] = true,
-	[UnitDefNames["bloodmage"].id] = true,
-}
-
 local housePos = {
 	{5488, 5296},
 	{5200, 5488},
@@ -321,13 +313,8 @@ end
 
 function gadget:Initialize()
 	local units = Spring.GetAllUnits()
-	--Spring.Echo("Houses")
 	for i = 1, #units do
-		if townDefs[Spring.GetUnitDefID(units[i])] then
-			local x, _, z = Spring.GetUnitPosition(units[i])
-			--Spring.Echo("\t{" .. math.floor((x/16)*16) .. ", " .. math.floor((z/16)*16) .. "},")
-			Spring.DestroyUnit(units[i], false, true)
-		end
+		Spring.DestroyUnit(units[i], false, true)
 	end
 	
 	SpawnHouses()

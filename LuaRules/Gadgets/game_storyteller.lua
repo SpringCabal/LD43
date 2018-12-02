@@ -160,9 +160,16 @@ function GetStory()
 end
 
 local function findPosition(defName)
-	local area = spawnAreas[math.random(#spawnAreas)]
-	local x = math.random(area.minx, area.maxx)
-	local z = math.random(area.minz, area.maxz)
+	--local area = spawnAreas[math.random(#spawnAreas)]
+	--local x = math.random(area.minx, area.maxx)
+	--local z = math.random(area.minz, area.maxz)
+	local cX = 5310
+	local cZ = 5250
+	local radius = 3200
+	local angle = math.random()*math.pi*2
+	local x = cX + math.cos(angle)*radius
+	local z = cZ + math.sin(angle)*radius
+	
 	local y = Spring.GetGroundHeight(x, z)
 	return x, y, z
 end
