@@ -17,7 +17,19 @@ function gadget:GetInfo()
 	}
 end
 
+----------------------------------------------------------------------------
+----------------------------------------------------------------------------
+-- Config
+
 local houseDefID = UnitDefNames["house"].id
+
+local townDefs = {
+	[UnitDefNames["house"].id] = true,
+	[UnitDefNames["crossbowman"].id] = true,
+	[UnitDefNames["swordsman"].id] = true,
+	[UnitDefNames["peasant"].id] = true,
+	[UnitDefNames["bloodmage"].id] = true,
+}
 
 local housePos = {
 	{5488, 5296},
@@ -129,6 +141,140 @@ local housePos = {
 	{4864, 6320},
 }
 
+local villagerArea = {
+	{
+		x = 4930,
+		z = 7070,
+		width = 180,
+		height = 180,
+		units = {
+			swordsman = 5,
+		}
+	},
+	{
+		x = 5580,
+		z = 7330,
+		width = 180,
+		height = 180,
+		units = {
+			swordsman = 5,
+		}
+	},
+	{
+		x = 5400,
+		z = 7070,
+		width = 500,
+		height = 180,
+		units = {
+			crossbowman = 6,
+		}
+	},
+	{
+		x = 5740,
+		z = 6300,
+		width = 180,
+		height = 180,
+		units = {
+			swordsman = 5,
+			crossbowman = 2,
+		}
+	},
+	{
+		x = 6850,
+		z = 6191,
+		width = 180,
+		height = 180,
+		units = {
+			swordsman = 5,
+			crossbowman = 2,
+		}
+	},
+	{
+		x = 6600,
+		z = 4900,
+		width = 180,
+		height = 180,
+		units = {
+			swordsman = 5,
+			crossbowman = 2,
+		}
+	},
+	{
+		x = 6250,
+		z = 5700,
+		width = 180,
+		height = 180,
+		units = {
+			swordsman = 5,
+			crossbowman = 2,
+		}
+	},
+	{
+		x = 4850,
+		z = 4450,
+		width = 180,
+		height = 180,
+		units = {
+			swordsman = 5,
+		}
+	},
+	{
+		x = 5230,
+		z = 4130,
+		width = 180,
+		height = 180,
+		units = {
+			swordsman = 5,
+		}
+	},
+	{
+		x = 5170,
+		z = 4480,
+		width = 240,
+		height = 240,
+		units = {
+			crossbowman = 5,
+		}
+	},
+	{
+		x = 5600,
+		z = 5100,
+		width = 180,
+		height = 180,
+		units = {
+			swordsman = 5,
+			crossbowman = 2,
+		}
+	},
+	{
+		x = 4930,
+		z = 5700,
+		width = 180,
+		height = 400,
+		units = {
+			swordsman = 3,
+			crossbowman = 1,
+		}
+	},
+	{
+		x = 5680,
+		z = 5750,
+		width = 900,
+		height = 900,
+		units = {
+			swordsman = 3,
+			crossbowman = 1,
+			peasant = 60,
+		}
+	},
+}
+
+----------------------------------------------------------------------------
+----------------------------------------------------------------------------
+
+local IterableMap = VFS.Include("LuaRules/Gadgets/Include/IterableMap.lua")
+local villagers = IterableMap.New()
+
 local function SpawnHouses()
 	for i = 1, #housePos do
 		local x = math.floor(housePos[i][1]/16)*16
@@ -137,15 +283,54 @@ local function SpawnHouses()
 	end
 end
 
+local function SpawnVillager(area, unitDefID)
+	local x = area.x + area.width*math.random() - area.width/2
+	local z = area.z + area.height*math.random() - area.height/2
+	local y = Spring.GetGroundHeight(x, z)
+	local facing = math.floor(math.random()*4)
+	local tries = 1
+	while tries < 8 and Spring.TestBuildOrder(unitDefID, x, y, z, facing) ~= 2 do
+		x = area.x + area.width*math.random() - area.width/2
+		z = area.z + area.height*math.random() - area.height/2
+		y = Spring.GetGroundHeight(x, z)
+		tries = tries + 1
+	end
+	local unitID = Spring.CreateUnit(unitDefID, x, y, z, math.floor(math.random()*4), 0, false, false)
+	--Spring.Utilities.UnitEcho(unitID, tries)
+	villagers.Add(unitID, area)
+end
+
+local function FillVillagerAreas()
+	for i = 1, #villagerArea do
+		for unitDefname, count in pairs(villagerArea[i].units) do
+			local unitDefID = UnitDefNames[unitDefname].id
+			for j = 1, count do
+				SpawnVillager(villagerArea[i], unitDefID)
+			end
+		end
+	end
+end
+
+local function SpawnBloodMage(x, z)
+	Spring.CreateUnit("bloodmage", x, Spring.GetGroundHeight(x, z), z, 0, 0, false, false)
+end
+
+
+----------------------------------------------------------------------------
+----------------------------------------------------------------------------
+
 function gadget:Initialize()
 	local units = Spring.GetAllUnits()
 	--Spring.Echo("Houses")
 	for i = 1, #units do
-		if Spring.GetUnitDefID(units[i]) == houseDefID then
+		if townDefs[Spring.GetUnitDefID(units[i])] then
 			local x, _, z = Spring.GetUnitPosition(units[i])
 			--Spring.Echo("\t{" .. math.floor((x/16)*16) .. ", " .. math.floor((z/16)*16) .. "},")
 			Spring.DestroyUnit(units[i], false, true)
 		end
 	end
+	
 	SpawnHouses()
+	SpawnBloodMage(5700, 5740)
+	FillVillagerAreas()
 end

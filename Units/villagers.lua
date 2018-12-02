@@ -1,12 +1,15 @@
-local Peasant = Humanoid:New {
+local units = {}
+
+units.Peasant = Humanoid:New {
 	-- General
 	name                = "Peasant",
 	movementClass       = "Defender",
 	objectName 			= "HumanWithStick.dae",
 	script              = "defender.lua",
-	maxDamage           = 1600,
+	maxDamage           = 350,
 
 	collisionVolumeScales    = '37 43 37',
+	maxVelocity         = 3,
 
 	weapons = {
 		{
@@ -15,16 +18,16 @@ local Peasant = Humanoid:New {
 	},
 }
 
-local Crossbowman = Humanoid:New {
-
+units.Crossbowman = Humanoid:New {
 	-- General
 	name                = "Crossbowman",
 	movementClass       = "Defender",
 	objectName 			= "HumanCrossbow.dae",
 	script              = "defender.lua",
-	maxDamage           = 1600,
+	maxDamage           = 400,
 
 	collisionVolumeScales    = '37 64 37',
+	maxVelocity         = 3,
 
 	weapons = {
 		{
@@ -33,8 +36,28 @@ local Crossbowman = Humanoid:New {
 	},
 }
 
-local Builder = Humanoid:New {
+units.Swordsman = Humanoid:New {
+	-- General
+	name                = "Swordsman",
+	movementClass       = "Defender",
+	objectName 			= "Swordsman.dae",
+	script              = "defender.lua",
+	maxDamage           = 600,
+	moveState           = 2,
 
+	collisionVolumeScales    = '37 64 37',
+	maxVelocity         = 3,
+	footprintX 			= 2,
+	footprintZ 			= 2,
+
+	weapons = {
+		{
+			name = "DefenderSword",
+		}
+	},
+}
+
+units.Builder = Humanoid:New {
 	-- General
 	name                = "Builder",
 	movementClass       = "Defender",
@@ -56,29 +79,4 @@ local Builder = Humanoid:New {
 	},
 }
 
-local Swordsman = Humanoid:New {
-	-- General
-	name                = "Swordsman",
-	movementClass       = "Defender",
-	objectName 			= "Swordsman.dae",
-	script              = "defender.lua",
-	maxDamage           = 1600,
-
-	collisionVolumeScales    = '37 64 37',
-	maxVelocity         = 3,
-	footprintX 			= 3,
-	footprintZ 			= 3,
-
-	weapons = {
-		{
-			name = "DefenderSword",
-		}
-	},
-}
-
-return {
-	Swordsman   = Swordsman,
-	Crossbowman = Crossbowman,
-	Peasant     = Peasant,
-	Builder     = Builder,
-}
+return units

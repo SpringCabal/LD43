@@ -18,6 +18,7 @@ local OrkSmall = Humanoid:New {
 	selectionVolumeOffsets = [[0 0 0]],
 	selectionVolumeScales  = [[50 50 50]],
 	selectionVolumeType    = [[ellipsoid]],
+	noChaseCategory = [[HOUSE]],
 
 	customParams = {
 		ork = true,
@@ -28,6 +29,7 @@ local OrkSmall = Humanoid:New {
 	weapons = {
 		{
 			name = "Bite",
+			onlyTargetCategory = [[INFANTRY]],
 		}
 	},
 }
@@ -56,6 +58,7 @@ local OrkBig = Humanoid:New {
 	weapons = {
 		{
 			name = "BigOrkAxe",
+			onlyTargetCategory = [[INFANTRY]],
 		}
 	},
 }
@@ -84,6 +87,7 @@ local OrkBoss = Humanoid:New {
 	weapons = {
 		{
 			name = "BossOrkAxe",
+			onlyTargetCategory = [[INFANTRY]],
 		}
 	},
 }

@@ -6,6 +6,7 @@ local Humanoid = Unit:New {
 	buildPic 			= "",
 	-- Sensors
 	sightDistance       = 800,
+	maxSlope              = 100,
 
 	-- Commands
 	canMove             = true,

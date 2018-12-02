@@ -29,7 +29,7 @@ weapons.CrossBow = Weapon:New {
 
 weapons.DefenderSword = MeleeWeapon:New {
 	name                  = "DefenderSword",
-	range                 = 100,
+	range                 = 60,
 	reloadTime            = 2.0,
 	-- targeting & accuracy
 	accuracy              = 0.9,

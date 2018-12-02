@@ -27,8 +27,8 @@ local lastStepFrame
 local waitFrames
 local spawnAreas
 
-local DEV_NO_RUN = true
-local NEVER_RUN = true
+local DEV_NO_RUN = false
+local NEVER_RUN = false
 
 -- ugh
 local killed = {}
