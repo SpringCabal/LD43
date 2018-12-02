@@ -5,7 +5,7 @@ units.Peasant = Humanoid:New {
 	name                = "Peasant",
 	movementClass       = "Defender",
 	objectName 			= "HumanWithStick.dae",
-	script              = "defender.lua",
+	script              = "Swordsman.lua",
 	maxDamage           = 350,
 
 	collisionVolumeScales    = '37 43 37',
@@ -29,6 +29,11 @@ units.Crossbowman = Humanoid:New {
 	collisionVolumeScales    = '37 64 37',
 	maxVelocity         = 3,
 
+	customParams = {
+		hscale = 1,
+		vscale = 1,
+	},
+	
 	weapons = {
 		{
 			name = "CrossBow",

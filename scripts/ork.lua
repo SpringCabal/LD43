@@ -20,8 +20,22 @@ function script.AimWeapon()
 	return true
 end
 
+local moveBob = include("moveBob.lua")
+function script.Create()
+	moveBob.Init(Torso, 3)
+end
+
+function script.StartMoving()
+	moveBob.StartMoving()
+end
+
+function script.StopMoving()
+	moveBob.StopMoving()
+end
+
 function script.FireWeapon()
+	moveBob.Attack()
 	Spring.ClearUnitGoal(unitID)
-	StartThread(AttackAnimation)
+	--StartThread(AttackAnimation) -- Broken
 	return true
 end
