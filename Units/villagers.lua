@@ -18,6 +18,25 @@ units.Peasant = Humanoid:New {
 	},
 }
 
+units.Coward = Humanoid:New {
+	-- General
+	name                = "Coward",
+	movementClass       = "Defender",
+	objectName 			= "HumanWithStick.dae",
+	script              = "Coward.lua",
+	maxDamage           = 350,
+	movestate           = 0,
+
+	collisionVolumeScales    = '37 43 37',
+	maxVelocity         = 3,
+
+	weapons = {
+		{
+			name = "CowardsEyes",
+		}
+	},
+}
+
 units.Crossbowman = Humanoid:New {
 	-- General
 	name                = "Crossbowman",

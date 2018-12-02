@@ -53,6 +53,20 @@ weapons.DefenderSpear = MeleeWeapon:New {
 	}
 }
 
+weapons.CowardsEyes = MeleeWeapon:New {
+	name                  = "CowardsEyes",
+	range                 = 350,
+	reloadTime            = 3,
+	-- targeting & accuracy
+	accuracy              = 0.9,
+	turret                = true,
+	 -- soundStart            = [[SpearThrow]],
+	soundHit              = [[Hit]],
+	 damage                = {
+		default = 0,
+	}
+}
+
 weapons.Staff = MeleeWeapon:New {
 	name                  = "Staff",
 	reloadTime            = 0.8,
