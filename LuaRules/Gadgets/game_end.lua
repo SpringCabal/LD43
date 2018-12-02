@@ -28,14 +28,22 @@ local initializeFrame = 0
 
 function gadget:Initialize()
 	initializeFrame = Spring.GetGameFrame() or 0
+	Spring.SetGameRulesParam("gameEnd", "start")
 end
 
+local orksmall = UnitDefNames["orksmall"].id
+local orkbig = UnitDefNames["orkbig"].id
+local orkboss = UnitDefNames["orkboss"].id
+local defs = { orksmall, orkbig, orkboss }
+
 function gadget:GameFrame(frame)
-	if frame > initializeFrame + 2 then
-		local carrotCount = Spring.GetGameRulesParam("carrot_count")
-		 -- We're doing widget-only game overs which makes restarts easier
--- 		if carrotCount <= 0 then
--- 			Spring.GameOver({})
--- 		end
+	if frame > initializeFrame + 2 and Spring.GetGameRulesParam("gameEnd") == "victoryPossible" then
+		for _, defID in pairs(defs) do
+			if Spring.GetTeamUnitDefCount(orksmall) > 0 then
+				return
+			end
+		end
+		-- count orks
+		Spring.SetGameRulesParam("gameEnd", "victory")
 	end
 end

@@ -70,7 +70,7 @@ local function SetupControls()
 	local survialTime = Spring.GetGameRulesParam("survivalTime") or 0
 	local rabbitKills = Spring.GetGameRulesParam("rabbits_killed") or 0
 
-	Chili.Label:New{
+	caption = Chili.Label:New{
 		x = 60,
 		y = 30,
 		width = 100,
@@ -79,7 +79,7 @@ local function SetupControls()
 		fontsize = 50,
 		textColor = {1,0,0,1},
 	}
-	 Chili.Label:New{
+	Chili.Label:New{
 		x = 80,
 		y = 100,
 		width = 100,
@@ -193,11 +193,6 @@ local function SetupControls()
 	}
 
 	screen0:AddChild(window_endgame)
-
-	for _, unitID in ipairs(Spring.GetAllUnits()) do
-		local unitDefID = Spring.GetUnitDefID(unitID)
-		widget:UnitCreated(unitID, unitDefID)
-	end
 end
 
 --------------------------------------------------------------------------------
@@ -234,6 +229,10 @@ function widget:Initialize()
 	color2incolor = Chili.color2incolor
 	incolor2color = Chili.incolor2color
 
+	for _, unitID in ipairs(Spring.GetAllUnits()) do
+		local unitDefID = Spring.GetUnitDefID(unitID)
+		widget:UnitCreated(unitID, unitDefID)
+	end
 end
 
 function widget:Shutdown()
@@ -243,18 +242,8 @@ function widget:Shutdown()
 end
 
 function widget:GameFrame()
-	local carrotCount = Spring.GetGameRulesParam("carrot_count") or -1
-	local survivalTime = Spring.GetGameRulesParam("survivalTime") or 0
-	if survivalTime == 1 and not sentGameStart then
-		if WG.analytics and WG.analytics.SendEvent then
-			WG.analytics:SendEvent("game_start")
-		end
-		sentGameStart = true
-	elseif survivalTime > 10 then
-		sentGameStart = false
-	end
-	if carrotCount == 0 then
-		widget:GameOver({})
+	if Spring.GetGameRulesParam("gameEnd") == "victory" then
+		self:GameOver({Spring.GetMyAllyTeamID()})
 	end
 end
 
@@ -284,13 +273,11 @@ function widget:GameOver(winningAllyTeams)
 			SetupControls()
 			caption:SetCaption("You win!");
 			caption.font.color={0,1,0,1};
-			ShowEndGameWindow()
 			return
 		end
 	end
 	Spring.SendCommands("endgraph 0")
 	SetupControls()
-	ShowEndGameWindow()
 end
 
 function widget:UnitCreated(unitID, unitDefID, unitTeam)

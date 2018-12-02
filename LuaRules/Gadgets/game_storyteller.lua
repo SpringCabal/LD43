@@ -211,9 +211,7 @@ function DoIntro(about)
 end
 
 function DoOutro()
-	if Spring.GetGameRulesParam("gameEnd") ~= "loss" then
-		Spring.SetGameRulesParam("gameEnd", "victory")
-	end
+	Spring.SetGameRulesParam("gameEnd", "victoryPossible")
 end
 
 function DoStep(step)
