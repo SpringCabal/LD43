@@ -30,13 +30,15 @@ end
 local function GetLight(beamLights, beamLightCount, pointLights, pointLightCount)
 	for houseID, _ in pairs(houses) do
 		local x, y, z = Spring.GetUnitPosition(houseID)
-		for _, dx in ipairs({minx, maxx}) do
-			for _, dz in ipairs({minz, maxz}) do
-				local light = {py = y + 50, param = {r = 0.7, g = 0.7, b = 0.4, radius = 500}, colMult = 1}
-				pointLightCount = pointLightCount + 1
-				light.px = x + dx
-				light.pz = z + dz
-				pointLights[pointLightCount] = light
+		if x then
+			for _, dx in ipairs({minx, maxx}) do
+				for _, dz in ipairs({minz, maxz}) do
+					local light = {py = y + 50, param = {r = 0.7, g = 0.7, b = 0.4, radius = 500}, colMult = 1}
+					pointLightCount = pointLightCount + 1
+					light.px = x + dx
+					light.pz = z + dz
+					pointLights[pointLightCount] = light
+				end
 			end
 		end
 	end
@@ -57,7 +59,7 @@ local function GetUnitDefSize(unitDefID)
 
 	local sx = 80
 	local sz = 80
-	return -sx,sx,-sz,sz
+	return -sx, sx, -sz, sz
 end
 
 function widget:Initialize()
