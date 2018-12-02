@@ -239,6 +239,35 @@ function loadWindow()
 	else
 		dbgBtn:SetCaption("Debug Off")
 	end
+
+	if WG.Profiler then
+		curr_x = curr_x + el_size + padding
+		local btnProf
+		btnProf = Chili.Button:New{
+			parent = window,
+			x = ('%f%%'):format(curr_x),
+			bottom = 0,
+			width = widthStr,
+			height = heightStr,
+			tooltip = '',
+			caption = "Toggle profiling",
+			OnClick = {function()
+				if WG.Profiler.IsStarted() then
+					WG.Profiler.Stop()
+					-- btnProf:SetCaption("Stop profiling")
+				else
+					WG.Profiler.Start()
+					-- btnProf:SetCaption("Start profiling")
+				end
+			end
+			}
+		}
+		-- if WG.Profiler.IsStarted() then
+		-- 	btnProf:SetCaption("Stop profiling")
+		-- else
+		-- 	btnProf:SetCaption("Start profiling")
+		-- end
+	end
 end
 
 function CheatIfNeeded()

@@ -15,6 +15,7 @@ return {
 }
 end
 
+local profiling = false
 local usePrefixedNames = true
 local PROFILE_POS_X = 425
 local PROFILE_POS_Y = 80
@@ -30,7 +31,7 @@ local function ConstructPrefixedName (ghInfo)
 	local _pos = baseName:find("_", 1)
 	local prefix = ((_pos and usePrefixedNames) and (baseName:sub(1, _pos-1)..": ") or "")
 	local prefixedGadgetName = "\255\200\200\200" .. prefix .. "\255\255\255\255" .. gadgetName
-	
+
 	prefixedWnames[gadgetName] = prefixedGadgetName
 	return prefixedWnames[gadgetName]
 end
@@ -76,7 +77,7 @@ end
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
 
--- make a table of the names of user widgets 
+-- make a table of the names of user widgets
 local userWidgets = {}
 function widget:Initialize()
 	for name,wData in pairs(widgetHandler.knownWidgets) do
@@ -87,8 +88,8 @@ end
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
 
-local oldUpdateWidgetCallIn
-local oldInsertWidget
+local oldUpdateAddonCallIn
+local oldInsertAddon
 
 local listOfHooks = {}
 setmetatable(listOfHooks, { __mode = 'k' })
@@ -98,7 +99,7 @@ local function IsHook(func)
 	return listOfHooks[func]
 end
 
-local function Hook(w,name) -- name is the callin
+local function Hook(w, name) -- name is the callin
 	local widgetName = w.whInfo.name
 
 	local wname = prefixedWnames[widgetName] or ConstructPrefixedName(w.whInfo)
@@ -106,8 +107,10 @@ local function Hook(w,name) -- name is the callin
 	local realFunc = w[name]
 	w["_old" .. name] = realFunc
 
-	if (widgetName=="Widget Profiler") then
-		return realFunc -- don't profile the profilers callins (it works, but it is better that our DrawScreen call is unoptimized and expensive anyway!)
+	if widgetName == "Widget Profiler" then
+		-- don't profile the profilers callins (it works, but it is
+		-- better that our DrawScreen call is unoptimized and expensive anyway!)
+		return realFunc
 	end
 
 	local widgetCallinTime = callinStats[wname] or {}
@@ -118,18 +121,19 @@ local function Hook(w,name) -- name is the callin
 	local t
 
 	local helper_func = function(...)
-		local dt = spDiffTimers(spGetTimer(),t)    
-		local _,_,new_s,_ = spGetLuaMemUsage() 
+		local dt = spDiffTimers(spGetTimer(),t)
+		local _,_,new_s,_ = spGetLuaMemUsage()
 		local ds = new_s - s
 		c[1] = c[1] + dt
 		c[2] = c[2] + dt
-		c[3] = c[3] + ds 
+		c[3] = c[3] + ds
 		c[4] = c[4] + ds
 		inHook = nil
 		return ...
 	end
 
 	local hook_func = function(...)
+		Spring.Echo("in_hook", inHook, os.clock())
 		if (inHook) then
 			return realFunc(...)
 		end
@@ -148,32 +152,32 @@ end
 
 local function StartHook()
 	Spring.Echo("start profiling")
+	profiling = true
 
 	local wh = widgetHandler
 
 	local CallInsList = {}
-	for name,e in pairs(wh) do
-		local i = name:find("List")
-		if (i)and(type(e)=="table") then
-			CallInsList[#CallInsList+1] = name:sub(1,i-1)
-		end
+	for name, _ in pairs(wh.callInLists) do
+		CallInsList[#CallInsList + 1] = name
 	end
 
 	--// hook all existing callins
-	for _,callin in ipairs(CallInsList) do
-		local callinGadgets = wh[callin .. "List"]
-		for _,w in ipairs(callinGadgets or {}) do
-			w[callin] = Hook(w,callin)
+	for _, callin in ipairs(CallInsList) do
+		local callinAddons = wh.callInLists[callin]
+		for n, w in pairs(callinAddons or {}) do
+			if type(w) == "table" and w.owner then
+				w.owner[callin] = Hook(w.owner, callin)
+			end
 		end
 	end
 
 	Spring.Echo("hooked all callins")
 
 	--// hook the UpdateCallin function
-	oldUpdateWidgetCallIn =  wh.UpdateWidgetCallIn
-	wh.UpdateWidgetCallIn = function(self,name,w)
-		local listName = name .. 'List'
-		local ciList = self[listName]
+	oldUpdateAddonCallIn =  wh.UpdateAddonCallIn
+	wh.UpdateAddonCallIn = function(self, name, w)
+		local ciList = self.callInLists[name]
+		-- Spring.Echo("has ciList", not not ciList)
 		if (ciList) then
 			local func = w[name]
 			if (type(func) == 'function') then
@@ -185,21 +189,19 @@ local function StartHook()
 				ArrayRemove(ciList, w)
 			end
 			self:UpdateCallIn(name)
-			else
-			print('UpdateWidgetCallIn: bad name: ' .. name)
 		end
 	end
 
 	Spring.Echo("hooked UpdateCallin")
 
-	--// hook the InsertWidget function
-	oldInsertWidget =  wh.InsertWidget
-	widgetHandler.InsertWidget = function(self,widget)
+	--// hook the InsertAddon function
+	oldInsertAddon =  wh.InsertAddon
+	widgetHandler.InsertAddon = function(self,widget)
 		if (widget == nil) then
 			return
 		end
 
-		oldInsertWidget(self,widget)
+		oldInsertAddon(self,widget)
 
 		for _,callin in ipairs(CallInsList) do
 			local func = widget[callin]
@@ -209,40 +211,38 @@ local function StartHook()
 		end
 	end
 
-	Spring.Echo("hooked InsertWidget")
+	Spring.Echo("hooked InsertAddon")
 end
 
 
 local function StopHook()
 	Spring.Echo("stop profiling")
+	profiling = false
 
 	local wh = widgetHandler
 
 	local CallInsList = {}
-	for name,e in pairs(wh) do
-		local i = name:find("List")
-		if (i)and(type(e)=="table") then
-			CallInsList[#CallInsList+1] = name:sub(1,i-1)
-		end
+	for name, _ in pairs(wh.callInLists) do
+		CallInsList[#CallInsList + 1] = name
 	end
 
 	--// unhook all existing callins
-	for _,callin in ipairs(CallInsList) do
-		local callinWidgets = wh[callin .. "List"]
-		for _,w in ipairs(callinWidgets or {}) do
-			if (w["_old" .. callin]) then
-				w[callin] = w["_old" .. callin]
+	for _, callin in ipairs(CallInsList) do
+		local callinAddons = wh.callInLists[callin]
+		for n, w in pairs(callinAddons or {}) do
+			if type(w) == "table" and w.owner and w.owner["_old" .. callin] then
+				w.owner[callin] = w.owner["_old" .. callin]
 			end
 		end
 	end
 
 	Spring.Echo("unhooked all callins")
 
-	--// unhook the UpdateCallin and InsertWidget functions
-	wh.UpdateWidgetCallIn = oldUpdateWidgetCallIn
+	--// unhook the UpdateCallin and InsertAddon functions
+	wh.UpdateAddonCallIn = oldUpdateAddonCallIn
 	Spring.Echo("unhooked UpdateCallin")
-	wh.InsertWidget = oldInsertWidget
-	Spring.Echo("unhooked InsertWidget")
+	wh.InsertAddon = oldInsertAddon
+	Spring.Echo("unhooked InsertAddon")
 end
 
 --------------------------------------------------------------------------------
@@ -317,7 +317,7 @@ function GetRedColourStrings(v) --tLoad is %
 	redStrength[name..'_time'] = u*redStrength[name..'_time'] + (1-u)*new_r
 	local r,g,b = 1, 1-redStrength[name.."_time"]*((255-64)/255), 1-redStrength[name.."_time"]*((255-64)/255)
 	v.timeColourString = ColourString(r,g,b)
-	
+
 	-- space
 	new_r = math.max(0,math.min(1,(sLoad-minSpace)/(maxSpace-minSpace)))
 	redStrength[name..'_space'] = redStrength[name..'_space'] or 0
@@ -386,9 +386,9 @@ function widget:DrawScreen()
 					cmaxname_t = cname
 				end
 				c[1] = 0
-				
+
 				space = space + c[3]
-				if (c[4]>cmax_space) then 
+				if (c[4]>cmax_space) then
 					cmax_space = c[4]
 					cmaxname_space = cname
 				end
@@ -397,7 +397,7 @@ function widget:DrawScreen()
 
 			local relTime = 100 * t / deltaTime
 			timeLoadAverages[wname] = CalcLoad(timeLoadAverages[wname] or relTime, relTime, averageTime)
-			
+
 			local relSpace = space / deltaTime
 			spaceLoadAverages[wname] = CalcLoad(spaceLoadAverages[wname] or relSpace, relSpace, averageTime)
 
@@ -413,7 +413,7 @@ function widget:DrawScreen()
 		end
 
 		table.sort(sortedList,SortFunc)
-		
+
 		for i=1,#sortedList do
 			GetRedColourStrings(sortedList[i])
 		end
@@ -471,7 +471,7 @@ function widget:DrawScreen()
 		j = j + 1
 		gl.Text(totals_colour.."total rate of mem allocation by luaui callins", x+152, y-1-(12)*j, 10, "no")
 		gl.Text(totals_colour..('%.0f'):format(allOverSpace) .. 'kB/s', x+105, y-1-(12)*j, 10, "no")
-		
+
 		if gm then
 			j = j + 2
 			gl.Text(totals_colour..'total lua memory usage is '.. ('%.0f'):format(gm/1000) .. 'MB, of which:', x+65, y-1-(12)*j, 10, "no")
@@ -488,7 +488,7 @@ function widget:DrawScreen()
 				gl.Text(totals_colour..'  '..('%.0f'):format(100*sm/gm) .. '% is from synced states (luarules+luagaia)', x+65, y-1-(12)*j, 10, "no")
 			end
 		end
-		
+
 		j = j + 2
 		gl.Text(title_colour.."All data excludes load from garbage collection & executing GL calls", x+65, y-1-(12)*j, 10, "no")
 		j = j + 1
@@ -498,10 +498,9 @@ function widget:DrawScreen()
 		gl.Text(title_colour.."Tick time: " .. tick .. "s", x+65, y-1-(12)*j, 10, "no")
 		j = j + 1
 		gl.Text(title_colour.."Smoothing time: " .. averageTime .. "s", x+65, y-1-(12)*j, 10, "no")
-		
-		
+
 		gl.EndText()
-		
+
 	gl.PopMatrix()
 end
 
@@ -509,3 +508,10 @@ end
 
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
+
+
+WG.Profiler = {
+	Start = StartHook,
+	Stop = StopHook,
+	IsStarted = function() return profiling end,
+}
