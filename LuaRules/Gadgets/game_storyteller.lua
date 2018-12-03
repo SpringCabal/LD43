@@ -63,7 +63,7 @@ function GetStory()
 			name = "spawn",
 			humanName = "First Night",
 			units = {
-				orksmall = 50,
+				orksmall = 40,
 				orkbig = 1,
 			},
 			team = enemyTeam,
@@ -73,47 +73,47 @@ function GetStory()
 			name = "spawn",
 			humanName = "Second Night",
 			units = {
-				orksmall = 60,
+				orksmall = 50,
 				orkbig = 3,
 			},
 			team = enemyTeam,
-			time = 35,
+			time = 25,
 		},
 		{ -- Night 3
 			name = "spawn",
 			humanName = "Getting Bigger",
 			units = {
-				orksmall = 70,
+				orksmall = 60,
 				orkbig = 12,
 			},
 			team = enemyTeam,
-			time = 30,
+			time = 12,
 		},
 		{  -- Night 4
 			name = "spawn",
 			humanName = "Quick Followup",
 			units = {
-				orksmall = 70,
+				orksmall = 60,
 				orkbig = 10,
 			},
 			team = enemyTeam,
-			time = 10,
+			time = 25,
 		},
 		{  -- Night 5
 			name = "spawn",
 			humanName = "Big Ork Wave",
 			units = {
-				orksmall = 30,
-				orkbig = 30,
+				orksmall = 25,
+				orkbig = 25,
 			},
 			team = enemyTeam,
-			time = 35,
+			time = 25,
 		},
 		{  -- Night 6
 			name = "spawn",
 			humanName = "The Swarm",
 			units = {
-				orksmall = 150,
+				orksmall = 160,
 				orkbig = 10,
 			},
 			team = enemyTeam,
@@ -124,23 +124,23 @@ function GetStory()
 			humanName = "Final Boss",
 			ableToWin = true,
 			units = {
-				orksmall = 80,
+				orksmall = 70,
 				orkbig = 20,
 				orkboss = 1,
 			},
 			team = enemyTeam,
-			time = 20,
+			time = 40,
 		},
 		{  -- Forever spawn
 			name = "spawn",
 			infiniteLoop = true,
 			humanName = "The Loop",
 			units = {
-				orksmall = 40,
-				orkbig = 15,
+				orksmall = 35,
+				orkbig = 8,
 			},
 			team = enemyTeam,
-			time = 20,
+			time = 30,
 		},
 	}
 end
@@ -200,22 +200,13 @@ function SpawnUnits(units, team)
 	end
 end
 
-function DoIntro(about)
-	Spring.SetGameRulesParam("introEvent", about)
-end
-
-function DoOutro()
-	Spring.SetGameRulesParam("gameEnd", "victoryPossible")
-end
-
 function DoStep(step)
 	if step.name == "spawn" then
 		Spring.Echo("spawn", step.humanName)
 		SpawnUnits(step.units, step.team)
-	elseif step.name == "intro" then
-		DoIntro(step.about)
-	elseif step.name == "outro" then
-		DoOutro()
+	end
+	if step.ableToWin then
+		Spring.SetGameRulesParam("gameEnd", "victoryPossible")
 	end
 end
 
@@ -264,6 +255,9 @@ end
 
 local lastGameMode = nil
 function gadget:GameFrame()
+	if Spring.GetGameRulesParam("gameEnd") == "victory" then
+		return
+	end
 	if NEVER_RUN then
 		return
 	end

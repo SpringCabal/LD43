@@ -26,6 +26,15 @@ function script.AimWeapon()
 	return true
 end
 
+local function UpdatePosition()
+	local x, _, z = Spring.GetUnitPosition(unitID)
+	if x then
+		Spring.SetGameRulesParam("boss_x", x)
+		Spring.SetGameRulesParam("boss_z", z)
+	end
+	Sleep(2000)
+end
+
 function script.Create()
 	local unitDefID = Spring.GetUnitDefID(unitID)
 	unitDefName = UnitDefs[unitDefID].name
@@ -35,8 +44,9 @@ function script.Create()
 		tossStr = 12
 		deunorkable = true
 		Spring.SetUnitRulesParam(unitID, "unorkable", 1)
+		StartThread(UpdatePosition)
 	elseif unitDefName == "orkbig" then
-		shared.Init(Torso, 5, 5)
+		shared.Init(Torso, 2, 2)
 		tossRadius = 120
 		tossStr = 5
 		Spring.SetUnitRulesParam(unitID, "unorkable", 1)

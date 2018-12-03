@@ -39,21 +39,19 @@ weapons.FancyMeleeWeapon = Weapon:New {
 	avoidFeature          = false,
 	collideFriendly       = false,
 	collideFeature        = false,
-	noExplode             = true,
-	
-	areaOfEffect          = 0, -- Causes camera jitter
 	
 	damage                  = {
 		default = 100
 	},
 
+	impactOnly              = true,
 	fireStarter             = 100,
 	impulseFactor           = 0,
 	laserFlareSize          = 1,
 	minIntensity            = 1,
 	rgbColor                = [[1 0 0]],
 	soundStartVolume        = 6,
-	thickness               = 0, -- Make this 1 for visibility (debug purposes)
+	thickness               = 1, -- Make this 1 for visibility (debug purposes)
 	tolerance               = 8000,
 	turret                  = true,
 	weaponType              = [[BeamLaser]],

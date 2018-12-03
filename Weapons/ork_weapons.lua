@@ -1,4 +1,4 @@
-local BigOrkAxe = MeleeWeapon:New {
+local BigOrkAxe = FancyMeleeWeapon:New {
 	name                  = "BigOrkAxe",
 	range                 = 120,
 	reloadTime            = 2.5,
@@ -12,7 +12,7 @@ local BigOrkAxe = MeleeWeapon:New {
 	}
 }
 
-local BossOrkAxe = MeleeWeapon:New {
+local BossOrkAxe = FancyMeleeWeapon:New {
 	name                  = "BossOrkAxe",
 	range                 = 200,
 	reloadTime            = 2.5,
@@ -27,7 +27,7 @@ local BossOrkAxe = MeleeWeapon:New {
 }
 
 
-local Bite = MeleeWeapon:New {
+local Bite = FancyMeleeWeapon:New {
 	name                  = "Bite",
 	range                 = 80,
 	reloadTime            = 0.5,

@@ -46,7 +46,7 @@ local OrkBig = Humanoid:New {
 	movementClass       = "BigUnit",
 	objectName 			= "OrkBig.dae",
 	script              = "ork.lua",
-	maxDamage           = 2000,
+	maxDamage           = 1800,
 	-- mass                = 50, -- does this even matter?
 
 	maxVelocity         = 4,
@@ -84,7 +84,7 @@ local OrkBoss = Humanoid:New {
 	movementClass       = "BigUnit",
 	objectName          = "OrkBoss.dae",
 	script              = "ork.lua",
-	maxDamage           = 20000,
+	maxDamage           = 10000,
 	-- mass                = 50, -- does this even matter?
 
 	maxVelocity         = 5.1,

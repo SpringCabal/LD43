@@ -132,7 +132,7 @@ local function AttackUnit(unitID, x, z, moveTo)
 	ClearMove(unitID)
 	local tx = ux + 50*dx/dist
 	local tz = uz + 50*dz/dist
-	local ty = Spring.GetGroundHeight(tx, tz) + 20
+	local ty = Spring.GetGroundHeight(tx, tz) + 25
 	Spring.SetUnitTarget(unitID, tx, ty, tz)
 	attackGoal = true
 	

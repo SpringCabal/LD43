@@ -53,6 +53,20 @@ local function CheckIdle(unitID)
 	Spring.GiveOrderToUnit(unitID, CMD.FIGHT, {dx, dy, dz}, {})
 end
 
+local function SetupFlee(unitID, _, _, bossX, bossZ)
+	local ux, _,uz = Spring.GetUnitPosition(unitID)
+	local dx, dz = ux - bossX, uz - bossZ
+	local dist = math.sqrt(dx*dx + dz*dz)
+	
+	local cx = ux + 4000*dx/dist
+	local cz = uz + 4000*dz/dist
+	local cy = ux + Spring.GetGroundHeight(cx, cz)
+	
+	Spring.Utilities.GiveClampedOrderToUnit(unitID, CMD.MOVE, {cx, cy, cz}, 0)
+	Spring.GiveOrderToUnit(unitID, CMD.FIRESTATE_HOLDFIRE, {0, 0}, {})
+
+end
+
 --------------------------------------------------------------------------------
 -- Event Handling
 --------------------------------------------------------------------------------
@@ -79,6 +93,12 @@ function gadget:UnitDestroyed(unitID, unitDefID, teamID)
 	end
 end
 
+function GG.OrkAiFlee()
+	
+	local x = Spring.GetGameRulesParam("boss_x") or AIM_X
+	local z = Spring.GetGameRulesParam("boss_z") or AIM_Z
+	aiUnits.Apply(SetupFlee, x, z)
+end
 
 function gadget:Initialize()
 	for _, unitID in ipairs(Spring.GetAllUnits()) do

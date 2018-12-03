@@ -28,7 +28,7 @@ weapons.CrossBow = Weapon:New {
 	}
 }
 
-weapons.DefenderSword = MeleeWeapon:New {
+weapons.DefenderSword = FancyMeleeWeapon:New {
 	name                  = "DefenderSword",
 	range                 = 60,
 	reloadTime            = 1.2,
@@ -41,7 +41,7 @@ weapons.DefenderSword = MeleeWeapon:New {
 	}
 }
 
-weapons.DefenderSpear = MeleeWeapon:New {
+weapons.DefenderSpear = FancyMeleeWeapon:New {
 	name                  = "DefenderSpear",
 	range                 = 100,
 	reloadTime            = 1.5,
@@ -71,6 +71,8 @@ weapons.Staff = FancyMeleeWeapon:New {
 	name                  = "Staff",
 	reloadTime            = 0.8,
 	areaOfEffect          = 120,
+	noExplode             = true,
+	impactOnly            = false,
 	soundStart            = "staffswing",
 	soundHit              = "staffhit",
 	 damage                = {

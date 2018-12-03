@@ -27,7 +27,7 @@ end
 local orksmall = UnitDefNames["orksmall"].id
 local orkbig = UnitDefNames["orkbig"].id
 local orkboss = UnitDefNames["orkboss"].id
-local defs = { orksmall, orkbig, orkboss }
+local defs = {orkboss}
 local ENEMY_TEAM = 1
 
 local initializeFrame = 0
@@ -46,5 +46,6 @@ function gadget:GameFrame(frame)
 		end
 		-- count orks
 		Spring.SetGameRulesParam("gameEnd", "victory")
+		GG.OrkAiFlee()
 	end
 end

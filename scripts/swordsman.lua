@@ -49,7 +49,6 @@ end
 
 function script.FireWeapon()
 	shared.AttackBob()
-	Spring.ClearUnitGoal(unitID)
 	if canAttackAnimate then
 		StartThread(AttackAnimation)
 	end
