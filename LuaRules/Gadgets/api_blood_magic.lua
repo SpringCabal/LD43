@@ -98,7 +98,7 @@ local function Fireball(unitID, tx, ty, tz)
 	local x, y, z = Spring.GetUnitPosition(unitID)
 	local function castFunc()
 		ty = Spring.GetGroundHeight(tx, tz) + 20
-		y = y + 20
+		y = y + 120
 		local dx, dy, dz = tx - x, ty - y, tz - z
 		local flyTime = 10 + math.floor(math.sqrt(dx*dx + dz*dz)/45)
 		local gravity = 0.2
@@ -109,7 +109,7 @@ local function Fireball(unitID, tx, ty, tz)
 			speed = { vx, vy, vz },
 			ttl = flyTime,
 			owner = unitID,
-			team = PLAYER_TEAM,
+			--team = PLAYER_TEAM,
 		})
 		Spring.SetProjectileGravity(proID, -gravity)
 	end
