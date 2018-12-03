@@ -30,52 +30,42 @@ local alliesDrained = 0
 
 local fireballDefID = WeaponDefNames["fireball"].id
 
+local CEG_SINGLE_BLOOD = [[feature_poof_single]]
 local CEG_FLAMES = [[feature_poof_spawner]]
 local CEG_HEALTH = [[feature_slurp_spawner]]
 local CEG_MIGRAINE = [[migraine_pulse_spawner]]
 local CEG_ADRENALINE = [[adrenaline_sparkles]]
 local CEG_DIALYSIS = [[gtfo_pulse]]
 
-local function SpawnBloodEffect(unitID)
+local function SpawnEffect(unitID, cegName)
 	local x, _, z, _, y = Spring.GetUnitPosition(unitID, true)
-	Spring.SpawnCEG(CEG_FLAMES,
+	Spring.SpawnCEG(cegName,
 		x,y,z,
 		0,0,0,
 		20, 20
 	)
 end
 
-local function SpawnHealthEffect(unitID)
-	local x, _, z, _, y = Spring.GetUnitPosition(unitID, true)
-	Spring.SpawnCEG(CEG_HEALTH,
+local function SpawnEffectPosition(x, y, z, cegName)
+	Spring.SpawnCEG(cegName,
 		x,y,z,
 		0,0,0,
 		20, 20
 	)
 end
 
-local function SpawnMigraineEffect(x, y, z)
-	Spring.SpawnCEG(CEG_MIGRAINE,
-		x,y,z,
-		0,0,0,
-		20, 20
-	)
-end
-
-local function SpawnAdrenalineEffect(x, y, z)
-	Spring.SpawnCEG(CEG_ADRENALINE,
-		x,y,z,
-		0,0,0,
-		20, 20
-	)
-end
-
-local function SpawnDialysisEffect(x, y, z)
-	Spring.SpawnCEG(CEG_DIALYSIS,
-		x,y,z,
-		0,0,0,
-		20, 20
-	)
+local function MakeBloodTrail(x, y, z, targetID)
+	local tx, _, tz, _, ty = Spring.GetUnitPosition(targetID, true)
+	if not tx then
+		return
+	end
+	local dx, dy, dz = x - tx, y - ty, z - tz
+	local dist = math.max(0.1, math.sqrt(dx*dx + dy*dy + dz*dz))
+	dx, dy, dz = dx/dist, dy/dist, dz/dist
+	
+	for i = 10, dist, 10 do
+		SpawnEffectPosition(tx + dx*i, ty + dy*i, tz + dz*i, CEG_SINGLE_BLOOD)
+	end
 end
 
 local function UnNeutralUnits(units)
@@ -84,13 +74,14 @@ local function UnNeutralUnits(units)
 	end
 end
 
-local function DoPartial(toKill, required)
+local function DoPartial(toKill, required, x, y, z)
 	if #toKill == 0 then
 		return false
 	end
 
 	for i = 1, #toKill do
-		SpawnBloodEffect(toKill[i])
+		SpawnEffect(toKill[i], CEG_FLAMES)
+		MakeBloodTrail(x, y, z, toKill[i])
 		Spring.DestroyUnit(toKill[i], true)
 		alliesDrained = alliesDrained + 1
 		Spring.SetGameRulesParam("alliesDrained", alliesDrained)
@@ -103,12 +94,13 @@ local function DrainNearbyUnits(collectorID, required, canPartial)
 	local toKill = {}
 	local toUnNeutral = {}
 	local total = 0
+	local x, _, z, _, y = Spring.GetUnitPosition(collectorID, true)
 	for i = 1, 50 do
 		local unitID = Spring.GetUnitNearestAlly(collectorID, BLOOD_MAGIC_RANGE)
 		if not unitID then
 			UnNeutralUnits(toUnNeutral)
 			if canPartial then
-				return false, DoPartial(toKill, required)
+				return false, DoPartial(toKill, required, x, y, z)
 			end
 			return false
 		end
@@ -118,13 +110,15 @@ local function DrainNearbyUnits(collectorID, required, canPartial)
 		else
 			local hp = Spring.GetUnitHealth(unitID)
 			if hp > required then
-				SpawnBloodEffect(unitID)
+				SpawnEffect(unitID, CEG_FLAMES)
+				MakeBloodTrail(x, y, z, unitID)
 				Spring.SetUnitHealth(unitID, hp - required)
 				required = 0
 
 				UnNeutralUnits(toUnNeutral)
 				for j = 1, #toKill do
-					SpawnBloodEffect(toKill[j])
+					SpawnEffect(toKill[j], CEG_FLAMES)
+					MakeBloodTrail(x, y, z, toKill[j])
 					Spring.DestroyUnit(toKill[j], true)
 					alliesDrained = alliesDrained + 1
 					Spring.SetGameRulesParam("alliesDrained", alliesDrained)
@@ -159,7 +153,7 @@ local function Transfusion(unitID)
 	local function castFunc()
 		if Spring.ValidUnitID(unitID) then
 			Spring.SetUnitHealth(unitID, maxHealth - (partialShortBy or 0))
-			SpawnHealthEffect(unitID)
+			SpawnEffect(unitID, CEG_HEALTH)
 		end
 	end
 
@@ -222,10 +216,10 @@ local function Adrenaline(unitID, tx, ty, tz)
 			if Spring.GetUnitDefID(units[i]) ~= houseDefID then
 				GG.StatusEffects.Adrenaline(units[i], 320 + math.random()*60)
 				local ux, uy, uz = Spring.GetUnitPosition(units[i])
-				SpawnAdrenalineEffect(ux, uy, uz)
+				SpawnEffectPosition(ux, uy, uz, CEG_ADRENALINE)
 			end
 		end
-		SpawnAdrenalineEffect(x, y, z)
+		SpawnEffectPosition(x, y, z, CEG_ADRENALINE)
 	end
 
 	local env = Spring.UnitScript.GetScriptEnv(unitID)
@@ -247,7 +241,7 @@ local function Migraine(unitID, tx, ty, tz)
 		for i = 1, #units do
 			GG.StatusEffects.Stun(units[i], 320 + math.random()*80)
 		end
-		SpawnMigraineEffect(tx, ty, tz)
+		SpawnEffectPosition(tx, ty, tz, CEG_MIGRAINE)
 	end
 	
 	local env = Spring.UnitScript.GetScriptEnv(unitID)
@@ -277,7 +271,7 @@ local function Dialysis(unitID, tx, ty, tz)
 			local impulse = 36*(1 - dist/1000)
 			Spring.AddUnitImpulse(units[i], impulse*dx/dist, impulse, impulse*dz/dist)
 		end
-		SpawnDialysisEffect(x, y, z)
+		SpawnEffectPosition(x, y, z, CEG_DIALYSIS)
 	end
 
 	local env = Spring.UnitScript.GetScriptEnv(unitID)
