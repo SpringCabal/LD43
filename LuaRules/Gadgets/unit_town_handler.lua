@@ -305,8 +305,8 @@ local villagerArea = {
 		units = {
 			swordsman = 30,
 			crossbowman = 8,
-			coward = 30,
-			peasant = 25,
+			coward = 18,
+			peasant = 24,
 		}
 	},
 	{
@@ -317,7 +317,7 @@ local villagerArea = {
 		units = {
 			swordsman = 12,
 			crossbowman = 4,
-			coward = 18,
+			coward = 6,
 			peasant = 8,
 		}
 	},
@@ -353,8 +353,8 @@ local villagerArea = {
 		units = {
 			swordsman = 15,
 			crossbowman = 2,
-			coward = 15,
-			peasant = 15,
+			coward = 12,
+			peasant = 18,
 		}
 	},
 }
@@ -454,7 +454,7 @@ function gadget:Initialize()
 	end
 	
 	SpawnHouses()
-	SpawnBloodMage(5700, 5740)
+	SpawnBloodMage(5580, 7100)
 	FillVillagerAreas()
 end
 
