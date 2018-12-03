@@ -50,6 +50,20 @@ oooooooooooo
 	onoffable           = true,
 	script              = "house.lua",
 	objectName 			= "House.dae",
+
+	-- FIXME: uncommenting this freezes Spring
+	-- corpse              = [[DEAD_A]],
+	featureDefs         = {
+		DEAD_A  = {
+			blocking         = false,
+			featureDead      = [[DEAD_A]],
+			footprintX       = 2,
+			footprintZ       = 2,
+			object           = [[RubbleBrick.dae]],
+			smokeTime        = 0,
+		},
+
+	},
 }
 
 
