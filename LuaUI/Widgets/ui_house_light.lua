@@ -28,10 +28,12 @@ function widget:UnitCreated(unitID, unitDefID, unitTeam)
 	local lights = {}
 	for _, dx in ipairs({minx, maxx}) do
 		for _, dz in ipairs({minz, maxz}) do
-			local light = {py = y + 50, param = {r = 0.7, g = 0.7, b = 0.4, radius = 500}, colMult = 1}
-			light.px = x + dx
-			light.pz = z + dz
-			table.insert(lights, light)
+			if math.random() > 0.6 then
+				local light = {py = y + 50, param = {r = 0.7, g = 0.7, b = 0.4, radius = 500}, colMult = 2}
+				light.px = x + dx
+				light.pz = z + dz
+				table.insert(lights, light)
+			end
 		end
 	end
 	houses[unitID] = lights
@@ -43,9 +45,9 @@ end
 
 local function GetLight(beamLights, beamLightCount, pointLights, pointLightCount)
 	for _, lights in pairs(houses) do
-		for i = 1, 4 do
+		for i, light in ipairs(lights) do
 			pointLightCount = pointLightCount + 1
-			pointLights[pointLightCount] = lights[i]
+			pointLights[pointLightCount] = light
 		end
 	end
 	return beamLights, beamLightCount, pointLights, pointLightCount
