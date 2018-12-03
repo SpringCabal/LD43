@@ -47,7 +47,7 @@ local OrkBig = Humanoid:New {
 	objectName 			= "OrkBig.dae",
 	script              = "ork.lua",
 	maxDamage           = 1600,
-	-- mass                = 50, -- does this even matter?
+	mass                = 120,
 
 	maxVelocity         = 4,
 	turnRate            = 1000 / 0.16,
@@ -90,7 +90,7 @@ local OrkBoss = Humanoid:New {
 	objectName          = "OrkBoss.dae",
 	script              = "ork.lua",
 	maxDamage           = 12000,
-	-- mass                = 50, -- does this even matter?
+	mass                = 360,
 
 	maxVelocity         = 5.1,
 	turnRate            = 800 / 0.16,
