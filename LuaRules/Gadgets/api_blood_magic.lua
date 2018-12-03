@@ -199,18 +199,12 @@ local function Adrenaline(unitID, tx, ty, tz)
 		for i = 1, #units do
 			GG.StatusEffects.Adrenaline(units[i], 320 + math.random()*60)
 		end
-		SpawnMigraineEffect(tx, ty, tz)
-	end
-
-	local env = Spring.UnitScript.GetScriptEnv(unitID)
-	Spring.UnitScript.CallAsUnit(unitID, env.script.CastAnimation, castFunc, 2, tx, tz)
-	Spring.SetGameRulesParam("castingFreeze", Spring.GetGameFrame() + CASTING_TIME)
+		SpawnAdrenalineEffect(x, y, z)
 	end
 
 	local env = Spring.UnitScript.GetScriptEnv(unitID)
 	Spring.UnitScript.CallAsUnit(unitID, env.script.CastAnimation, castFunc, 1, tx, tz)
 	Spring.SetGameRulesParam("castingFreeze", Spring.GetGameFrame() + CASTING_TIME_SHORT)
-	Spring.ClearUnitGoal(unitID)
 end
 
 local function Migraine(unitID, tx, ty, tz)
@@ -224,8 +218,7 @@ local function Migraine(unitID, tx, ty, tz)
 		for i = 1, #units do
 			GG.StatusEffects.Stun(units[i], 320 + math.random()*80)
 		end
-		local ux, uy, uz = Spring.GetUnitPosition(unitID)
-		SpawnAdrenalineEffect(ux, uy, uz)
+		SpawnMigraineEffect(tx, ty, tz)
 	end
 	
 	local env = Spring.UnitScript.GetScriptEnv(unitID)
