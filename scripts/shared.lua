@@ -136,6 +136,7 @@ function script.Killed(recentDamage, maxHealth)
 	Spring.SetUnitSelectionVolumeData(unitID, 5, 5, 5, 0, 0, 0, -1, 1, 0)
 	Spring.SetUnitNeutral(unitID, true)
 	GG.Attributes.AddEffect(unitID, "deathParalysis", {move = 0, reload = 0})
+	Spring.SetUnitBlocking(unitID, false)
 	
 	dead = true
 	Turn(bobPiece, y_axis, math.rad(90), math.rad(250))

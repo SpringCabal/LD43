@@ -355,10 +355,20 @@ end
 function gadget:Initialize()
 	local units = Spring.GetAllUnits()
 	for i = 1, #units do
+		Spring.SetUnitPosition(units[i], 100, 100)
 		Spring.DestroyUnit(units[i], false, true)
 	end
 	
 	SpawnHouses()
 	SpawnBloodMage(5700, 5740)
 	FillVillagerAreas()
+end
+
+function gadget:Shutdown()
+	local units = Spring.GetAllUnits()
+	for i = 1, #units do
+		Spring.SetUnitPosition(units[i], 100, 100)
+		Spring.UnitScript.SetDeathScriptFinished(units[i], 0)
+		Spring.DestroyUnit(units[i], false, true)
+	end
 end
