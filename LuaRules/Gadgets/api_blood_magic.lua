@@ -147,7 +147,9 @@ local function Transfusion(unitID)
 
 	local env = Spring.UnitScript.GetScriptEnv(unitID)
 	Spring.UnitScript.CallAsUnit(unitID, env.script.CastAnimation, castFunc, 1, tx, tz)
-	Spring.SetGameRulesParam("castingFreeze", Spring.GetGameFrame() + CASTING_TIME_SHORT)
+	local frame = Spring.GetGameFrame()
+	Spring.SetGameRulesParam("castingFreeze", frame + CASTING_TIME_SHORT)
+	Spring.SetUnitRulesParam(unitID, "start_cast", frame)
 	Spring.ClearUnitGoal(unitID)
 end
 
@@ -183,7 +185,9 @@ local function Heartburn(unitID, tx, ty, tz)
 
 	local env = Spring.UnitScript.GetScriptEnv(unitID)
 	Spring.UnitScript.CallAsUnit(unitID, env.script.CastAnimation, castFunc, 2, tx, tz)
-	Spring.SetGameRulesParam("castingFreeze", Spring.GetGameFrame() + CASTING_TIME)
+	local frame = Spring.GetGameFrame()
+	Spring.SetGameRulesParam("castingFreeze", frame + CASTING_TIME)
+	Spring.SetUnitRulesParam(unitID, "start_cast", frame)
 	Spring.ClearUnitGoal(unitID)
 end
 
@@ -197,14 +201,20 @@ local function Adrenaline(unitID, tx, ty, tz)
 	local function castFunc()
 		local units = Spring.GetUnitsInCylinder(x, z, 350, PLAYER_TEAM)
 		for i = 1, #units do
-			GG.StatusEffects.Adrenaline(units[i], 320 + math.random()*60)
+			if Spring.GetUnitDefID(units[i]) ~= houseDefID then
+				GG.StatusEffects.Adrenaline(units[i], 320 + math.random()*60)
+				local ux, uy, uz = Spring.GetUnitPosition(units[i])
+				SpawnAdrenalineEffect(ux, uy, uz)
+			end
 		end
 		SpawnAdrenalineEffect(x, y, z)
 	end
 
 	local env = Spring.UnitScript.GetScriptEnv(unitID)
 	Spring.UnitScript.CallAsUnit(unitID, env.script.CastAnimation, castFunc, 1, tx, tz)
-	Spring.SetGameRulesParam("castingFreeze", Spring.GetGameFrame() + CASTING_TIME_SHORT)
+	local frame = Spring.GetGameFrame()
+	Spring.SetGameRulesParam("castingFreeze", frame + CASTING_TIME_SHORT)
+	Spring.SetUnitRulesParam(unitID, "start_cast", frame)
 	Spring.ClearUnitGoal(unitID)
 end
 
@@ -224,7 +234,9 @@ local function Migraine(unitID, tx, ty, tz)
 	
 	local env = Spring.UnitScript.GetScriptEnv(unitID)
 	Spring.UnitScript.CallAsUnit(unitID, env.script.CastAnimation, castFunc, 3, tx, tz)
-	Spring.SetGameRulesParam("castingFreeze", Spring.GetGameFrame() + CASTING_TIME_LONG)
+	local frame = Spring.GetGameFrame()
+	Spring.SetGameRulesParam("castingFreeze", frame + CASTING_TIME_LONG)
+	Spring.SetUnitRulesParam(unitID, "start_cast", frame)
 	Spring.ClearUnitGoal(unitID)
 end
 
@@ -251,7 +263,9 @@ local function Dialysis(unitID, tx, ty, tz)
 
 	local env = Spring.UnitScript.GetScriptEnv(unitID)
 	Spring.UnitScript.CallAsUnit(unitID, env.script.CastAnimation, castFunc, 3, tx, tz)
-	Spring.SetGameRulesParam("castingFreeze", Spring.GetGameFrame() + CASTING_TIME_LONG)
+	local frame = Spring.GetGameFrame()
+	Spring.SetGameRulesParam("castingFreeze", frame + CASTING_TIME_LONG)
+	Spring.SetUnitRulesParam(unitID, "start_cast", frame)
 	Spring.ClearUnitGoal(unitID)
 end
 

@@ -45,6 +45,8 @@ return {
             sizemod            = 0.90,
             --texture            = [[fireball_rot]],
             texture            = [[migraine]],
+
+            colormap = "0.5 0.1 1.0 0.0    1.0 0.1 0.5 1",
           },
         },
       },

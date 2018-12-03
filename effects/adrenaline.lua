@@ -21,7 +21,7 @@ return {
         explosionwave = {
             air                = true,
             class              = [[CSimpleParticleSystem]],
-            count              = 15,
+            count              = 1,
             ground             = true,
             water              = true,
             underwater         = true,

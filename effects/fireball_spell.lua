@@ -31,6 +31,8 @@ return {
         -- pos                = [[r20 r-20, -50, r20 r-20]],
         sizegrowth         = 1, -- same as groundflash circlegrowth
         sizemod            = 1,
+
+        colormap = "1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0",
         -- texture            = [[fireball]],
         texture            = [[fireball_rot]],
       },

@@ -31,33 +31,40 @@ function widget:UnitDestroyed(unitID)
 end
 
 local function GetLight(beamLights, beamLightCount, pointLights, pointLightCount)
-	flicker = math.sin(os.clock() * 3) / 3.14 * STATIC_FLICKER_RATIO
-	if controlledID then
-		local x, y, z = Spring.GetUnitViewPosition(controlledID)
-
-		local castingFreeze = Spring.GetGameRulesParam("castingFreeze")
-		local multi = 1
-		if castingFreeze and Spring.GetGameFrame() < castingFreeze then
-			multi = math.min(
-						10,
-						(castingFreeze - Spring.GetGameFrame()) + 1
-					) / 5
-		end
-
-		pointLightCount = pointLightCount + 1
-		pointLights[pointLightCount] = {
-			px = x + staffX,
-			py = y + staffY + 15,
-			pz = z + staffZ,
-			param = {
-				r = 4,
-				g = 1,
-				b = 1,
-				radius = 1000
-			},
-			colMult = 2 * multi * (1 + flicker),
-		}
+	if not controlledID then
+		return beamLights, beamLightCount, pointLights, pointLightCount
 	end
+
+	flicker = math.sin(os.clock() * 3) / 3.14 * STATIC_FLICKER_RATIO
+	local x, y, z = Spring.GetUnitViewPosition(controlledID)
+
+	local castingFreeze = Spring.GetGameRulesParam("castingFreeze")
+	local multi = 1
+	local frame = Spring.GetGameFrame()
+	if castingFreeze and frame < castingFreeze then
+		local castingStart = Spring.GetUnitRulesParam(controlledID, "start_cast")
+		if not castingStart then
+			return beamLights, beamLightCount, pointLights, pointLightCount
+		end
+		local curr = frame - castingStart
+		local total = castingFreeze - frame
+		local ratio = curr / total
+		multi = math.mix(1, 5, math.erf((ratio - 0.5) / 2)  / 2 + 0.5)
+	end
+
+	pointLightCount = pointLightCount + 1
+	pointLights[pointLightCount] = {
+		px = x + staffX,
+		py = y + staffY + 15,
+		pz = z + staffZ,
+		param = {
+			r = 4,
+			g = 1,
+			b = 1,
+			radius = 1000
+		},
+		colMult = 2 * multi * (1 + flicker),
+	}
 
 	return beamLights, beamLightCount, pointLights, pointLightCount
 end
