@@ -5,7 +5,7 @@ local OrkSmall = Humanoid:New {
 	movementClass       = "Defender",
 	objectName          = "OrkSmall.dae",
 	script              = "ork.lua",
-	maxDamage           = 500,
+	maxDamage           = 550,
 	mass                = 80,
 	footprintX          = 2,
 	footprintZ          = 2,
@@ -47,7 +47,7 @@ local OrkBig = Humanoid:New {
 	objectName 			= "OrkBig.dae",
 	script              = "ork.lua",
 	maxDamage           = 1600,
-	mass                = 120,
+	mass                = 90,
 
 	maxVelocity         = 4,
 	turnRate            = 1000 / 0.16,
@@ -90,7 +90,7 @@ local OrkBoss = Humanoid:New {
 	objectName          = "OrkBoss.dae",
 	script              = "ork.lua",
 	maxDamage           = 12000,
-	mass                = 360,
+	mass                = 150,
 
 	maxVelocity         = 5.1,
 	turnRate            = 800 / 0.16,

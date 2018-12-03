@@ -68,7 +68,7 @@ local BloodMage = Raw:New {
 	movementClass       = "Player",
 	objectName          = "BloodMage.dae",
 	script              = "blood_mage.lua",
-	maxDamage           = 4000,
+	maxDamage           = 3200,
 
 	iconType = "bloodmage",
 
