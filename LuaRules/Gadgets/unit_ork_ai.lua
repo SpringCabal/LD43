@@ -20,6 +20,7 @@ local AIM_VAR = 600
 local AIM_REACHED_VAR = 2000
 local ENEMY_TEAM = 1
 local orksKilled = 0
+local flee = false
 
 local handledUnits = {
 	[UnitDefNames["orksmall"].id] = true,
@@ -35,6 +36,9 @@ local aiUnits = IterableMap.New()
 --------------------------------------------------------------------------------
 
 local function SetupAi(unitID)
+	if flee then
+		return
+	end
 	local dx = AIM_X + math.random()*AIM_VAR - AIM_VAR/2
 	local dz = AIM_Z + math.random()*AIM_VAR - AIM_VAR/2
 	local dy = Spring.GetGroundHeight(dx, dz)
@@ -43,7 +47,7 @@ local function SetupAi(unitID)
 end
 
 local function CheckIdle(unitID)
-	if Spring.GetCommandQueue(unitID, 0) ~= 0 then
+	if flee or (Spring.GetCommandQueue(unitID, 0) ~= 0) then
 		return
 	end
 	local dx = AIM_X + math.random()*AIM_REACHED_VAR - AIM_REACHED_VAR/2
@@ -61,6 +65,7 @@ local function SetupFlee(unitID, _, _, bossX, bossZ)
 	local cx = ux + 4000*dx/dist
 	local cz = uz + 4000*dz/dist
 	local cy = ux + Spring.GetGroundHeight(cx, cz)
+	Spring.MarkerAddPoint(cx, cy, cz, "f")
 	
 	Spring.Utilities.GiveClampedOrderToUnit(unitID, CMD.MOVE, {cx, cy, cz}, 0)
 	Spring.GiveOrderToUnit(unitID, CMD.FIRESTATE_HOLDFIRE, {0, 0}, {})
@@ -94,7 +99,7 @@ function gadget:UnitDestroyed(unitID, unitDefID, teamID)
 end
 
 function GG.OrkAiFlee()
-	
+	local flee = true
 	local x = Spring.GetGameRulesParam("boss_x") or AIM_X
 	local z = Spring.GetGameRulesParam("boss_z") or AIM_Z
 	aiUnits.Apply(SetupFlee, x, z)

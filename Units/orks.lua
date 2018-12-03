@@ -50,6 +50,7 @@ local OrkBig = Humanoid:New {
 	-- mass                = 50, -- does this even matter?
 
 	maxVelocity         = 4,
+	turnRate            = 1000 / 0.16,
 
 	footprintX          = 4,
 	footprintZ          = 4,
@@ -88,6 +89,7 @@ local OrkBoss = Humanoid:New {
 	-- mass                = 50, -- does this even matter?
 
 	maxVelocity         = 5.1,
+	turnRate            = 800 / 0.16,
 
 	footprintX          = 4,
 	footprintZ          = 4,

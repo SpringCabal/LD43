@@ -85,7 +85,6 @@ end
 function script.FireWeapon(num)
 	if num == 1 then
 		shared.AttackBob()
-		Spring.ClearUnitGoal(unitID)
 	end
 	--StartThread(AttackAnimation) -- Broken
 end
