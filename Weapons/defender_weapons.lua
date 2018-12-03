@@ -24,7 +24,7 @@ weapons.CrossBow = Weapon:New {
 	soundStart             = "crossbowfire",
 	soundHit               = "crossbowhit",
 	 damage                = {
-		default = 120,
+		default = 70,
 	}
 }
 
@@ -37,7 +37,7 @@ weapons.DefenderSword = FancyMeleeWeapon:New {
 	 -- soundStart            = [[SpearThrow]],
 	soundStart            = "swordswing",
 	 damage                = {
-		default = 130,
+		default = 90,
 	}
 }
 
@@ -50,7 +50,7 @@ weapons.DefenderSpear = FancyMeleeWeapon:New {
 	 -- soundStart            = [[SpearThrow]],
 	soundStart            = "stickswing",
 	 damage                = {
-		default = 75,
+		default = 45,
 	}
 }
 
@@ -77,7 +77,7 @@ weapons.Staff = FancyMeleeWeapon:New {
 	soundHit              = "staffhit",
 	edgeEffectiveness = 0.9,
 	 damage                = {
-		default = 275,
+		default = 300,
 	}
 }
 

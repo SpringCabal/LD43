@@ -8,7 +8,7 @@ local BigOrkAxe = FancyMeleeWeapon:New {
 	 -- soundStart            = [[SpearThrow]],
 	soundStart             = "bigorkattack",
 	 damage                = {
-		default = 250,
+		default = 140,
 	}
 }
 
@@ -16,13 +16,13 @@ local BossOrkAxe = FancyMeleeWeapon:New {
 	name                  = "BossOrkAxe",
 	range                 = 200,
 	reloadTime            = 2.5,
-	areaOfEffect          = 200,
+	areaOfEffect          = 300,
 	-- targeting & accuracy
 	accuracy              = 0.9,
 	 -- soundStart            = [[SpearThrow]],
 	soundStart             = "bossorkattack",
 	 damage                = {
-		default = 650,
+		default = 450,
 	}
 }
 
@@ -37,7 +37,7 @@ local Bite = FancyMeleeWeapon:New {
 	 -- soundStart            = [[SpearThrow]],
 	soundStart             = "smallorkattack",
 	 damage                = {
-		default = 20,
+		default = 9,
 	}
 }
 

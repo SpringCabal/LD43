@@ -2,7 +2,7 @@ return {
     ["migraine_pulse_spawner"] = {
         poof01 = {
         class              = [[CExpGenSpawner]],
-        count              = [[18]],
+        count              = [[3]],
         air                = true,
         ground             = true,
         water              = true,
@@ -10,7 +10,7 @@ return {
         unit               = true,
         nounit             = true,
         properties = {
-				delay              = [[0 i20]],
+				delay              = [[0 i8]],
                 damage             = [[d1]],
                 explosionGenerator = [[custom:migraine_pulse]],
             },
@@ -26,7 +26,7 @@ return {
 		  circlegrowth       = 12,
 		  flashalpha         = 2.15,
 		  flashsize          = 68,
-		  ttl                = 22,
+		  ttl                = 26,
 		  color = {
 			[1]  = 1,
 			[2]  = 0.89999997615814,
@@ -44,7 +44,7 @@ return {
 			alpha              = 0.5,
 			color              = [[1,0,1]],
 			expansionspeed     = 12,
-			ttl                = 22,
+			ttl                = 26,
 		  },
 		},
       },

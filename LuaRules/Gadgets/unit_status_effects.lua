@@ -33,9 +33,9 @@ function StatusEffects.Adrenaline(unitID, duration)
 	local data = units.Get(unitID) or {}
 	
 	if resist[Spring.GetUnitDefID(unitID) or -1] then
-		GG.Attributes.AddEffect(unitID, "buff", {move = 1.6, reload = 2})
+		GG.Attributes.AddEffect(unitID, "buff", {move = 1.8, reload = 3})
 	else
-		GG.Attributes.AddEffect(unitID, "buff", {move = 2, reload = 2})
+		GG.Attributes.AddEffect(unitID, "buff", {move = 2, reload = 2.5})
 	end
 	
 	local env = Spring.UnitScript.GetScriptEnv(unitID)

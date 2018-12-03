@@ -24,9 +24,9 @@ local LIFE_BONUS = 250
 
 local PLAYER_TEAM = 0
 local ENEMY_TEAM = 1
-local CASTING_TIME_SHORT = 1 * 18
-local CASTING_TIME = 1 * 20
-local CASTING_TIME_LONG = 1 * 33
+local CASTING_TIME_SHORT = 1 * 8
+local CASTING_TIME = 1 * 12
+local CASTING_TIME_LONG = 1 * 25
 
 local alliesDrained = 0
 
@@ -227,7 +227,7 @@ local function Adrenaline(unitID, tx, ty, tz)
 	local x, y, z = Spring.GetUnitPosition(unitID)
 
 	local function castFunc()
-		local units = Spring.GetUnitsInCylinder(x, z, 350, PLAYER_TEAM)
+		local units = Spring.GetUnitsInCylinder(x, z, 450, PLAYER_TEAM)
 		for i = 1, #units do
 			if Spring.GetUnitDefID(units[i]) ~= houseDefID then
 				GG.StatusEffects.Adrenaline(units[i], 320 + math.random()*60)
@@ -254,9 +254,12 @@ local function Migraine(unitID, tx, ty, tz)
 	end
 	
 	local function castFunc()
-		local units = Spring.GetUnitsInCylinder(tx, tz, 350, ENEMY_TEAM)
+		local units = Spring.GetUnitsInCylinder(tx, tz, 450, ENEMY_TEAM)
 		for i = 1, #units do
-			GG.StatusEffects.Stun(units[i], 320 + math.random()*80)
+			local ux, uy, uz = Spring.GetUnitPosition(units[i])
+			local dx, dz = ux - tx, uz - tz
+			local dist = math.sqrt(dx*dx + dz*dz)
+			GG.StatusEffects.Stun(units[i], (1 - dist/1000)*(400 + math.random()*80))
 		end
 		SpawnEffectPosition(tx, ty, tz, CEG_MIGRAINE)
 	end
