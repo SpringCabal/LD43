@@ -1,5 +1,6 @@
 local Hand_Right = piece("Hand_Right")
 local Torso = piece("Torso")
+local canAttackAnimate = false
 
 local function AttackAnimation()
 	Move(Hand_Right, y_axis, -30, 1000)
@@ -25,6 +26,10 @@ end
 
 local shared = include("shared.lua")
 function script.Create()
+	local unitDefID = Spring.GetUnitDefID(unitID)
+	if UnitDefs[unitDefID].name == "swordsman" then
+		canAttackAnimate = true
+	end
 	shared.Init(Torso, 3)
 end
 

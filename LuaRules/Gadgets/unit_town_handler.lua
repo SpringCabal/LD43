@@ -302,6 +302,7 @@ local villagerArea = {
 
 ----------------------------------------------------------------------------
 ----------------------------------------------------------------------------
+-- Spawning
 
 local IterableMap = VFS.Include("LuaRules/Gadgets/Include/IterableMap.lua")
 local villagers = IterableMap.New()
@@ -328,6 +329,7 @@ local function SpawnVillager(area, unitDefID)
 		tries = tries + 1
 	end
 	local unitID = Spring.CreateUnit(unitDefID, x, y, z, math.floor(math.random()*4), 0, false, false)
+	Spring.SetUnitRotation(unitID, 0, math.random()*math.pi, 0)
 	-- Spring.SetUnitNoMinimap(unitID, true)
 	--Spring.Utilities.UnitEcho(unitID, tries)
 	villagers.Add(unitID, area)
@@ -348,9 +350,39 @@ local function SpawnBloodMage(x, z)
 	Spring.CreateUnit("bloodmage", x, Spring.GetGroundHeight(x, z), z, 0, 0, false, false)
 end
 
+----------------------------------------------------------------------------
+----------------------------------------------------------------------------
+-- Handling
+
+local function CheckIdle(unitID, area)
+	if Spring.GetCommandQueue(unitID, 0) ~= 0 then
+		return
+	end
+	local ux, uy, uz = Spring.GetUnitPosition(unitID)
+	
+	if math.abs(ux - area.x) < area.width and  math.abs(uz - area.z) < area.height then
+		return
+	end
+	
+	local x = area.x + area.width*math.random() - area.width/2
+	local z = area.z + area.height*math.random() - area.height/2
+	local dx = area.x + math.random()*area.width - area.width/2
+	local dz = area.z + math.random()*area.height - area.height/2
+	local dy = Spring.GetGroundHeight(dx, dz)
+	Spring.GiveOrderToUnit(unitID, CMD.FIGHT, {dx, dy, dz}, {})
+end
 
 ----------------------------------------------------------------------------
 ----------------------------------------------------------------------------
+-- Callins
+
+function gadget:GameFrame(frame)
+	local count = math.ceil(villagers.GetIndexMax()/90)
+	for i = 1, count do
+		local unitID, area = villagers.Next()
+		CheckIdle(unitID, area)
+	end
+end
 
 function gadget:Initialize()
 	local units = Spring.GetAllUnits()
@@ -364,10 +396,16 @@ function gadget:Initialize()
 	FillVillagerAreas()
 end
 
+function gadget:UnitDestroyed(unitID, unitDefID, teamID)
+	villagers.Remove(unitID)
+end
+
 function gadget:Shutdown()
 	local units = Spring.GetAllUnits()
 	for i = 1, #units do
 		Spring.SetUnitPosition(units[i], 100, 100)
+		Spring.MoveCtrl.Enable(units[i])
+		Spring.MoveCtrl.SetPosition(units[i], 100, 0, 100)
 		Spring.UnitScript.SetDeathScriptFinished(units[i], 0)
 		Spring.DestroyUnit(units[i], false, true)
 	end

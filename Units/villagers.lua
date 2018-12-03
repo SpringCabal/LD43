@@ -80,6 +80,11 @@ units.Swordsman = Humanoid:New {
 	footprintX 			= 2,
 	footprintZ 			= 2,
 
+	customParams = {
+		hscale = 0.65,
+		vscale = 0.65,
+	},
+	
 	weapons = {
 		{
 			name = "DefenderSword",
