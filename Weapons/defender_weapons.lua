@@ -7,12 +7,12 @@ weapons.CrossBow = Weapon:New {
 	name                  = "Spear",
 	impactOnly            = true,
 	noSelfDamage          = true,
-	range                 = 1000,     -- bad defaults (only 10.0)
+	range                 = 800,     -- bad defaults (only 10.0)
 	weaponVelocity        = 2000,     -- default velocity is 0, wtf?
 	reloadTime            = 3.0,
 	tolerance             = 6000,
 	 -- collision & avoidance
-	avoidFriendly         = false,
+	avoidFriendly         = true,
 	avoidFeature          = false,
 	 collideFriendly       = false,
 	collideFeature        = false,
@@ -23,7 +23,7 @@ weapons.CrossBow = Weapon:New {
 	 -- soundStart            = [[SpearThrow]],
 	soundHit              = [[Hit]],
 	 damage                = {
-		default = 100,
+		default = 120,
 	}
 }
 

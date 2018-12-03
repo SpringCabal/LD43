@@ -13,17 +13,18 @@ function gadget:GetInfo()
 end
 
 local houseDefID = UnitDefNames["house"].id
-local BLOOD_MAGIC_RANGE = 500
-local MAX_DRAIN_PER_UNIT = 10000
+local BLOOD_MAGIC_RANGE = 600
 
-local FIREBALL_COST = 700
+local FIREBALL_COST = 800
 local BUFF_COST = 500
 local STUN_COST = 800
 local THROW_COST = 1800
 
 local PLAYER_TEAM = 0
 local ENEMY_TEAM = 1
+local CASTING_TIME_SHORT = 1 * 18
 local CASTING_TIME = 1 * 33
+local CASTING_TIME_LONG = 1 * 33
 
 local fireballDefID = WeaponDefNames["fireball"].id
 local webDefID = WeaponDefNames["web"].id
@@ -91,10 +92,18 @@ local function Transfusion(unitID)
 	if not manaFound then
 		return
 	end
-	Spring.SetUnitHealth(unitID, maxHealth)
-	SpawnBloodEffect(unitID)
 
-	return true
+	local function castFunc()
+		if Spring.ValidUnitID(unitID) then
+			Spring.SetUnitHealth(unitID, maxHealth)
+			SpawnBloodEffect(unitID)
+		end
+	end
+	
+	local env = Spring.UnitScript.GetScriptEnv(unitID)
+	Spring.UnitScript.CallAsUnit(unitID, env.script.CastAnimation, castFunc, 1, tx, tz)
+	Spring.SetGameRulesParam("castingFreeze", Spring.GetGameFrame() + CASTING_TIME_SHORT)
+	Spring.ClearUnitGoal(unitID)
 end
 
 
@@ -114,7 +123,7 @@ local function Heartburn(unitID, tx, ty, tz)
 		y = y + 120
 		local dx, dy, dz = tx - x, ty - y, tz - z
 		local flyTime = 10 + math.floor(math.sqrt(dx*dx + dz*dz)/45)
-		local gravity = 0.2
+		local gravity = 0.18
 
 		local vx, vy, vz = dx/flyTime, flyTime*gravity/2 + dy/flyTime, dz/flyTime
 		local proID = Spring.SpawnProjectile(fireballDefID, {
@@ -128,7 +137,7 @@ local function Heartburn(unitID, tx, ty, tz)
 	end
 	
 	local env = Spring.UnitScript.GetScriptEnv(unitID)
-	Spring.UnitScript.CallAsUnit(unitID, env.script.CastAnimation, castFunc, tx, tz)
+	Spring.UnitScript.CallAsUnit(unitID, env.script.CastAnimation, castFunc, 2, tx, tz)
 	Spring.SetGameRulesParam("castingFreeze", Spring.GetGameFrame() + CASTING_TIME)
 	Spring.ClearUnitGoal(unitID)
 end
@@ -142,12 +151,12 @@ local function Migraine(unitID, tx, ty, tz)
 	local function castFunc()
 		local units = Spring.GetUnitsInCylinder(tx, tz, 250, ENEMY_TEAM)
 		for i = 1, #units do
-			GG.StatusEffects.Stun(units[i], 180 + math.random()*30)
+			GG.StatusEffects.Stun(units[i], 220 + math.random()*30)
 		end
 	end
 	
 	local env = Spring.UnitScript.GetScriptEnv(unitID)
-	Spring.UnitScript.CallAsUnit(unitID, env.script.CastAnimation, castFunc, tx, tz)
+	Spring.UnitScript.CallAsUnit(unitID, env.script.CastAnimation, castFunc, 2, tx, tz)
 	Spring.SetGameRulesParam("castingFreeze", Spring.GetGameFrame() + CASTING_TIME)
 	Spring.ClearUnitGoal(unitID)
 end
@@ -160,15 +169,15 @@ local function Adrenaline(unitID, tx, ty, tz)
 	local x, y, z = Spring.GetUnitPosition(unitID)
 	
 	local function castFunc()
-		local units = Spring.GetUnitsInCylinder(x, z, 250, PLAYER_TEAM)
+		local units = Spring.GetUnitsInCylinder(x, z, 350, PLAYER_TEAM)
 		for i = 1, #units do
-			GG.StatusEffects.Adrenaline(units[i], 300 + math.random()*60)
+			GG.StatusEffects.Adrenaline(units[i], 320 + math.random()*60)
 		end
 	end
 	
 	local env = Spring.UnitScript.GetScriptEnv(unitID)
-	Spring.UnitScript.CallAsUnit(unitID, env.script.CastAnimation, castFunc, tx, tz)
-	Spring.SetGameRulesParam("castingFreeze", Spring.GetGameFrame() + CASTING_TIME)
+	Spring.UnitScript.CallAsUnit(unitID, env.script.CastAnimation, castFunc, 1, tx, tz)
+	Spring.SetGameRulesParam("castingFreeze", Spring.GetGameFrame() + CASTING_TIME_SHORT)
 	Spring.ClearUnitGoal(unitID)
 end
 
@@ -180,18 +189,18 @@ local function Dialysis(unitID, tx, ty, tz)
 	local x, y, z = Spring.GetUnitPosition(unitID)
 	
 	local function castFunc()
-		local units = Spring.GetUnitsInCylinder(x, z, 360, ENEMY_TEAM)
+		local units = Spring.GetUnitsInCylinder(x, z, 400, ENEMY_TEAM)
 		for i = 1, #units do
 			local ux, uy, uz = Spring.GetUnitPosition(units[i])
 			local dx, dz = ux - x, uz - z
 			local dist = math.sqrt(dx*dx + dz*dz)
-			local impulse = 20*(1 - dist/800)
+			local impulse = 32*(1 - dist/800)
 			Spring.AddUnitImpulse(units[i], impulse*dx/dist, impulse, impulse*dz/dist)
 		end
 	end
 	
 	local env = Spring.UnitScript.GetScriptEnv(unitID)
-	Spring.UnitScript.CallAsUnit(unitID, env.script.CastAnimation, castFunc, tx, tz)
+	Spring.UnitScript.CallAsUnit(unitID, env.script.CastAnimation, castFunc, 2, tx, tz)
 	Spring.SetGameRulesParam("castingFreeze", Spring.GetGameFrame() + CASTING_TIME)
 	Spring.ClearUnitGoal(unitID)
 end

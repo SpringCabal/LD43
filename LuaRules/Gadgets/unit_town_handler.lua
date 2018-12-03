@@ -154,11 +154,11 @@ local villagerArea = {
 	},
 	{
 		x = 5400,
-		z = 7070,
+		z = 6950,
 		width = 500,
-		height = 180,
+		height = 300,
 		units = {
-			swordsman = 4,
+			swordsman = 8,
 			crossbowman = 6,
 		}
 	},
@@ -256,7 +256,7 @@ local villagerArea = {
 		width = 1200,
 		height = 1200,
 		units = {
-			swordsman = 12,
+			swordsman = 30,
 			crossbowman = 8,
 			coward = 65,
 			peasant = 15,
@@ -266,10 +266,10 @@ local villagerArea = {
 		x = 5110,
 		z = 6500,
 		width = 700,
-		height = 700,
+		height = 800,
 		units = {
-			swordsman = 7,
-			crossbowman = 2,
+			swordsman = 12,
+			crossbowman = 4,
 			coward = 22,
 			peasant = 8,
 		}
@@ -288,14 +288,26 @@ local villagerArea = {
 	},
 	{
 		x = 5500,
-		z = 4950,
+		z = 5000,
 		width = 1600,
-		height = 600,
+		height = 800,
 		units = {
-			swordsman = 7,
-			crossbowman = 2,
+			swordsman = 8,
+			crossbowman = 3,
 			coward = 25,
 			peasant = 15,
+		}
+	},
+	{
+		x = 6500,
+		z = 6000,
+		width = 900,
+		height = 1800,
+		units = {
+			swordsman = 15,
+			crossbowman = 2,
+			coward = 22,
+			peasant = 8,
 		}
 	},
 }
