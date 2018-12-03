@@ -673,8 +673,6 @@ local function CleanUpFBO()
   end
 end
 
-WG.uiScale = 1
-
 function widget:Initialize()
 	Spring.SendCommands("minimap geo " .. Spring.GetConfigString("MiniMapGeometry"))
 	Spring.SendCommands("minimap simplecolors 1")
@@ -725,8 +723,8 @@ function widget:Initialize()
           void main() {
 			texCoord = gl_Vertex.xy * 0.5 + 0.5;
 			texCoord /= 1.3;
-			texCoord.y += 0.17;
-			texCoord.x += 0.04;
+			texCoord.y += 0.04;
+			texCoord.x += 0.13;
 			gl_Position = vec4(gl_Vertex.xyz, 1.0);
           }
 			]],
@@ -807,7 +805,7 @@ local function DrawMiniMap()
   glDrawMiniMap()
 end
 
-WG.uiScale = 1.3
+WG.uiScale = 2
 
 function widget:DrawScreen()
 	local cs = Spring.GetCameraState()
@@ -890,9 +888,9 @@ function widget:DrawScreen()
 		-- gl.Color(1,1,1,alpha)
 		gl.Texture(0, offscreentex)
 		gl.UseShader(fadeShader)
-		gl.Uniform(alphaLoc, alpha * 7)
+		gl.Uniform(alphaLoc, alpha * 3)
 		local px, py = window.x + lx * 2.5, vsy - window.y - ly * 3
-		gl.Uniform(boundsLoc, (px/vsx) * 7, ((py - lh)/vsy) * 1.03, (lw/vsx) / 1.8, (lh/vsy) * 0.60)
+		gl.Uniform(boundsLoc, (px/vsx) * 12, ((py - lh)/vsy) * 0.8, (lw/vsx) * 0.7, (lh/vsy) * 0.9)
 		gl.Uniform(screenLoc, vsx, vsy)
 		-- Spring.Echo("Bounds: "..(window.x + lx)/vsx..", "..(window.y + ly)/vsy..", "..((window.x + lx) + lw)/vsx..", "..((window.y + ly) + lh)/vsy)
 		gl.TexRect(-1, 1, 1, -1)
