@@ -137,7 +137,17 @@ function GetStory()
 				orkbig = 2,
 			},
 			team = enemyTeam,
-			time = 25,
+			time = 35,
+		},
+		{  --  More Nights
+			name = "spawn",
+			humanName = "More Nights",
+			units = {
+				orksmall = 70,
+				orkbig = 10,
+			},
+			team = enemyTeam,
+			time = 20,
 		},
 		{  -- Night 7
 			name = "spawn",
@@ -149,7 +159,7 @@ function GetStory()
 				orkboss = 1,
 			},
 			team = enemyTeam,
-			time = 40,
+			time = 30,
 		},
 		{  -- Forever spawn
 			name = "spawn",
@@ -160,7 +170,7 @@ function GetStory()
 				orkbig = 3,
 			},
 			team = enemyTeam,
-			time = 25,
+			time = 20,
 		},
 	}
 end
