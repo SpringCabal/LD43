@@ -37,6 +37,7 @@ local controlledDefID = UnitDefNames["bloodmage"].id
 local controlledID = nil
 local moveGoal = nil
 local attackGoal = nil
+local doingMoveToAttack = false
 
 local movementMessage
 
@@ -105,18 +106,30 @@ local function MoveUnit(unitID, x, z)
 	GiveClampedMoveGoal(unitID, x, z, radius)
 end
 
-local function AttackUnit(unitID, x, z)
+local function AttackUnit(unitID, x, z, moveTo)
 	if not (unitID and Spring.ValidUnitID(unitID)) then
 		return
 	end
 	local ux, _, uz = Spring.GetUnitPosition(unitID)
 	local dx, dz = x - ux, z - uz
 	local dist = math.max(0.1, math.sqrt(dx*dx + dz*dz))
-	--if dist < 80 then
-		ClearMove(unitID)
-	--else
-	--	GiveClampedMoveGoal(unitID, x, z, 80)
-	--end
+	
+	if moveTo then
+		if dist > 50 then
+			GiveClampedMoveGoal(unitID, x, z, 50)
+			doingMoveToAttack = true
+			return
+		end
+	end
+	
+	if doingMoveToAttack then
+		if moveGoal and dist > 50 then
+			return
+		end
+		doingMoveToAttack = false
+	end
+	
+	ClearMove(unitID)
 	local tx = ux + 50*dx/dist
 	local tz = uz + 50*dz/dist
 	local ty = Spring.GetGroundHeight(tx, tz) + 20
@@ -176,10 +189,15 @@ function HandleLuaMessage(msg)
 		return
 	end
 
-	if msg_table[1] == 'movement' or msg_table[1] == 'attack' then
+	if msg_table[1] == 'movement' or msg_table[1] == 'attack' or msg_table[1] == 'attmove' then
 		local x = tonumber(msg_table[2])
 		local z = tonumber(msg_table[3])
-
+		
+		if movementMessage and movementMessage.moveTo and not movementMessage.used then
+			-- Avoid dropping click inputs
+			return
+		end
+		
 		if x == 0 and z == 0 then
 			movementMessage = false
 		else
@@ -187,7 +205,8 @@ function HandleLuaMessage(msg)
 				frame = frame,
 				x = x,
 				z = z,
-				attack = (msg_table[1] == 'attack'),
+				attack = (msg_table[1] == 'attack' or msg_table[1] == 'attmove'),
+				moveTo = (msg_table[1] == 'attmove'),
 			}
 		end
 	elseif msg_table[1] == 'stop' then
@@ -212,10 +231,11 @@ function gadget:GameFrame(frame)
 		local x, y, z = Spring.GetUnitPosition(controlledID)
 		if (movementMessage and movementMessage.frame + 2 > frame) then
 			if movementMessage.attack then
-				AttackUnit(controlledID, movementMessage.x, movementMessage.z)
+				AttackUnit(controlledID, movementMessage.x, movementMessage.z, movementMessage.moveTo)
 			else
 				MoveUnit(controlledID, movementMessage.x, movementMessage.z)
 			end
+			movementMessage.used = true
 		else
 			ClearAttack(controlledID)
 		end

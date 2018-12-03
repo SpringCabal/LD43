@@ -82,7 +82,7 @@ function widget:MousePress(mx, my, button)
 		return true
 	elseif button == 3 then
 		mouseControl3 = true
-		HoldMouse(ATTACK, mx, my)
+		HoldMouse("attmove", mx, my)
 		return true
 	end
 end
@@ -116,11 +116,8 @@ function widget:DrawScreen()
 end
 
 function widget:MouseRelease(mx, my, button)
-	if button == 1 then
-		mouseControl1 = false
-	elseif button == 3 then
-		mouseControl3 = false
-	end
+	mouseControl1 = false
+	mouseControl3 = false
 end
 
 -- handles weapon switching and abilities

@@ -73,9 +73,8 @@ function widget:Initialize()
 		purple .. "Ctrl+Q : " .. white .. "Quit",
 	}
 	 mouseText = {
---         purple .. "Left click: " .. white .. "Shoot",
---         purple .. "Right click : " .. white .. "Place Mines",
---         purple .. "Scroll Wheel : " .. white .. "Zoom",
+		purple .. "Left click: " .. white .. "Move",
+		purple .. "Right click : " .. white .. "Attack",
 	}
 	  if (not WG.Chili) then
 		return
@@ -98,7 +97,7 @@ function MakeBindingText()
 	 for _,child in pairs(children) do
 		screen0:RemoveChild(child)
 	end
-	  h = 20
+	h = 24
 	y = h*(#bindText + #mouseText)
 	x = 10
 	 for _,text in ipairs(mouseText) do
@@ -115,6 +114,7 @@ function  AddLine(text, x_, y_)
 	children[#children+1] = Chili.Label:New{
 		x = x_,
 		bottom = y_,
+		fontsize = 20,
 		parent = screen0,
 		caption = text,
 	}
