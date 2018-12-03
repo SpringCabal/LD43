@@ -4,7 +4,7 @@ units.Peasant = Humanoid:New {
 	-- General
 	name                = "Peasant",
 	movementClass       = "Defender",
-	objectName 			= "HumanWithStick.dae",
+	objectName 			= "Villager.dae",
 	script              = "Swordsman.lua",
 	maxDamage           = 600,
 
@@ -13,6 +13,11 @@ units.Peasant = Humanoid:New {
 	selectionVolumeScales  = [[20 20 20]],
 	selectionVolumeType    = [[ellipsoid]],
 	maxVelocity         = 6,
+
+	customParams = {
+		hscale = 1,
+		vscale = 1,
+	},
 
 	iconType = "peasant",
 
@@ -27,7 +32,7 @@ units.Coward = Humanoid:New {
 	-- General
 	name                = "Coward",
 	movementClass       = "Defender",
-	objectName 			= "HumanWithStick.dae",
+	objectName 			= "VillagerNoWeapon.dae",
 	script              = "Coward.lua",
 	maxDamage           = 600,
 	movestate           = 0,
@@ -37,6 +42,11 @@ units.Coward = Humanoid:New {
 	selectionVolumeScales  = [[20 20 20]],
 	selectionVolumeType    = [[ellipsoid]],
 	maxVelocity         = 6,
+
+	customParams = {
+		hscale = 1,
+		vscale = 1,
+	},
 
 	iconType = "peasant",
 

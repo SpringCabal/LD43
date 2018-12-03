@@ -1,9 +1,8 @@
-local Hand_Right = piece("Hand_Right")
 local Torso = piece("Torso")
 
 
 function script.QueryWeapon()
-	return Hand_Right
+	return Torso
 end
 
 function script.AimWeapon()
