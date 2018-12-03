@@ -45,6 +45,10 @@ function gadget:Initialize()
 		killed[unitID] = true
 	end
 
+	if Spring.GetGameRulesParam("sb_gameMode") == nil then
+        Spring.RevertHeightMap(0, 0, Game.mapSizeX, Game.mapSizeZ, 1)
+    end
+
 	Spring.SetGameRulesParam("introEvent", "")
 end
 
