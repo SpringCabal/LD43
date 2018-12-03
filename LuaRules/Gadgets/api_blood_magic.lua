@@ -26,6 +26,8 @@ local CASTING_TIME_SHORT = 1 * 18
 local CASTING_TIME = 1 * 33
 local CASTING_TIME_LONG = 1 * 33
 
+local alliesDrained = 0
+
 local fireballDefID = WeaponDefNames["fireball"].id
 local CEG_SPAWN = [[feature_poof_spawner]]
 
@@ -52,6 +54,8 @@ local function DoPartial(toKill, required)
 	for i = 1, #toKill do
 		SpawnBloodEffect(toKill[i])
 		Spring.DestroyUnit(toKill[i], true)
+		alliesDrained = alliesDrained + 1
+		Spring.SetGameRulesParam("alliesDrained", alliesDrained)
 	end
 
 	return required
@@ -84,6 +88,8 @@ local function DrainNearbyUnits(collectorID, required, canPartial)
 				for j = 1, #toKill do
 					SpawnBloodEffect(toKill[j])
 					Spring.DestroyUnit(toKill[j], true)
+					alliesDrained = alliesDrained + 1
+					Spring.SetGameRulesParam("alliesDrained", alliesDrained)
 				end
 
 				return true

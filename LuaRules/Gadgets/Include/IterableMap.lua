@@ -36,7 +36,7 @@ function IterableMap.New()
 	
 	function api.Remove(key)
 		if (not key) or (not indexByKey[key]) then
-			return
+			return false
 		end
 		local myIndex = indexByKey[key]
 		local endKey = keyByIndex[indexMax]
@@ -46,6 +46,7 @@ function IterableMap.New()
 		indexByKey[key] = nil
 		dataByKey[key] = nil
 		indexMax = indexMax - 1
+		return true
 	end
 	
 	function api.ReplaceKey(oldKey, newKey)

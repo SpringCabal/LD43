@@ -49,7 +49,7 @@ local function ShowEndGameWindow()
 	screen0:AddChild(window_endgame)
 end
 
-local function SetupControls()
+local function SetupControls(isVictory)
 	local winSizeX, winSizeY = Spring.GetWindowGeometry()
 	local width, height = 400, 400
 
@@ -71,17 +71,59 @@ local function SetupControls()
 	local rabbitKills = Spring.GetGameRulesParam("rabbits_killed") or 0
 
 	caption = Chili.Label:New{
-		x = 60,
-		y = 30,
-		width = 100,
+		x = 10,
+		y = (isVictory and 5) or 25,
+		right = 10,
 		parent = window_endgame,
-		caption = "Game Over",
+		align = "center",
+		caption = (isVictory and "The Town is\n    Saved!") or "Defeat!",
 		fontsize = 50,
-		textColor = {1,0,0,1},
+		textColor = (isVictory and {0,1,0,1}) or {1,0,0,1},
 	}
+	
+	if isVictory then
+		Chili.Label:New{
+			x = 20,
+			y = 150,
+			width = 100,
+			parent = window_endgame,
+			caption = (Spring.GetGameRulesParam("villagersKilled") or 0) .. " townsfolk lost their lives.",
+			fontsize = 20,
+			textColor = {1,1,1,1},
+		}
+		Chili.Label:New{
+			x = 20,
+			y = 175,
+			width = 100,
+			parent = window_endgame,
+			caption = (Spring.GetGameRulesParam("alliesDrained") or 0) .. " were found mysteriously drained\nof blood.",
+			fontsize = 20,
+			textColor = {1,1,1,1},
+		}
+	else
+		Chili.Label:New{
+			x = 20,
+			y = 105,
+			width = 100,
+			parent = window_endgame,
+			caption = (Spring.GetGameRulesParam("orksKilled") or 0) .. " orks were slain before you\nsuccumbed.",
+			fontsize = 20,
+			textColor = {1,1,1,1},
+		}
+		Chili.Label:New{
+			x = 20,
+			y = 180,
+			width = 100,
+			parent = window_endgame,
+			caption = "There is no hope without your aid.",
+			fontsize = 20,
+			textColor = {1,1,1,1},
+		}
+	end
+	
 	Chili.Label:New{
-		x = 80,
-		y = 100,
+		x = 20,
+		y = 260,
 		width = 100,
 		parent = window_endgame,
 		caption = "Thanks for playing!",
@@ -89,79 +131,13 @@ local function SetupControls()
 		fontsize = 20,
 		textColor = {1,1,1,1},
 	}
-	-- Chili.Label:New{
-	-- 	x = 114,
-	-- 	y = 155,
-	-- 	width = 100,
-	-- 	parent = window_endgame,
-	-- 	caption = "Time: " .. survialTime .. "s",
-	-- 	fontsize = 32,
-	-- 	textColor = {1,0,0,1},
-	-- }
-	-- Chili.Label:New{
-	-- 	x = 128,
-	-- 	y = 200,
-	-- 	width = 100,
-	-- 	parent = window_endgame,
-	-- 	caption = rabbitKills .. " 👹",
-	-- 	fontsize = 32,
-	-- 	textColor = {1,0,0,1},
-	-- }
-
-	-- nameBox = Chili.EditBox:New{
-	-- 	parent = window_endgame,
-	-- 	x = 50,
-	-- 	y = 255,
-	-- 	width = 290,
-	-- 	height = 30,
-	-- 	fontsize = 22,
-	-- 	hint = "Leaderboard Name",
-	-- 	text = playerName,
-	-- }
-
-	-- submitButton = Button:New {
-	-- 	parent   = window_endgame,
-	-- 	bottom   = 30;
-	-- 	width    = 90;
-	-- 	x        = 40;
-	-- 	height   = 55;
-	-- 	fontsize = 20,
-	-- 	caption = "Submit",
-	-- 	OnClick = { function()
-	-- 		if not nameBox then
-	-- 			return
-	-- 		end
-	-- 		playerName = nameBox.text
-	-- 		if playerName == "" then
-	-- 			return
-	-- 		end
-	-- 		nameBox:Dispose()
-	-- 		nameBox = nil
-	-- 		lblUpload = Chili.Label:New {
-	-- 			parent = window_endgame,
-	-- 			x = 130,
-	-- 			y = 255,
-	-- 			width = 260,
-	-- 			height = 30,
-	-- 			caption = "Uploading...",
-	-- 			fontsize = 26,
-	-- 		}
-	-- 		if WG.analytics and WG.analytics.SendEvent then
-	-- 			-- sending it with a fake timestamp so it belongs to the previous game
-	-- 			WG.analytics:SendEvent("player_name", playerName, gameOverTime)
-	-- 			lblUpload:SetCaption("Score sent \255\0\255\0✔\b")
-	-- 		else
-	-- 			lblUpload:SetCaption("Upload Error \255\255\0\0✗\b")
-	-- 		end
-	-- 	end},
-	-- }
 	restartButton = Button:New{
-		bottom  = 30,
-		width   = 90,
-		x       = 50,
-		height  = 55,
+		bottom  = 5,
+		width   = 175,
+		x       = 10,
+		height  = 80,
 		caption = "Restart",
-		fontsize = 20,
+		fontsize = 24,
 		OnClick = {
 			function()
 				nameBox = nil
@@ -176,12 +152,12 @@ local function SetupControls()
 		parent = window_endgame,
 	}
 	Button:New{
-		bottom  = 30,
-		width   = 80,
-		x       = 260,
-		height  = 55,
+		bottom  = 5,
+		width   = 175,
+		right   = 10,
+		height  = 80,
 		caption = "Exit",
-		fontsize = 20,
+		fontsize = 24,
 		OnClick = {
 			function()
 				nameBox = nil
@@ -228,7 +204,7 @@ function widget:Initialize()
 	screen0 = Chili.Screen0
 	color2incolor = Chili.color2incolor
 	incolor2color = Chili.incolor2color
-
+	
 	for _, unitID in ipairs(Spring.GetAllUnits()) do
 		local unitDefID = Spring.GetUnitDefID(unitID)
 		widget:UnitCreated(unitID, unitDefID)
@@ -270,14 +246,12 @@ function widget:GameOver(winningAllyTeams)
 	for _, winningAllyTeamID in pairs(winningAllyTeams) do
 		if myAllyTeamID == winningAllyTeamID then
 			Spring.SendCommands("endgraph 0")
-			SetupControls()
-			caption:SetCaption("You win!");
-			caption.font.color={0,1,0,1};
+			SetupControls(true)
 			return
 		end
 	end
 	Spring.SendCommands("endgraph 0")
-	SetupControls()
+	SetupControls(false)
 end
 
 function widget:UnitCreated(unitID, unitDefID, unitTeam)

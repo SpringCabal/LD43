@@ -414,6 +414,8 @@ end
 ----------------------------------------------------------------------------
 -- Handling
 
+local villagersKilled = 0
+
 local function CheckIdle(unitID, area)
 	if Spring.GetCommandQueue(unitID, 0) ~= 0 then
 		return
@@ -457,7 +459,10 @@ function gadget:Initialize()
 end
 
 function gadget:UnitDestroyed(unitID, unitDefID, teamID)
-	villagers.Remove(unitID)
+	if villagers.Remove(unitID) then
+		villagersKilled = villagersKilled + 1
+		Spring.SetGameRulesParam("villagersKilled", villagersKilled)
+	end
 end
 
 function gadget:Shutdown()

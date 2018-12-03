@@ -19,6 +19,7 @@ local AIM_Z = 5720
 local AIM_VAR = 600
 local AIM_REACHED_VAR = 2000
 local ENEMY_TEAM = 1
+local orksKilled = 0
 
 local handledUnits = {
 	[UnitDefNames["orksmall"].id] = true,
@@ -73,6 +74,8 @@ end
 function gadget:UnitDestroyed(unitID, unitDefID, teamID)
 	if handledUnits[unitDefID] and teamID == ENEMY_TEAM then
 		aiUnits.Remove(unitID)
+		orksKilled = orksKilled + 1
+		Spring.SetGameRulesParam("orksKilled", orksKilled)
 	end
 end
 
