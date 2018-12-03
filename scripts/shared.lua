@@ -46,14 +46,18 @@ function sharedFunc.StopMoving()
 	Move(bobPiece, y_axis, 0, 10)
 end
 
+function sharedFunc.FaceDirection(dx, dz)
+	local angle = Spring.Utilities.Vector.Angle(dx, dz) - math.pi/2
+	Spring.SetUnitRotation(unitID, 0, angle, 0)
+end
+
 function sharedFunc.FaceTarget(targetID)
 	if not targetID then
 		return
 	end
 	local ux, uy, uz = Spring.GetUnitPosition(unitID)
 	local tx, ty, tz = Spring.GetUnitPosition(targetID)
-	local angle = Spring.Utilities.Vector.Angle(tx - ux, tz - uz)
-	Spring.MoveCtrl.SetHeading(unitID, angle)
+	sharedFunc.FaceDirection(tx - ux, tz - uz)
 end
 
 return sharedFunc

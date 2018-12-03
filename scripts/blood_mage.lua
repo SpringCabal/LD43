@@ -1,5 +1,3 @@
-
-
 local Hand_Right = piece("Hand_Right")
 local Hand_Left = piece("Hand_Left")
 local Torso = piece("Torso")
@@ -61,6 +59,11 @@ function script.BlockShot(num, targetID)
 end
 
 function script.FireWeapon()
+	if GG.fireTx then
+		local ux, _, uz = Spring.GetUnitPosition(unitID)
+		local dx, dz = GG.fireTx - ux, GG.fireTz - uz
+		shared.FaceDirection(dx, dz)
+	end
 	Spring.ClearUnitGoal(unitID)
 	StartThread(AttackAnimation)
 	return true

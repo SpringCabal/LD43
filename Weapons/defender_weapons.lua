@@ -67,7 +67,7 @@ weapons.CowardsEyes = MeleeWeapon:New {
 	}
 }
 
-weapons.Staff = MeleeWeapon:New {
+weapons.Staff = FancyMeleeWeapon:New {
 	name                  = "Staff",
 	reloadTime            = 0.8,
 	 damage                = {

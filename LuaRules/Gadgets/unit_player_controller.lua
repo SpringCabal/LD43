@@ -36,6 +36,7 @@ local HEIGHT_CHANGE_PER_FRAME = 7
 local controlledDefID = UnitDefNames["bloodmage"].id
 local controlledID = nil
 local moveGoal = nil
+local attackGoal = nil
 
 local movementMessage
 
@@ -62,7 +63,7 @@ end
 -------------------------------------------------------------------
 
 local function GiveClampedMoveGoal(unitID, x, z, radius)
-	radius = radius or 16
+	radius = radius or 40
 	local cx, cz = Spring.Utilities.ClampPosition(x, z)
 	local cy = Spring.GetGroundHeight(cx, cz)
 	local _, height, _ = Spring.GetUnitPosition(unitID)
@@ -70,41 +71,67 @@ local function GiveClampedMoveGoal(unitID, x, z, radius)
 	moveGoal = moveGoal or {}
 	moveGoal.x = cx
 	moveGoal.z = cz
+	moveGoal.radius = radius
+end
+
+local function ClearMove(unitID)
+	if moveGoal then
+		Spring.ClearUnitGoal(unitID)
+		moveGoal = nil
+	end
+end
+
+local function ClearAttack(unitID)
+	if attackGoal then
+		Spring.SetUnitTarget(unitID, nil)
+		attackGoal = nil
+	end
 end
 
 local function MoveUnit(unitID, x, z)
 	if not (unitID and Spring.ValidUnitID(unitID)) then
 		return
 	end
-	if Spring.GetUnitCommands(unitID, 0) > 0 then
-		local cmds = Spring.GetUnitCommands(unitID, -1)
-		for i = 1, #cmds do
-			Spring.GiveOrderToUnit(unitID, CMD.REMOVE, {cmds[i].tag}, {})
-		end
-	end
+	--if Spring.GetUnitCommands(unitID, 0) > 0 then
+	--	local cmds = Spring.GetUnitCommands(unitID, -1)
+	--	for i = 1, #cmds do
+	--		Spring.GiveOrderToUnit(unitID, CMD.REMOVE, {cmds[i].tag}, {})
+	--	end
+	--end
+	ClearAttack(unitID)
 	GiveClampedMoveGoal(unitID, x, z, radius)
 end
 
-local function ClearMove(unitID)
-	Spring.ClearUnitGoal(unitID)
-	moveGoal = nil
-end
-
-local function UpdateMoveGoal(unitID)
-	local x, _, z = Spring.GetUnitPosition(unitID)
-	if moveGoal and Vector.DistSq(x, z, moveGoal.x, moveGoal.z) < 1000 then
-		ClearMove(unitID)
-	end
-end
-
-local function AttackTarget(unitID, targetID)
-	if not targetID then
+local function AttackUnit(unitID, x, z)
+	if not (unitID and Spring.ValidUnitID(unitID)) then
 		return
 	end
-	if moveGoal then
+	local ux, _, uz = Spring.GetUnitPosition(unitID)
+	local dx, dz = x - ux, z - uz
+	local dist = math.max(0.1, math.sqrt(dx*dx + dz*dz))
+	--if dist < 80 then
 		ClearMove(unitID)
+	--else
+	--	GiveClampedMoveGoal(unitID, x, z, 80)
+	--end
+	local tx = ux + 50*dx/dist
+	local tz = uz + 50*dz/dist
+	local ty = Spring.GetGroundHeight(tx, tz) + 20
+	Spring.SetUnitTarget(unitID, tx, ty, tz)
+	attackGoal = true
+	
+	GG.fireTx = tx
+	GG.fireTz = tz
+end
+
+
+local function UpdateMoveGoal(unitID)
+	if moveGoal then
+		local x, _, z = Spring.GetUnitPosition(unitID)
+		if Vector.DistSq(x, z, moveGoal.x, moveGoal.z) < moveGoal.radius*moveGoal.radius then
+			ClearMove(unitID)
+		end
 	end
-	Spring.GiveOrderToUnit(unitID, CMD.ATTACK, {targetID}, {})
 end
 
 function gadget:UnitCreated(unitID, unitDefID, unitTeam)
@@ -146,7 +173,7 @@ function HandleLuaMessage(msg)
 		return
 	end
 
-	if msg_table[1] == 'movement' then
+	if msg_table[1] == 'movement' or msg_table[1] == 'attack' then
 		local x = tonumber(msg_table[2])
 		local z = tonumber(msg_table[3])
 
@@ -156,16 +183,14 @@ function HandleLuaMessage(msg)
 			movementMessage = {
 				frame = frame,
 				x = x,
-				z = z
+				z = z,
+				attack = (msg_table[1] == 'attack'),
 			}
 		end
 	elseif msg_table[1] == 'stop' then
 		if controlledID then
 			ClearMove(controlledID)
 		end
-	elseif msg_table[1] == 'attack' then
-		local targetID = tonumber(msg_table[2])
-		AttackTarget(controlledID, targetID)
 	elseif msg_table[1] == 'spell' then
 		table.remove(msg_table, 1)
 		for i = 1, #msg_table do
@@ -183,7 +208,13 @@ function gadget:GameFrame(frame)
 	if controlledID then
 		local x, y, z = Spring.GetUnitPosition(controlledID)
 		if (movementMessage and movementMessage.frame + 2 > frame) then
-			MoveUnit(controlledID, movementMessage.x, movementMessage.z)
+			if movementMessage.attack then
+				AttackUnit(controlledID, movementMessage.x, movementMessage.z)
+			else
+				MoveUnit(controlledID, movementMessage.x, movementMessage.z)
+			end
+		else
+			ClearAttack(controlledID)
 		end
 		UpdateMoveGoal(controlledID)
 	end

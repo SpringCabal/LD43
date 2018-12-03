@@ -17,6 +17,7 @@ local BLOOD_MAGIC_RANGE = 500
 local MAX_DRAIN_PER_UNIT = 10000
 local FIREBALL_COST = 700
 
+local PLAYER_TEAM = 0
 local CASTING_TIME = 1 * 33
 
 local fireballDefID = WeaponDefNames["fireball"].id
@@ -107,6 +108,7 @@ local function Fireball(unitID, tx, ty, tz)
 		speed = { vx, vy, vz },
 		ttl = flyTime,
 		owner = unitID,
+		team = PLAYER_TEAM,
 	})
 	Spring.SetProjectileGravity(proID, -gravity)
 

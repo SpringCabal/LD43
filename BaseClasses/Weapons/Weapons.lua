@@ -11,8 +11,8 @@ weapons.MeleeWeapon = Weapon:New {
 	tolerance             = 6000,
 	impulseFactor           = 0,
 	 -- collision & avoidance
-	avoidFriendly         = true,
-	avoidFeature          = true,
+	avoidFriendly         = false,
+	avoidFeature          = false,
 	 collideFriendly       = false,
 	collideFeature        = false,
 	targetBorder            = true,
@@ -29,12 +29,20 @@ weapons.MeleeWeapon = Weapon:New {
 weapons.FancyMeleeWeapon = Weapon:New {
 	name                    = [[Auto Particle Beam]],
 	beamDecay               = 0.85,
-	beamTime                = 0.5,
+	beamTime                = 0.1,
 	beamttl                 = 1/30,
 	coreThickness           = 0.5,
 	craterBoost             = 0,
 	craterMult              = 0,
 
+	avoidFriendly         = false,
+	avoidFeature          = false,
+	collideFriendly       = false,
+	collideFeature        = false,
+	noExplode               = true,
+	
+	areaOfEffect          = 0, -- Causes camera jitter
+	
 	damage                  = {
 		default = 100
 	},
@@ -46,14 +54,13 @@ weapons.FancyMeleeWeapon = Weapon:New {
 	rgbColor                = [[1 0 0]],
 	soundStartVolume        = 6,
 	thickness               = 1,
-	tolerance               = 8192,
-	turret                  = false,
+	tolerance               = 8000,
+	turret                  = true,
 	weaponType              = [[BeamLaser]],
 	
 	-- New
-	range                   = 70,
+	range                   = 85,
 	reloadtime              = 0.6,
-	targetBorder            = true,
 }
 
 return weapons

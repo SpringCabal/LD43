@@ -25,6 +25,8 @@ local A = KEYSYMS.A
 local D = KEYSYMS.D
 local SPACE = KEYSYMS.SPACE
 
+local MOVE = "movement"
+local ATTACK = "attack"
 local ENEMY_TEAM = 1
 
 local controlledDefID = UnitDefNames["bloodmage"].id
@@ -44,31 +46,23 @@ local function getMouseCoordinate(mx,my)
 	return x,y,z
 end
 
-local function HoldLeftMouse(mx, my)
-	local traceType, pos = Spring.TraceScreenRay(mx, my)
+local function HoldMouse(command, mx, my)
+	local traceType, pos = Spring.TraceScreenRay(mx, my, true)
 	if not pos then
 		return false
 	end
-	if traceType == "unit" then
-		if Spring.GetUnitTeam(pos) == ENEMY_TEAM then
-			Spring.SendLuaRulesMsg('attack|' .. pos)
-			return
-		end
-	end
-
-	if traceType ~= "ground" then
-		traceType, pos = Spring.TraceScreenRay(mx, my, true)
-	end
 
 	if pos and pos[1] then
-		Spring.SendLuaRulesMsg('movement|' .. pos[1] .. '|' .. pos[3])
+		Spring.SendLuaRulesMsg(command .. '|' .. pos[1] .. '|' .. pos[3])
 	end
 end
 
 local function MouseControl()
 	local mx, my, lmb, mmb, rmb = Spring.GetMouseState()
 	if lmb and mouseControl1 then
-		HoldLeftMouse(mx, my)
+		HoldMouse(MOVE, mx, my)
+	elseif rmb and mouseControl3 then
+		HoldMouse(ATTACK, mx, my)
 	end
 end
 
@@ -84,7 +78,10 @@ function widget:MousePress(mx, my, button)
 	local alt, ctrl, meta, shift = Spring.GetModKeyState()
 	if button == 1 then
 		mouseControl1 = true
-		HoldLeftMouse(mx, my)
+		HoldMouse(MOVE, mx, my)
+	elseif button == 3 then
+		mouseControl3 = true
+		HoldMouse(ATTACK, mx, my)
 	end
 end
 
