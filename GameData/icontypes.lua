@@ -20,8 +20,8 @@ local iconTypes = {
         distance = 100,
     },
     bloodmage = {
-        bitmap = "icons/circle.png",
-        size = 3,
+        bitmap = "icons/star-good.png",
+        size = 6,
         distance = 100,
     },
 
@@ -36,8 +36,8 @@ local iconTypes = {
         distance = 100,
     },
     orkboss = {
-        bitmap = "icons/circle.png",
-        size = 3.5,
+        bitmap = "icons/star.png",
+        size = 6.5,
         distance = 100,
     },
 }

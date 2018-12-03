@@ -46,7 +46,7 @@ local glResetMatrices = gl.ResetMatrices
 local echo = Spring.Echo
 
 local iconsize = 20
-local bgColor_panel = {nil, nil, nil, 0.3}
+local bgColor_panel = {nil, nil, nil, 0.0}
 local final_opacity = 0
 local last_alpha = 1 --Last set alpha value for the actual clickable minimap image
 local default_fog_brightness = 0.5
@@ -534,13 +534,6 @@ function updateRadarColors()
 	end
 end
 
-function setSensorState(newState)
-	local losEnabled = Spring.GetMapDrawMode() == "los"
-	if losEnabled ~= newState then
-		Spring.SendCommands('togglelos')
-	end
-end
-
 local firstUpdate = true
 local updateRunOnceRan = false
 
@@ -549,16 +542,6 @@ function widget:Update() --Note: these run-once codes is put here (instead of in
 		firstUpdate = false
 		return
 	end
-	if not updateRunOnceRan then
-		local frame = (Spring.GetGameRulesParam("totalSaveGameFrame") or 0) + Spring.GetGameFrame()
-		if frame > 0 then
-			setSensorState(options.initialSensorState.value)
-			updateRadarColors()
-		end
-		options.use_map_ratio.OnChange(options.use_map_ratio) -- Wait for docking to provide saved window size
-		updateRunOnceRan = true
-	end
-
 	local cs = Spring.GetCameraState()
 	if not options.hideOnOverview.value then
 		if cs.name == "ov" and not tabbedMode then
@@ -571,13 +554,10 @@ function widget:Update() --Note: these run-once codes is put here (instead of in
 			tabbedMode = false
 		end
 	end
-	WG.MinimapDraggingCamera = options.leftClickOnMinimap.value == 'camera' or leftClickDraggingCamera
 	-- widgetHandler:RemoveCallIn("Update") -- remove update call-in since it only need to run once. ref: gui_ally_cursors.lua by jK
 end
 
 function widget:GameStart()
-	setSensorState(options.initialSensorState.value)
-	updateRadarColors()
 end
 
 MakeMinimapWindow = function()
@@ -693,7 +673,13 @@ local function CleanUpFBO()
   end
 end
 
+WG.uiScale = 1
+
 function widget:Initialize()
+	Spring.SendCommands("minimap geo " .. Spring.GetConfigString("MiniMapGeometry"))
+	Spring.SendCommands("minimap simplecolors 1")
+	Spring.SendCommands("minimap unitexp 0.3")
+	Spring.SendCommands("minimap unitsize 1.2")
 	if (Spring.GetMiniMapDualScreen()) then
 		Spring.Echo("ChiliMinimap: auto disabled (DualScreen is enabled).")
 		widgetHandler:RemoveWidget()
@@ -737,8 +723,11 @@ function widget:Initialize()
 				varying vec2 texCoord;
 
           void main() {
-            texCoord = gl_Vertex.xy * 0.5 + 0.5;
-            gl_Position = vec4(gl_Vertex.xyz, 1.0);
+			texCoord = gl_Vertex.xy * 0.5 + 0.5;
+			texCoord /= 1.3;
+			texCoord.y += 0.17;
+			texCoord.x += 0.04;
+			gl_Position = vec4(gl_Vertex.xyz, 1.0);
           }
 			]],
 		    fragment = [[
@@ -755,10 +744,12 @@ function widget:Initialize()
 		        vec4 color = texture2D(tex0, texCoord.st);
 		        //float width = bounds.z;
 		        //float height = bounds.w;
-		        float edgeFadeScaledPixels = edgeFadePixels/1080.0 * screen.y;
+		        float edgeFadeScaledPixels = edgeFadePixels/1080.0 * screen.y * 20;
 		        vec2 edgeFadeBase = vec2(edgeFadeScaledPixels / screen.x, edgeFadeScaledPixels / screen.y);
-		        vec2 edgeFade = vec2((2.0 * bounds.z) / edgeFadeBase.x, (2.0 * bounds.w) / edgeFadeBase.y);
-				vec2 edgeAlpha = vec2(clamp(1.0 - abs((texCoord.x - bounds.x)/bounds.z - 0.5) * 2.0, 0.0, 1.0/edgeFade.x) * edgeFade.x,
+				vec2 edgeFade = vec2((2.0 * bounds.z) / edgeFadeBase.x, (2.0 * bounds.w) / edgeFadeBase.y);
+				//bounds.y -= 0.015;
+				//bounds.x += 0.005;
+				vec2 edgeAlpha = vec2(clamp(1.0 - abs((texCoord.x - bounds.x)/bounds.z - 0.5) * 2, 0.0, 1.0/edgeFade.x) * edgeFade.x,
 										clamp(1.0 - abs((texCoord.y - bounds.y)/bounds.w - 0.5) * 2.0, 0.0, 1.0/edgeFade.y) * edgeFade.y);
 				float final_alpha = edgeAlpha.x * edgeAlpha.y * alpha;
 				color.r = color.r;
@@ -794,7 +785,6 @@ end
 function widget:Shutdown()
 	--// reset engine default minimap rendering
 	gl.SlaveMiniMap(false)
-	Spring.SendCommands("minimap geo " .. Spring.GetConfigString("MiniMapGeometry"))
 
   if (gl.DeleteTextureFBO) then
     gl.DeleteTextureFBO(offscreentex)
@@ -816,6 +806,8 @@ local function DrawMiniMap()
   gl.Clear(GL.COLOR_BUFFER_BIT,0,0,0,0)
   glDrawMiniMap()
 end
+
+WG.uiScale = 1.3
 
 function widget:DrawScreen()
 	local cs = Spring.GetCameraState()
@@ -845,8 +837,6 @@ function widget:DrawScreen()
 
 		cx,cy = map_panel:LocalToScreen(cx,cy)
 		gl.ConfigMiniMap(cx*(WG.uiScale or 1),(vsy-ch-cy)*(WG.uiScale or 1),cw*(WG.uiScale or 1),ch*(WG.uiScale or 1))
-		WG.MinimapPosition = {cx,cy,cw,ch}
-		WG.MinimapPositionSpringSpace = {cx, vsy - cy - ch,cw,ch}
 	end
 
 	-- Do this even if the fadeShader can't exist, just so that all hiding code still behaves properly
@@ -900,12 +890,12 @@ function widget:DrawScreen()
 		-- gl.Color(1,1,1,alpha)
 		gl.Texture(0, offscreentex)
 		gl.UseShader(fadeShader)
-		gl.Uniform(alphaLoc, alpha)
-		local px, py = window.x + lx, vsy - window.y - ly
-		gl.Uniform(boundsLoc, (px/vsx), ((py - lh)/vsy), (lw/vsx), (lh/vsy))
+		gl.Uniform(alphaLoc, alpha * 7)
+		local px, py = window.x + lx * 2.5, vsy - window.y - ly * 3
+		gl.Uniform(boundsLoc, (px/vsx) * 7, ((py - lh)/vsy) * 1.03, (lw/vsx) / 1.8, (lh/vsy) * 0.60)
 		gl.Uniform(screenLoc, vsx, vsy)
 		-- Spring.Echo("Bounds: "..(window.x + lx)/vsx..", "..(window.y + ly)/vsy..", "..((window.x + lx) + lw)/vsx..", "..((window.y + ly) + lh)/vsy)
-		gl.TexRect(-1-0.25/vsx,1+0.25/vsy,1+0.25/vsx,-1-0.25/vsy)
+		gl.TexRect(-1, 1, 1, -1)
 
 		gl.Texture(0, false)
 		gl.Blending(false)

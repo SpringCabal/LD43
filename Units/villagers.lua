@@ -32,7 +32,7 @@ units.Coward = Humanoid:New {
 	collisionVolumeScales    = '37 43 37',
 	maxVelocity         = 6,
 
-	iconType = "coward",
+	iconType = "peasant",
 
 	weapons = {
 		{
@@ -84,7 +84,9 @@ units.Swordsman = Humanoid:New {
 		hscale = 0.65,
 		vscale = 0.65,
 	},
-	
+
+	iconType = "swordsman",
+
 	weapons = {
 		{
 			name = "DefenderSword",
