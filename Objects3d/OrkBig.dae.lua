@@ -2,6 +2,6 @@ model = {
 	radius = 64.0,
 	height = 20.0,
 	midpos = {0, 33.0, 22},
-	tex1 = "OrkSmallLPTexture.png",
+	tex1 = "OrkBigTexture.png",
 }
 return model
