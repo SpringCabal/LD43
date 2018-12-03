@@ -67,14 +67,16 @@ function widget:Initialize()
 	UpdateGameMode()
 	 bindText = { -- keybinds told to player
 		--purple .. "Q : " .. white .. "swap pull / push",
-		purple .. "1 : " .. white .. "Haste",
-		purple .. "2 : " .. white .. "Fireball",
-		purple .. "3 : " .. white .. "Web",
+		purple .. "1 : " .. white .. "Transfusion",
+		purple .. "2 : " .. white .. "Heartburn",
+		purple .. "3 : " .. white .. "Migraine",
+		purple .. "4 : " .. white .. "Adrenaline",
+		purple .. "5 : " .. white .. "Dialysis",
+		purple .. "Left click: " .. white .. "Move",
+		purple .. "Right click : " .. white .. "Attack",
 		purple .. "Ctrl+Q : " .. white .. "Quit",
 	}
 	 mouseText = {
-		purple .. "Left click: " .. white .. "Move",
-		purple .. "Right click : " .. white .. "Attack",
 	}
 	  if (not WG.Chili) then
 		return

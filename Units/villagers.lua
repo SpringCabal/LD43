@@ -9,7 +9,7 @@ units.Peasant = Humanoid:New {
 	maxDamage           = 350,
 
 	collisionVolumeScales    = '37 43 37',
-	maxVelocity         = 3,
+	maxVelocity         = 6,
 
 	weapons = {
 		{
@@ -28,7 +28,7 @@ units.Coward = Humanoid:New {
 	movestate           = 0,
 
 	collisionVolumeScales    = '37 43 37',
-	maxVelocity         = 3,
+	maxVelocity         = 6,
 
 	weapons = {
 		{
@@ -46,7 +46,7 @@ units.Crossbowman = Humanoid:New {
 	maxDamage           = 400,
 
 	collisionVolumeScales    = '37 46 37',
-	maxVelocity         = 3,
+	maxVelocity         = 6,
 
 	customParams = {
 		hscale = 1,
@@ -70,7 +70,7 @@ units.Swordsman = Humanoid:New {
 	moveState           = 2,
 
 	collisionVolumeScales    = '23 34 23',
-	maxVelocity         = 3,
+	maxVelocity         = 6,
 	footprintX 			= 2,
 	footprintZ 			= 2,
 

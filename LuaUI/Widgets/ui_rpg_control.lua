@@ -132,7 +132,7 @@ function widget:KeyPress(key, mods, isRepeat)
 
 	if key == S then
 		Spring.SendLuaRulesMsg('stop')
-	elseif key >= KEYSYMS.N_1 and key <= KEYSYMS.N_3 then
+	elseif key >= KEYSYMS.N_1 and key <= KEYSYMS.N_5 then
 		local num = key - KEYSYMS.N_1 + 1
 		local mx, my, lmb, mmb, rmb = Spring.GetMouseState()
 		local x,y,z = getMouseCoordinate(mx,my)

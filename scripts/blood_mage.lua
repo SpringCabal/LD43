@@ -58,7 +58,7 @@ function script.CastAnimation(castFunc, tx, tz)
 end
 
 function script.QueryWeapon()
-	return Torso
+	return Hand_Right
 end
 
 function script.AimWeapon()

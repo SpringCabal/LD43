@@ -228,6 +228,10 @@ end
 
 function gadget:GameFrame(frame)
 	if controlledID then
+		local castingFreeze = Spring.GetGameRulesParam("castingFreeze")
+		if castingFreeze and castingFreeze > frame then
+			return
+		end
 		local x, y, z = Spring.GetUnitPosition(controlledID)
 		if (movementMessage and movementMessage.frame + 2 > frame) then
 			if movementMessage.attack then

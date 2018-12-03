@@ -15,7 +15,9 @@ end
 local houseDefID = UnitDefNames["house"].id
 local BLOOD_MAGIC_RANGE = 500
 local MAX_DRAIN_PER_UNIT = 10000
+
 local FIREBALL_COST = 700
+local BUFF_COST = 500
 
 local PLAYER_TEAM = 0
 local CASTING_TIME = 1 * 33
@@ -71,21 +73,23 @@ local function DrainNearbyUnits(collectorID, required)
 	return false
 end
 
-local function Haste(unitID)
-	local manaFound = DrainNearbyUnits(unitID, 200)
+local function Transfusion(unitID)
+	local health, maxHealth = Spring.GetUnitHealth(unitID)
+	if health >= maxHealth then
+		return
+	end
+	local manaFound = DrainNearbyUnits(unitID, maxHealth - health)
 	if not manaFound then
 		return
 	end
-	-- GG.Attributes.AddEffect(unitID, "somekey?", {
-	-- 	accel = 1.5,
-	-- 	move = 1.5
-	-- })
+	Spring.SetUnitHealth(unitID, maxHealth)
+	SpawnBloodEffect(unitID)
 
 	return true
 end
 
 
-local function Fireball(unitID, tx, ty, tz)
+local function Heartburn(unitID, tx, ty, tz)
 	if tx == nil then
 		return
 	end
@@ -118,41 +122,39 @@ local function Fireball(unitID, tx, ty, tz)
 	Spring.UnitScript.CallAsUnit(unitID, env.script.CastAnimation, castFunc, tx, tz)
 	Spring.SetGameRulesParam("castingFreeze", Spring.GetGameFrame() + CASTING_TIME)
 	Spring.ClearUnitGoal(unitID)
-	
-	return true
 end
 
-local function Slow(unitID, tx, ty, tz)
-	local manaFound = DrainNearbyUnits(unitID, FIREBALL_COST)
+local function Migraine(unitID, tx, ty, tz)
+
+end
+
+local function Adrenaline(unitID, tx, ty, tz)
+	local manaFound = DrainNearbyUnits(unitID, BUFF_COST)
 	if not manaFound then
 		return
 	end
-
-
-	ty = Spring.GetGroundHeight(tx, tz)
 	local x, y, z = Spring.GetUnitPosition(unitID)
-	local vx = tx - x
-	local vy = ty - y
-	local vz = tz - z
-	local d = math.sqrt(vx*vx + vy*vy + vz*vz)
-	local SPEED = 40
-	local multiplier = SPEED / (d + 0.0001)
-	vx = vx * multiplier
-	vy = vy * multiplier
-	vz = vz * multiplier
-	Spring.SpawnProjectile(webDefID, {
-		pos = { x, y, z },
-		speed = { vx, vy, vz },
-		ttl = 30,
-		-- ["end"] = { tx, ty, tz },
-		owner = unitID,
-	})
+	
+	local function castFunc()
+		local units = Spring.GetUnitsInCylinder(x, z, 100, PLAYER_TEAM)
+		local frame = Spring.GetGameFrame()
+		for i = 1, #units do
+			GG.StatusEffects.Adrenaline(units[i], frame + 300 + math.random()*60)
+		end
+	end
+	
+	local env = Spring.UnitScript.GetScriptEnv(unitID)
+	Spring.UnitScript.CallAsUnit(unitID, env.script.CastAnimation, castFunc, tx, tz)
+	Spring.SetGameRulesParam("castingFreeze", Spring.GetGameFrame() + CASTING_TIME)
+	Spring.ClearUnitGoal(unitID)
+end
 
-	return true
+local function Dialysis(unitID, tx, ty, tz)
+
 end
 
 -- ID mapping as well
-local spells = { Haste, Fireball, Slow }
+local spells = { Transfusion, Heartburn, Migraine, Adrenaline, Dialysis }
 
 local function UseSpell(unitID, spellID, tx, ty, tz)
 	Spring.Echo('Casting spell: ', spellID, unitID)

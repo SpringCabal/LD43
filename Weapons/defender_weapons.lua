@@ -70,6 +70,7 @@ weapons.CowardsEyes = MeleeWeapon:New {
 weapons.Staff = FancyMeleeWeapon:New {
 	name                  = "Staff",
 	reloadTime            = 0.8,
+	areaOfEffect          = 50,
 	 damage                = {
 		default = 200,
 	}
