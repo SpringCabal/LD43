@@ -36,7 +36,7 @@ local aiUnits = IterableMap.New()
 --------------------------------------------------------------------------------
 
 local function SetupAi(unitID)
-	if flee then
+	if fleeMode then
 		return
 	end
 	local dx = AIM_X + math.random()*AIM_VAR - AIM_VAR/2
@@ -47,7 +47,7 @@ local function SetupAi(unitID)
 end
 
 local function CheckIdle(unitID)
-	if flee or (Spring.GetCommandQueue(unitID, 0) ~= 0) then
+	if fleeMode or (Spring.GetCommandQueue(unitID, 0) ~= 0) then
 		return
 	end
 	local dx = AIM_X + math.random()*AIM_REACHED_VAR - AIM_REACHED_VAR/2
@@ -59,17 +59,19 @@ end
 
 local function SetupFlee(unitID, _, _, bossX, bossZ)
 	local ux, _,uz = Spring.GetUnitPosition(unitID)
+	if not ux then
+		return
+	end
 	local dx, dz = ux - bossX, uz - bossZ
 	local dist = math.sqrt(dx*dx + dz*dz)
 	
 	local cx = ux + 4000*dx/dist
 	local cz = uz + 4000*dz/dist
-	local cy = ux + Spring.GetGroundHeight(cx, cz)
-	Spring.MarkerAddPoint(cx, cy, cz, "f")
+	local cy = Spring.GetGroundHeight(cx, cz)
 	
-	Spring.Utilities.GiveClampedOrderToUnit(unitID, CMD.MOVE, {cx, cy, cz}, 0)
-	Spring.GiveOrderToUnit(unitID, CMD.FIRESTATE_HOLDFIRE, {0, 0}, {})
-
+	Spring.GiveOrderToUnit(unitID, CMD.FIRESTATE_HOLDFIRE, {0}, {})
+	GG.Attributes.AddEffect(unitID, "flee", {reload = 0})
+	Spring.Utilities.GiveClampedOrderToUnit(unitID, CMD.MOVE, {cx, cy, cz}, {})
 end
 
 --------------------------------------------------------------------------------
@@ -99,7 +101,7 @@ function gadget:UnitDestroyed(unitID, unitDefID, teamID)
 end
 
 function GG.OrkAiFlee()
-	local flee = true
+	fleeMode = true
 	local x = Spring.GetGameRulesParam("boss_x") or AIM_X
 	local z = Spring.GetGameRulesParam("boss_z") or AIM_Z
 	aiUnits.Apply(SetupFlee, x, z)
