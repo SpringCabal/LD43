@@ -22,7 +22,12 @@ end
 
 local shared = include("shared.lua")
 function script.Create()
-	shared.Init(Torso, 3)
+	local unitDefID = Spring.GetUnitDefID(unitID)
+	if UnitDefs[unitDefID].name == "orkbig" then
+		shared.Init(Torso, 5, 5)
+	else
+		shared.Init(Torso, 3)
+	end
 end
 
 function script.StartMoving()

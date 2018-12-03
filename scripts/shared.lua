@@ -6,6 +6,8 @@ local SIG_STUN = 4
 local bobScale = 2
 local timeScale = 1
 local staticBobScale = 2
+local sizeScale = 1
+local dead = false
 
 local bobPiece
 
@@ -30,6 +32,9 @@ local function Bob()
 end
 
 function sharedFunc.AttackBob()
+	if dead then
+		return
+	end
 	Move(bobPiece, y_axis, -20, 500)
 	Turn(bobPiece, y_axis, -math.rad(20), math.rad(200))
 	Sleep(100)
@@ -37,27 +42,41 @@ function sharedFunc.AttackBob()
 	Turn(bobPiece, y_axis, math.rad(0), math.rad(120))
 end
 
-function sharedFunc.Init(_bobPiece, _bobScale)
+function sharedFunc.Init(_bobPiece, _bobScale, _sizeScale)
 	bobPiece = _bobPiece
 	bobScale = _bobScale or bobScale
+	sizeScale = _sizeScale or sizeScale
+	
 	staticBobScale = bobScale
 end
 
 function sharedFunc.StartMoving()
+	if dead then
+		return
+	end
 	StartThread(Bob)
 end
 
 function sharedFunc.StopMoving()
+	if dead then
+		return
+	end
 	Signal(SIG_MOVE)
 	Move(bobPiece, y_axis, 0, 10)
 end
 
 function sharedFunc.FaceDirection(dx, dz)
+	if dead then
+		return
+	end
 	local angle = Spring.Utilities.Vector.Angle(dx, dz) - math.pi/2
 	Spring.SetUnitRotation(unitID, 0, angle, 0)
 end
 
 function sharedFunc.FaceTarget(targetID)
+	if dead then
+		return
+	end
 	if not targetID then
 		return
 	end
@@ -90,16 +109,36 @@ local function StunThread(duration)
 	Sleep(duration*1000/30)
 	
 	Spin(bobPiece, z_axis, math.rad(0), math.rad(400))
-	Turn(bobPiece, y_axis, math.rad(0), math.rad(90))
+	Turn(bobPiece, y_axis, math.rad(0), math.rad(180))
 	bobScale = staticBobScale*2
 end
 
 function script.Buff(duration)
+	if dead then
+		return
+	end
 	StartThread(BuffThread, duration)
 end
 
 function script.Stun(duration)
+	if dead then
+		return
+	end
 	StartThread(StunThread, duration)
+end
+
+function script.Killed(recentDamage, maxHealth)
+	Signal(SIG_STUN)
+	Signal(SIG_BUFF)
+	Signal(SIG_MOVE)
+	dead = true
+	Turn(bobPiece, y_axis, math.rad(90), math.rad(250))
+	Move(bobPiece, z_axis, 2*bobScale, 20*bobScale)
+	Sleep(200)
+	Turn(bobPiece, z_axis, math.rad(90), math.rad(180))
+	Move(bobPiece, z_axis, -50*sizeScale, 30*sizeScale)
+	Sleep(1500)
+	return 0
 end
 
 return sharedFunc

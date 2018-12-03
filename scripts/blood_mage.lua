@@ -15,6 +15,7 @@ local function AttackAnimation()
 end
 
 local function DoCastAnimation(castFunc, tx, tz)
+	shared.StopMoving()
 	if tx then
 		local ux, _, uz = Spring.GetUnitPosition(unitID)
 		local dx, dz = tx - ux, tz - uz
