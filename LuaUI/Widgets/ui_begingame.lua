@@ -21,18 +21,23 @@ local playerName = ""
 
 
 local storyTxt = [[
-You are a respected blood mage in a large village/small town. You have the role of a herbalists, making minor domestically useful magical effects by sacrificing/using specialist animal parts that you buy from hunters/whatever. You are part of the village and local economy.
+Usually the militia is more than a match for the occasional orkish raid. As the towns blood mage your contibuted is usually limited to patching up any wounded (at a heavy discount, of course). This time is different. Everyone who can weild a pitchfork is being urged to fight. A gigantic army headed by a fearsome (and massive) leader is approaching. There is no way the militia is up to the task, and, alas, your spells and effects are too weak to tip the balance.
 
-For some reason the town is attacked by monsters, wave after wave, night after night. You see that the town is not going to survive. To defend the town you decide to open the book of Forbidden Magics that you found during your training at the academy. These magics are much more powerful and surely can aid the defense of the town: throw fireballs, summon lightning, create bogs. However, they are powered by something more advanced than mere animals.
+Unless... you were to crack open your book of Forbidden Magic. Powered by more than pricked fingers and vials of sheeps blood, these spells may just be the tool required to save us. Well, most of us. The townsfolk will understand as, if any of us are to see the dawn...
+
 
 ]] .. '\255\255\190\190Sacrifices must be made.\b'
 
 
 local goalTxt = [[
-The game is won by surviving a certain number of nights. The nights would increase in difficulty, there would be a boss at the end, and there would be around 7 nights.
-The secondary goal (score) is to save as many of the villagers as you can.
-The partial goal is to survive for as many nights as you can.
-This goal is designed to make the sacrifices important, since if the game is winnable some of the sacrifices may turn out to have not been necessary. Contrast this with an infinite wave mode in which the aim is to survive for as long as possible. Sacrifices mean less when everyone dies anyway.
+
+ + Protect the townsfolk.
+
+ + Kill the leader of the orks.
+
+ + Survive the night.
+
+ + Try to live with yourself afterwards.
 ]]
 
 local function ActionOK()
@@ -69,6 +74,33 @@ local function SetupControls()
         draggable = false,
         resizable = false,
     }
+	
+	Chili.Panel:New {
+        --caption = "Game Over",
+        x = 0,
+        y = 0,
+        width  = 0,
+        height = 0,
+        padding = {8, 8, 8, 8};
+        --autosize   = true;
+        --parent = screen0,
+        draggable = false,
+        resizable = false,
+		parent = mainWindow,
+    }
+	Chili.Panel:New {
+        --caption = "Game Over",
+        x = 0,
+        y = 0,
+        width  = 0,
+        height = 0,
+        padding = {8, 8, 8, 8};
+        --autosize   = true;
+        --parent = screen0,
+        draggable = false,
+        resizable = false,
+		parent = mainWindow,
+    }
 
     Chili.Label:New{
         align = "center",
@@ -76,24 +108,24 @@ local function SetupControls()
         right = 0,
         y = 30,
         parent = mainWindow,
-        caption = "BloodMage",
+        caption = "Defend Your Town!",
         fontsize = 50,
         textColor = {1,0,0,1},
     }
 
     local controlsTxt = ""
-    local startY = 100
+    local startY = 250
     Chili.Label:New {
-        x = 10,
-        y = startY,
-        fontsize = 20,
+        x = 120,
+        y = startY + 10,
+        fontsize = 32,
         parent = mainWindow,
         caption = "Controls:",
     }
     for i, text in pairs(WG.Bindings) do
         Chili.Label:New{
-            x = 10,
-            y = startY + i * 30,
+            x = 120,
+            y = startY + i * 50,
             fontsize = 20,
             parent = mainWindow,
             caption = text,
@@ -101,9 +133,9 @@ local function SetupControls()
         local desc = WG.BindingDescription[i]
         if desc then
             Chili.Label:New {
-                x = 200,
-                y = startY + i * 30,
-                fontsize = 20,
+                x = 180,
+                y = startY + 28 + i * 50,
+                fontsize = 16,
                 parent = mainWindow,
                 caption = desc,
             }
@@ -111,38 +143,42 @@ local function SetupControls()
     end
 
     Chili.ScrollPanel:New {
-        x = 500, right = 0,
-        y = 120, height = 150,
+        x = 500, right = 180,
+        y = 120, height = 320,
         parent = mainWindow,
+		backgroundColor = {0,0,0,0},
+		borderColor = {0,0,0,0},
         children = {
             Chili.TextBox:New {
                 x = 0, right = 0,
                 text = storyTxt,
-                fontsize = 16,
+                fontsize = 20,
             },
         }
     }
 
     Chili.ScrollPanel:New {
-        x = 500, right = 0,
-        y = 300, height = 150,
+        x = 500, right = 180,
+        y = 420, height = 200,
         parent = mainWindow,
+		backgroundColor = {0,0,0,0},
+		borderColor = {0,0,0,0},
         children = {
             Chili.TextBox:New {
                 x = 0, right = 0,
                 text = goalTxt,
-                fontsize = 16,
+                fontsize = 20,
             },
         }
     }
 
     Chili.Button:New {
         bottom  = 30,
-        width   = 200,
-        x       = 150,
-        height  = 55,
+        width   = 350,
+        x       = 520,
+        height  = 120,
         caption = "Play",
-        fontsize = 20,
+        fontsize = 52,
         OnClick = {
             ActionOK
         },
@@ -150,11 +186,11 @@ local function SetupControls()
     }
     Chili.Button:New {
         bottom  = 30,
-        width   = 200,
-        right   = 150,
-        height  = 55,
+        width   = 350,
+        right   = 50,
+        height  = 120,
         caption = "Exit",
-        fontsize = 20,
+        fontsize = 52,
         OnClick = {
             ActionCancel
         },
@@ -190,6 +226,17 @@ function widget:Initialize()
     screen0 = Chili.Screen0
 
     SetupControls()
+end
+
+local init = false
+function widget:GameFrame()
+	if init then
+		return
+	end
+	if mainWindow.parent then
+		Spring.SendCommands("pause 1")
+	end
+	init = true
 end
 
 function widget:Shutdown()

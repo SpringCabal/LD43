@@ -30,13 +30,12 @@ local bindText = { -- keybinds told to player
 	purple .. "Ctrl+Q : " .. white .. "Quit",
 }
 
--- Is this needed? What about discovery?
 local bindDesc = {
-	'',
-	'',
-	'',
-	'',
-	''
+	'Gain health at the expense of others.',
+	'Causes a burning sensation.',
+	'Really gets you (and your allies) moving.',
+	'Unbearable headaches for your foes.',
+	'Removes toxins (and orks).',
 }
 
 WG.Bindings = bindText

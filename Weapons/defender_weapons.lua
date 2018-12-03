@@ -44,13 +44,13 @@ weapons.DefenderSword = FancyMeleeWeapon:New {
 weapons.DefenderSpear = FancyMeleeWeapon:New {
 	name                  = "DefenderSpear",
 	range                 = 100,
-	reloadTime            = 1.5,
+	reloadTime            = 1.4,
 	-- targeting & accuracy
 	accuracy              = 0.9,
 	 -- soundStart            = [[SpearThrow]],
 	soundStart            = "stickswing",
 	 damage                = {
-		default = 30,
+		default = 90,
 	}
 }
 

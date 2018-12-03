@@ -57,7 +57,7 @@ local BloodMage = Raw:New {
 	-- This should be a good default for games that don't care about performance
 	-- Let's hope it works...
 	collisionVolumeType      = 'CylY',
-	collisionVolumeScales    = '37 60 37',
+	collisionVolumeScales    = '28 40 28',
 
 	selectionVolumeOffsets = [[0 0 0]],
 	selectionVolumeScales  = [[2 2 2]],

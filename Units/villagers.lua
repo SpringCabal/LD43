@@ -6,9 +6,9 @@ units.Peasant = Humanoid:New {
 	movementClass       = "Defender",
 	objectName 			= "Villager.dae",
 	script              = "Swordsman.lua",
-	maxDamage           = 600,
+	maxDamage           = 650,
 
-	collisionVolumeScales    = '37 43 37',
+	collisionVolumeScales    = '28 34 28',
 	selectionVolumeOffsets = [[0 0 0]],
 	selectionVolumeScales  = [[20 20 20]],
 	selectionVolumeType    = [[ellipsoid]],
@@ -30,14 +30,14 @@ units.Peasant = Humanoid:New {
 
 units.Coward = Humanoid:New {
 	-- General
-	name                = "Coward",
+	name                = "Peasant",
 	movementClass       = "Defender",
 	objectName 			= "VillagerNoWeapon.dae",
 	script              = "Coward.lua",
 	maxDamage           = 600,
 	movestate           = 0,
 
-	collisionVolumeScales    = '37 43 37',
+	collisionVolumeScales    = '28 34 28',
 	selectionVolumeOffsets = [[0 0 0]],
 	selectionVolumeScales  = [[20 20 20]],
 	selectionVolumeType    = [[ellipsoid]],
@@ -65,7 +65,7 @@ units.Crossbowman = Humanoid:New {
 	script              = "crossbowman.lua",
 	maxDamage           = 600,
 
-	collisionVolumeScales    = '37 46 37',
+	collisionVolumeScales    = '28 34 28',
 	selectionVolumeOffsets = [[0 0 0]],
 	selectionVolumeScales  = [[20 20 20]],
 	selectionVolumeType    = [[ellipsoid]],
@@ -95,7 +95,7 @@ units.Swordsman = Humanoid:New {
 	moveState           = 2, -- 2 results in large swarms
 	mass                = 80,
 
-	collisionVolumeScales    = '23 34 23',
+	collisionVolumeScales    = '28 34 28',
 	selectionVolumeOffsets = [[0 0 0]],
 	selectionVolumeScales  = [[20 20 20]],
 	selectionVolumeType    = [[ellipsoid]],

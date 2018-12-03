@@ -17,8 +17,8 @@ local BLOOD_MAGIC_RANGE = 600
 
 local FIREBALL_COST = 1000
 local BUFF_COST = 900
-local STUN_COST = 1200
-local THROW_COST = 1800
+local STUN_COST = 1000
+local THROW_COST = 1500
 
 local PLAYER_TEAM = 0
 local ENEMY_TEAM = 1
@@ -31,12 +31,23 @@ local alliesDrained = 0
 local fireballDefID = WeaponDefNames["fireball"].id
 
 local CEG_FLAMES = [[feature_poof_spawner]]
+local CEG_HEALTH = [[feature_slurp_spawner]]
 local CEG_MIGRAINE = [[migraine_pulse_spawner]]
 local CEG_ADRENALINE = [[adrenaline_sparkles]]
+local CEG_DIALYSIS = [[gtfo_pulse]]
 
 local function SpawnBloodEffect(unitID)
 	local x, _, z, _, y = Spring.GetUnitPosition(unitID, true)
 	Spring.SpawnCEG(CEG_FLAMES,
+		x,y,z,
+		0,0,0,
+		20, 20
+	)
+end
+
+local function SpawnHealthEffect(unitID)
+	local x, _, z, _, y = Spring.GetUnitPosition(unitID, true)
+	Spring.SpawnCEG(CEG_HEALTH,
 		x,y,z,
 		0,0,0,
 		20, 20
@@ -59,6 +70,13 @@ local function SpawnAdrenalineEffect(x, y, z)
 	)
 end
 
+local function SpawnDialysisEffect(x, y, z)
+	Spring.SpawnCEG(CEG_DIALYSIS,
+		x,y,z,
+		0,0,0,
+		20, 20
+	)
+end
 
 local function UnNeutralUnits(units)
 	for i = 1, #units do
@@ -85,7 +103,7 @@ local function DrainNearbyUnits(collectorID, required, canPartial)
 	local toKill = {}
 	local toUnNeutral = {}
 	local total = 0
-	for i = 1, 20 do
+	for i = 1, 50 do
 		local unitID = Spring.GetUnitNearestAlly(collectorID, BLOOD_MAGIC_RANGE)
 		if not unitID then
 			UnNeutralUnits(toUnNeutral)
@@ -141,7 +159,7 @@ local function Transfusion(unitID)
 	local function castFunc()
 		if Spring.ValidUnitID(unitID) then
 			Spring.SetUnitHealth(unitID, maxHealth - (partialShortBy or 0))
-			SpawnBloodEffect(unitID)
+			SpawnHealthEffect(unitID)
 		end
 	end
 
@@ -248,10 +266,10 @@ local function Dialysis(unitID, tx, ty, tz)
 	local x, y, z = Spring.GetUnitPosition(unitID)
 
 	local function castFunc()
-		local units = Spring.GetUnitsInCylinder(x, z, 650, ENEMY_TEAM)
+		local units = Spring.GetUnitsInCylinder(x, z, 700, ENEMY_TEAM)
 		for i = 1, #units do
 			local health = Spring.GetUnitHealth(units[i])
-			Spring.SetUnitHealth(units[i], math.max(health - 2000, health/2))
+			Spring.SetUnitHealth(units[i], math.max(health - 1500, health/2))
 			
 			local ux, uy, uz = Spring.GetUnitPosition(units[i])
 			local dx, dz = ux - x, uz - z
@@ -259,6 +277,7 @@ local function Dialysis(unitID, tx, ty, tz)
 			local impulse = 36*(1 - dist/1000)
 			Spring.AddUnitImpulse(units[i], impulse*dx/dist, impulse, impulse*dz/dist)
 		end
+		SpawnDialysisEffect(x, y, z)
 	end
 
 	local env = Spring.UnitScript.GetScriptEnv(unitID)

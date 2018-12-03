@@ -40,6 +40,7 @@ local	resources = {
 			fireball            = 'FireBall.png',
 			fireball_rot        = 'fireball-rotated.png',
 			migraine            = 'migraine.png',
+			blood               = 'blood.png',
 		},
 	}
 }

@@ -71,12 +71,12 @@ local function CheckIdle(unitID, frame)
 	Spring.GiveOrderToUnit(unitID, CMD.FIGHT, {dx, dy, dz}, {})
 end
 
-local function SetupFlee(unitID, _, _, bossX, bossZ)
+local function SetupFlee(unitID)
 	local ux, _,uz = Spring.GetUnitPosition(unitID)
 	if not ux then
 		return
 	end
-	local dx, dz = ux - bossX, uz - bossZ
+	local dx, dz = ux - AIM_X, uz - AIM_Z
 	local dist = math.sqrt(dx*dx + dz*dz)
 	
 	local cx = ux + 4000*dx/dist
@@ -116,9 +116,7 @@ end
 
 function GG.OrkAiFlee()
 	fleeMode = true
-	local x = Spring.GetGameRulesParam("boss_x") or AIM_X
-	local z = Spring.GetGameRulesParam("boss_z") or AIM_Z
-	aiUnits.Apply(SetupFlee, x, z)
+	aiUnits.Apply(SetupFlee)
 end
 
 function gadget:Initialize()

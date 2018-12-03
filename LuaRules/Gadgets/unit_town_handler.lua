@@ -305,8 +305,8 @@ local villagerArea = {
 		units = {
 			swordsman = 30,
 			crossbowman = 8,
-			coward = 35,
-			peasant = 20,
+			coward = 30,
+			peasant = 25,
 		}
 	},
 	{
@@ -317,7 +317,7 @@ local villagerArea = {
 		units = {
 			swordsman = 12,
 			crossbowman = 4,
-			coward = 22,
+			coward = 18,
 			peasant = 8,
 		}
 	},

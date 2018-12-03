@@ -1,7 +1,7 @@
 
 local OrkSmall = Humanoid:New {
 	-- General
-	name                = "OrkSmall",
+	name                = "Ork Bruiser",
 	movementClass       = "Defender",
 	objectName          = "OrkSmall.dae",
 	script              = "ork.lua",
@@ -13,7 +13,7 @@ local OrkSmall = Humanoid:New {
 	maxVelocity         = 4,
 	acceleration        = 2,
 	brakeRate           = 2,
-	turnRate            = 1600 / 0.16,
+	turnRate            = 1200 / 0.16,
 
 	selectionVolumeOffsets = [[0 0 0]],
 	selectionVolumeScales  = [[50 50 50]],
@@ -42,11 +42,11 @@ local OrkSmall = Humanoid:New {
 
 local OrkBig = Humanoid:New {
 	-- General
-	name                = "OrkBig",
+	name                = "Ork Brute",
 	movementClass       = "BigUnit",
 	objectName 			= "OrkBig.dae",
 	script              = "ork.lua",
-	maxDamage           = 1800,
+	maxDamage           = 1600,
 	-- mass                = 50, -- does this even matter?
 
 	maxVelocity         = 4,
@@ -84,11 +84,11 @@ local OrkBig = Humanoid:New {
 
 local OrkBoss = Humanoid:New {
 	-- General
-	name                = "OrkBoss",
+	name                = "Ork Biggun",
 	movementClass       = "BigUnit",
 	objectName          = "OrkBoss.dae",
 	script              = "ork.lua",
-	maxDamage           = 10000,
+	maxDamage           = 12000,
 	-- mass                = 50, -- does this even matter?
 
 	maxVelocity         = 5.1,

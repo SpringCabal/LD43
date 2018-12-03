@@ -73,7 +73,7 @@ function GetStory()
 			name = "spawn",
 			humanName = "Second Night",
 			units = {
-				orksmall = 50,
+				orksmall = 60,
 				orkbig = 3,
 			},
 			team = enemyTeam,
@@ -84,7 +84,7 @@ function GetStory()
 			humanName = "Getting Bigger",
 			units = {
 				orksmall = 60,
-				orkbig = 12,
+				orkbig = 8,
 			},
 			team = enemyTeam,
 			time = 12,
@@ -94,7 +94,7 @@ function GetStory()
 			humanName = "Quick Followup",
 			units = {
 				orksmall = 60,
-				orkbig = 10,
+				orkbig = 6,
 			},
 			team = enemyTeam,
 			time = 25,
@@ -103,8 +103,8 @@ function GetStory()
 			name = "spawn",
 			humanName = "Big Ork Wave",
 			units = {
-				orksmall = 25,
-				orkbig = 25,
+				orksmall = 32,
+				orkbig = 20,
 			},
 			team = enemyTeam,
 			time = 25,
@@ -113,19 +113,29 @@ function GetStory()
 			name = "spawn",
 			humanName = "The Swarm",
 			units = {
-				orksmall = 160,
-				orkbig = 10,
+				orksmall = 90,
+				orkbig = 3,
 			},
 			team = enemyTeam,
-			time = 30,
+			time = 8,
+		},
+		{  -- Night 6a
+			name = "spawn",
+			humanName = "The Swarm",
+			units = {
+				orksmall = 80,
+				orkbig = 2,
+			},
+			team = enemyTeam,
+			time = 25,
 		},
 		{  -- Night 7
 			name = "spawn",
 			humanName = "Final Boss",
 			ableToWin = true,
 			units = {
-				orksmall = 70,
-				orkbig = 20,
+				orksmall = 90,
+				orkbig = 8,
 				orkboss = 1,
 			},
 			team = enemyTeam,
@@ -137,10 +147,10 @@ function GetStory()
 			humanName = "The Loop",
 			units = {
 				orksmall = 35,
-				orkbig = 8,
+				orkbig = 3,
 			},
 			team = enemyTeam,
-			time = 30,
+			time = 25,
 		},
 	}
 end

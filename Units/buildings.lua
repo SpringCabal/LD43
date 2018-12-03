@@ -14,7 +14,7 @@ local House = Unit:New {
 		hscale = 0.5,
 		vscale = 0.2,
 	},
-	 collisionVolumeScales   = '192 50 192',
+	 collisionVolumeScales   = '152 60 152',
 	collisionVolumeTest     = 1,
 	collisionVolumeType     = 'Box',
 	footprintX          = 12,
