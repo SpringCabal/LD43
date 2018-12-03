@@ -142,12 +142,12 @@ local function findPosition(defName)
 	local cX = 5310
 	local cZ = 5250
 	local radius = 3200
-	local angle = math.random()*300
-	if angle > 45 and angle < 75 then
-		angle = angle + 300 - 45
+	local angle = math.random()*320
+	if angle > 50 and angle < 70 then
+		angle = angle + 320 - 50
 	end
-	if angle > 130 and angle < 160 then
-		angle = angle + 330 - 130
+	if angle > 130 and angle < 150 then
+		angle = angle + 340 - 130
 	end
 	
 	angle = angle*math.pi/180
