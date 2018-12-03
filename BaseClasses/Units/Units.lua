@@ -20,6 +20,8 @@ local Humanoid = Unit:New {
 	footprintZ          = 2,
 	fireState           = 2,       -- Should auto-attack by default.
 	mass                = 50,
+	idleautoheal        = 0,
+	autoheal            = 0,
 
 	customParams = {
 		hscale = 0.5,
