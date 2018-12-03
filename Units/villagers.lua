@@ -6,7 +6,7 @@ units.Peasant = Humanoid:New {
 	movementClass       = "Defender",
 	objectName 			= "HumanWithStick.dae",
 	script              = "Swordsman.lua",
-	maxDamage           = 350,
+	maxDamage           = 500,
 
 	collisionVolumeScales    = '37 43 37',
 	maxVelocity         = 6,
@@ -26,7 +26,7 @@ units.Coward = Humanoid:New {
 	movementClass       = "Defender",
 	objectName 			= "HumanWithStick.dae",
 	script              = "Coward.lua",
-	maxDamage           = 350,
+	maxDamage           = 500,
 	movestate           = 0,
 
 	collisionVolumeScales    = '37 43 37',
@@ -47,7 +47,7 @@ units.Crossbowman = Humanoid:New {
 	movementClass       = "Defender",
 	objectName 			= "HumanCrossbow.dae",
 	script              = "crossbowman.lua",
-	maxDamage           = 400,
+	maxDamage           = 600,
 
 	collisionVolumeScales    = '37 46 37',
 	maxVelocity         = 6,
@@ -72,7 +72,7 @@ units.Swordsman = Humanoid:New {
 	movementClass       = "Defender",
 	objectName 			= "Swordsman.dae",
 	script              = "swordsman.lua",
-	maxDamage           = 600,
+	maxDamage           = 800,
 	moveState           = 2,
 
 	collisionVolumeScales    = '23 34 23',

@@ -135,6 +135,7 @@ function script.Killed(recentDamage, maxHealth)
 	Spring.SetUnitCollisionVolumeData(unitID, 5, 5, 5, 0, 0, 0, 0, 1, 0)
 	Spring.SetUnitSelectionVolumeData(unitID, 5, 5, 5, 0, 0, 0, -1, 1, 0)
 	Spring.SetUnitNeutral(unitID, true)
+	Spring.TransferUnit(unitID, 2, false)
 	GG.Attributes.AddEffect(unitID, "deathParalysis", {move = 0, reload = 0})
 	Spring.SetUnitBlocking(unitID, false)
 	

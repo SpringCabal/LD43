@@ -30,7 +30,7 @@ weapons.CrossBow = Weapon:New {
 weapons.DefenderSword = MeleeWeapon:New {
 	name                  = "DefenderSword",
 	range                 = 60,
-	reloadTime            = 2.0,
+	reloadTime            = 1.2,
 	-- targeting & accuracy
 	accuracy              = 0.9,
 	 -- soundStart            = [[SpearThrow]],
@@ -70,9 +70,9 @@ weapons.CowardsEyes = MeleeWeapon:New {
 weapons.Staff = FancyMeleeWeapon:New {
 	name                  = "Staff",
 	reloadTime            = 0.8,
-	areaOfEffect          = 50,
+	areaOfEffect          = 120,
 	 damage                = {
-		default = 200,
+		default = 300,
 	}
 }
 

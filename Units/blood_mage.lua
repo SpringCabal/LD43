@@ -7,7 +7,7 @@ local BloodMage = Raw:New {
 	buildPic 			= "",
 	-- Sensors
 	sightDistance       = 800,
-	mass                = 50,
+	mass                = 120,
 
 	-- Commands
 	canMove             = true,
@@ -64,7 +64,7 @@ local BloodMage = Raw:New {
 	movementClass       = "Player",
 	objectName          = "BloodMage.dae",
 	script              = "blood_mage.lua",
-	maxDamage           = 1600,
+	maxDamage           = 2500,
 
 	iconType = "bloodmage",
 

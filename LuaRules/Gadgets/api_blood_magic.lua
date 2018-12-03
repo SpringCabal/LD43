@@ -19,6 +19,7 @@ local MAX_DRAIN_PER_UNIT = 10000
 local FIREBALL_COST = 700
 local BUFF_COST = 500
 local STUN_COST = 800
+local THROW_COST = 1800
 
 local PLAYER_TEAM = 0
 local ENEMY_TEAM = 1
@@ -37,16 +38,23 @@ local function SpawnBloodEffect(unitID)
 	)
 end
 
+local function UnNeutralUnits(units)
+	for i = 1, #units do
+		Spring.TransferUnit(units[i], 0, false)
+	end
+end
+
 local function DrainNearbyUnits(collectorID, required)
 	local toKill = {}
 	local toUnNeutral = {}
 	for i = 1, 20 do
 		local unitID = Spring.GetUnitNearestAlly(collectorID, BLOOD_MAGIC_RANGE)
 		if not unitID then
+			UnNeutralUnits(toUnNeutral)
 			return false
 		end
 		if Spring.GetUnitDefID(unitID) == houseDefID then
-			Spring.SetUnitNeutral(unitID, true)
+			Spring.TransferUnit(unitID, 2, false)
 			toUnNeutral[#toUnNeutral + 1] = unitID
 		else
 			local hp = Spring.GetUnitHealth(unitID)
@@ -55,23 +63,22 @@ local function DrainNearbyUnits(collectorID, required)
 				Spring.SetUnitHealth(unitID, hp - required)
 				required = 0
 
+				UnNeutralUnits(toUnNeutral)
 				for i = 1, #toKill do
 					SpawnBloodEffect(toKill[i])
 					Spring.DestroyUnit(toKill[i], true)
 				end
 
-				for i = 1, #toUnNeutral do
-					Spring.SetUnitNeutral(toUnNeutral[i], false)
-				end
-
 				return true
 			else
 				toKill[#toKill + 1] = unitID
+				Spring.TransferUnit(unitID, 2, false)
 				required = required - hp
 			end
 		end
 	end
 
+	UnNeutralUnits(toUnNeutral)
 	return false
 end
 
@@ -166,7 +173,27 @@ local function Adrenaline(unitID, tx, ty, tz)
 end
 
 local function Dialysis(unitID, tx, ty, tz)
-
+	local manaFound = DrainNearbyUnits(unitID, THROW_COST)
+	if not manaFound then
+		return
+	end
+	local x, y, z = Spring.GetUnitPosition(unitID)
+	
+	local function castFunc()
+		local units = Spring.GetUnitsInCylinder(x, z, 360, ENEMY_TEAM)
+		for i = 1, #units do
+			local ux, uy, uz = Spring.GetUnitPosition(units[i])
+			local dx, dz = ux - x, uz - z
+			local dist = math.sqrt(dx*dx + dz*dz)
+			local impulse = 20*(1 - dist/800)
+			Spring.AddUnitImpulse(units[i], impulse*dx/dist, impulse, impulse*dz/dist)
+		end
+	end
+	
+	local env = Spring.UnitScript.GetScriptEnv(unitID)
+	Spring.UnitScript.CallAsUnit(unitID, env.script.CastAnimation, castFunc, tx, tz)
+	Spring.SetGameRulesParam("castingFreeze", Spring.GetGameFrame() + CASTING_TIME)
+	Spring.ClearUnitGoal(unitID)
 end
 
 -- ID mapping as well

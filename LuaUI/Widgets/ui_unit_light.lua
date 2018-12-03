@@ -20,8 +20,7 @@ local staffX, staffY, staffZ
 function widget:UnitCreated(unitID, unitDefID, unitTeam)
 	if unitDefID == controlledDefID then
 		controlledID = unitID
-		staffX, staffY, staffZ = Spring.GetUnitPiecePosition(unitID,
-									Spring.GetUnitPieceMap(unitID)["Hand_Right"])
+		staffX, staffY, staffZ = Spring.GetUnitPiecePosition(unitID, Spring.GetUnitPieceMap(unitID)["Hand_Right"])
 	end
 end
 
