@@ -11,8 +11,8 @@ local House = Unit:New {
 --     canRepeat           = false,
 	 --pushResistant       = true,
 	customParams = {
-		hscale = 0.5,
-		vscale = 0.2,
+		hscale = 1.0,
+		vscale = 1.0,
 	},
 	 collisionVolumeScales   = '152 60 152',
 	collisionVolumeTest     = 1,
