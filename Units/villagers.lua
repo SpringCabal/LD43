@@ -82,7 +82,7 @@ units.Swordsman = Humanoid:New {
 	objectName 			= "Swordsman.dae",
 	script              = "swordsman.lua",
 	maxDamage           = 800,
-	moveState           = 2, -- 2 results in large swarms
+	moveState           = 1, -- 2 results in large swarms
 	mass                = 80,
 
 	collisionVolumeScales    = '23 34 23',
