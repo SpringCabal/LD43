@@ -79,9 +79,11 @@ function widget:MousePress(mx, my, button)
 	if button == 1 then
 		mouseControl1 = true
 		HoldMouse(MOVE, mx, my)
+		return true
 	elseif button == 3 then
 		mouseControl3 = true
 		HoldMouse(ATTACK, mx, my)
+		return true
 	end
 end
 

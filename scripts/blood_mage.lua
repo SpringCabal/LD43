@@ -82,6 +82,13 @@ function script.BlockShot(num, targetID)
 	return false
 end
 
+function script.BlockShot()
+	if not GG.fireTx then
+		return true
+	end
+	return false
+end
+
 function script.FireWeapon()
 	if GG.fireTx then
 		local ux, _, uz = Spring.GetUnitPosition(unitID)

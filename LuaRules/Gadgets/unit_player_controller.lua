@@ -85,6 +85,9 @@ local function ClearAttack(unitID)
 	if attackGoal then
 		Spring.SetUnitTarget(unitID, nil)
 		attackGoal = nil
+		
+		GG.fireTx = false
+		GG.fireTz = false
 	end
 end
 
