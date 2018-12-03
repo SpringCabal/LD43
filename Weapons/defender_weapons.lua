@@ -21,7 +21,8 @@ weapons.CrossBow = Weapon:New {
 	accuracy              = 0.1,
 	-- model                 = 'spear.dae',
 	 -- soundStart            = [[SpearThrow]],
-	soundHit              = [[Hit]],
+	soundStart             = "crossbowfire",
+	soundHit               = "crossbowhit",
 	 damage                = {
 		default = 120,
 	}
@@ -34,7 +35,7 @@ weapons.DefenderSword = MeleeWeapon:New {
 	-- targeting & accuracy
 	accuracy              = 0.9,
 	 -- soundStart            = [[SpearThrow]],
-	soundHit              = [[Hit]],
+	soundStart            = "swordswing",
 	 damage                = {
 		default = 130,
 	}
@@ -47,7 +48,7 @@ weapons.DefenderSpear = MeleeWeapon:New {
 	-- targeting & accuracy
 	accuracy              = 0.9,
 	 -- soundStart            = [[SpearThrow]],
-	soundHit              = [[Hit]],
+	soundStart            = "stickswing",
 	 damage                = {
 		default = 30,
 	}
@@ -61,7 +62,7 @@ weapons.CowardsEyes = MeleeWeapon:New {
 	accuracy              = 0.9,
 	turret                = true,
 	 -- soundStart            = [[SpearThrow]],
-	soundHit              = [[Hit]],
+	soundStart            = "runawayyell",
 	 damage                = {
 		default = 0,
 	}
@@ -71,6 +72,8 @@ weapons.Staff = FancyMeleeWeapon:New {
 	name                  = "Staff",
 	reloadTime            = 0.8,
 	areaOfEffect          = 120,
+	soundStart            = "staffswing",
+	soundHit              = "staffhit",
 	 damage                = {
 		default = 275,
 	}

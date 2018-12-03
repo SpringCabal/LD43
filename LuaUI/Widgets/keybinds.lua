@@ -22,19 +22,21 @@ local bindText = { -- keybinds told to player
 	--purple .. "Q : " .. white .. "swap pull / push",
 	purple .. "1 : " .. white .. "Transfusion",
 	purple .. "2 : " .. white .. "Heartburn",
-	purple .. "3 : " .. white .. "Migraine",
-	purple .. "4 : " .. white .. "Adrenaline",
+	purple .. "3 : " .. white .. "Adrenaline",
+	purple .. "4 : " .. white .. "Migraine",
 	purple .. "5 : " .. white .. "Dialysis",
 	purple .. "Left click: " .. white .. "Move",
 	purple .. "Right click : " .. white .. "Attack",
 	purple .. "Ctrl+Q : " .. white .. "Quit",
 }
+
+-- Is this needed? What about discovery?
 local bindDesc = {
-	'Absorb health',
-	'Cast a fireball',
-	'Stun enemies',
-	'Speed up',
-	'Knockback enemies'
+	'',
+	'',
+	'',
+	'',
+	''
 }
 
 WG.Bindings = bindText

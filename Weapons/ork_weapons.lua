@@ -6,7 +6,7 @@ local BigOrkAxe = MeleeWeapon:New {
 	-- targeting & accuracy
 	accuracy              = 0.9,
 	 -- soundStart            = [[SpearThrow]],
-	soundHit              = [[Hit]],
+	soundStart             = "bigorkattack",
 	 damage                = {
 		default = 250,
 	}
@@ -20,7 +20,7 @@ local BossOrkAxe = MeleeWeapon:New {
 	-- targeting & accuracy
 	accuracy              = 0.9,
 	 -- soundStart            = [[SpearThrow]],
-	soundHit              = [[Hit]],
+	soundStart             = "bossorkattack",
 	 damage                = {
 		default = 900,
 	}
@@ -34,7 +34,7 @@ local Bite = MeleeWeapon:New {
 	-- targeting & accuracy
 	accuracy              = 0.9,
 	 -- soundStart            = [[SpearThrow]],
-	soundHit              = [[Hit]],
+	soundStart             = "smallorkattack",
 	 damage                = {
 		default = 20,
 	}
@@ -72,7 +72,8 @@ local Firebomb = Weapon:New {
 	accuracy              = 0.1,
 	-- model                 = 'spear.dae',
 	 -- soundStart            = [[SpearThrow]],
-	soundHit              = [[Hit]],
+	soundStart             = "firebombfire",
+	soundHit               = "firebombhit",
 	 damage                = {
 		default = 450,
 	}

@@ -73,6 +73,46 @@ local function MediumCast(castFunc, tx, tz)
 	Turn(Hand_Left, z_axis, math.rad(50), math.rad(100))
 
 	Move(Torso, z_axis, 40, 60)
+	Sleep(500)
+	if castFunc then
+		castFunc()
+	end
+	Sleep(100)
+	Move(Torso, z_axis, 0, 80)
+
+	Move(Hand_Right, x_axis, 0, 100)
+	Move(Hand_Right, z_axis, 0, 80)
+	
+	Move(Hand_Left, x_axis, 0, 100)
+	Move(Hand_Left, z_axis, 0, 80)
+	
+	
+	Turn(Hand_Right, z_axis, math.rad(0), math.rad(100))
+	Turn(Hand_Right, x_axis, math.rad(0), math.rad(150))
+	
+	Turn(Hand_Left, z_axis, math.rad(0), math.rad(100))
+end
+
+local function LongCast(castFunc, tx, tz)
+	shared.StopMoving()
+	if tx then
+		local ux, _, uz = Spring.GetUnitPosition(unitID)
+		local dx, dz = tx - ux, tz - uz
+		shared.FaceDirection(dx, dz)
+	end
+	
+	Move(Hand_Right, x_axis, -50, 100)
+	Move(Hand_Right, z_axis, 40, 80)
+	
+	Move(Hand_Left, x_axis, 50, 100)
+	Move(Hand_Left, z_axis, 40, 80)
+	
+	Turn(Hand_Right, z_axis, math.rad(25), math.rad(60))
+	Turn(Hand_Right, x_axis, -math.rad(82), math.rad(150))
+	
+	Turn(Hand_Left, z_axis, math.rad(50), math.rad(100))
+
+	Move(Torso, z_axis, 40, 60)
 	Sleep(800)
 	if castFunc then
 		castFunc()
@@ -93,7 +133,7 @@ local function MediumCast(castFunc, tx, tz)
 	Turn(Hand_Left, z_axis, math.rad(0), math.rad(100))
 end
 
-local castAnimationSize = {SmallCast, MediumCast} 
+local castAnimationSize = {SmallCast, MediumCast, LongCast} 
 
 function script.CastAnimation(castFunc, level, tx, tz)
 	StartThread(castAnimationSize[level], castFunc, tx, tz)

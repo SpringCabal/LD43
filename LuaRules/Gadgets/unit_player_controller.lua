@@ -64,7 +64,7 @@ end
 -------------------------------------------------------------------
 
 local function GiveClampedMoveGoal(unitID, x, z, radius)
-	radius = radius or 40
+	radius = radius or 60
 	local cx, cz = Spring.Utilities.ClampPosition(x, z)
 	local cy = Spring.GetGroundHeight(cx, cz)
 	local _, height, _ = Spring.GetUnitPosition(unitID)

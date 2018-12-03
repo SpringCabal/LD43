@@ -55,7 +55,8 @@ local OrkBig = Humanoid:New {
 	footprintZ          = 4,
 
 	collisionVolumeType      = 'CylY',
-	collisionVolumeScales    = '102.0 69.0 102.0',
+	collisionVolumeScales    = '96 96 96',
+	noChaseCategory = [[HOUSE]],
 
 	iconType = "orkbig",
 
@@ -67,7 +68,11 @@ local OrkBig = Humanoid:New {
 		{
 			name = "BigOrkAxe",
 			onlyTargetCategory = [[INFANTRY]],
-		}
+		},
+		{
+			name = "Firebomb",
+			onlyTargetCategory = [[HOUSE]],
+		},
 	},
 }
 
@@ -86,7 +91,8 @@ local OrkBoss = Humanoid:New {
 	footprintZ          = 4,
 
 	collisionVolumeType      = 'CylY',
-	collisionVolumeScales    = '320 235 320',
+	collisionVolumeScales    = '220 180 220',
+	noChaseCategory = [[HOUSE]],
 
 	iconType = "orkboss",
 
@@ -98,7 +104,11 @@ local OrkBoss = Humanoid:New {
 		{
 			name = "BossOrkAxe",
 			onlyTargetCategory = [[INFANTRY]],
-		}
+		},
+		{
+			name = "Firebomb",
+			onlyTargetCategory = [[HOUSE]],
+		},
 	},
 }
 
