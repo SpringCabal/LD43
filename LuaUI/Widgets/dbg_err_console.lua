@@ -104,6 +104,7 @@ function loadWindow()
 		OnClick = {function() onlyErrorsAndWarnings = not onlyErrorsAndWarnings; ReloadAllMessages() end}
 	}
 
+	curr_x = curr_x + el_size + padding
 	Chili.Button:New{
 		parent = window,
 		x = ('%f%%'):format(curr_x),
