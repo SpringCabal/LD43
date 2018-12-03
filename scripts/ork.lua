@@ -42,7 +42,7 @@ function script.Create()
 	if unitDefName == "orkboss" then
 		shared.Init(Torso, 2, 2)
 		tossRadius = 200
-		tossStr = 12
+		tossStr = 10
 		deunorkable = true
 		StartThread(UpdatePosition)
 		shared.InitSound("sounds/bossdeathyell.wav", 1)
@@ -72,11 +72,12 @@ function script.BlockShot(num, targetID)
 		local x, _, z = Spring.GetUnitPosition(unitID)
 		local units = Spring.GetUnitsInCylinder(tx, tz, tossRadius)
 		for i = 1, #units do
-			if units[i] ~= unitID and (deunorkable or (not Spring.GetUnitRulesParam(units[i], "unorkable"))) then
+			local targetUnorkable = Spring.GetUnitRulesParam(units[i], "unorkable")
+			if units[i] ~= unitID and (deunorkable or (not targetUnorkable)) then
 				local ux, uy, uz = Spring.GetUnitPosition(units[i])
 				local dx, dz = ux - x, uz - z
 				local dist = math.sqrt(dx*dx + dz*dz)
-				local impulse = tossStr*(1 - dist/(3*tossRadius))
+				local impulse = ((targetUnorkable and 0.5) or 1)*tossStr*(1 - dist/(3*tossRadius))
 				Spring.AddUnitImpulse(units[i], impulse*dx/dist, impulse, impulse*dz/dist)
 			end
 		end
