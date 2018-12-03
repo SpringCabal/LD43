@@ -95,23 +95,30 @@ local function Fireball(unitID, tx, ty, tz)
 		return
 	end
 
-	ty = Spring.GetGroundHeight(tx, tz) + 20
 	local x, y, z = Spring.GetUnitPosition(unitID)
-	y = y + 20
-	local dx, dy, dz = tx - x, ty - y, tz - z
-	local flyTime = 10 + math.floor(math.sqrt(dx*dx + dz*dz)/45)
-	local gravity = 0.2
+	local function castFunc()
+		ty = Spring.GetGroundHeight(tx, tz) + 20
+		y = y + 20
+		local dx, dy, dz = tx - x, ty - y, tz - z
+		local flyTime = 10 + math.floor(math.sqrt(dx*dx + dz*dz)/45)
+		local gravity = 0.2
 
-	local vx, vy, vz = dx/flyTime, flyTime*gravity/2 + dy/flyTime, dz/flyTime
-	local proID = Spring.SpawnProjectile(fireballDefID, {
-		pos = { x, y, z },
-		speed = { vx, vy, vz },
-		ttl = flyTime,
-		owner = unitID,
-		team = PLAYER_TEAM,
-	})
-	Spring.SetProjectileGravity(proID, -gravity)
-
+		local vx, vy, vz = dx/flyTime, flyTime*gravity/2 + dy/flyTime, dz/flyTime
+		local proID = Spring.SpawnProjectile(fireballDefID, {
+			pos = { x, y, z },
+			speed = { vx, vy, vz },
+			ttl = flyTime,
+			owner = unitID,
+			team = PLAYER_TEAM,
+		})
+		Spring.SetProjectileGravity(proID, -gravity)
+	end
+	
+	local env = Spring.UnitScript.GetScriptEnv(unitID)
+	Spring.UnitScript.CallAsUnit(unitID, env.script.CastAnimation, castFunc, tx, tz)
+	Spring.SetGameRulesParam("castingFreeze", Spring.GetGameFrame() + CASTING_TIME)
+	Spring.ClearUnitGoal(unitID)
+	
 	return true
 end
 
@@ -147,15 +154,10 @@ end
 -- ID mapping as well
 local spells = { Haste, Fireball, Slow }
 
-local function UseSpell(unitID, spellID, ...)
+local function UseSpell(unitID, spellID, tx, ty, tz)
 	Spring.Echo('Casting spell: ', spellID, unitID)
 	local spell = spells[spellID]
-	if spell(unitID, ...) then
-		Spring.SetGameRulesParam("castingFreeze", Spring.GetGameFrame() + CASTING_TIME)
-		Spring.ClearUnitGoal(unitID)
-		local env = Spring.UnitScript.GetScriptEnv(unitID)
-		Spring.UnitScript.CallAsUnit(unitID, env.script.CastAnimation)
-	end
+	spell(unitID, tx, ty, tz)
 end
 
 function gadget:Initialize()

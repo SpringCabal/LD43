@@ -2,6 +2,8 @@ local Hand_Right = piece("Hand_Right")
 local Hand_Left = piece("Hand_Left")
 local Torso = piece("Torso")
 
+local shared = include("shared.lua")
+
 local function AttackAnimation()
 	Move(Hand_Right, y_axis, -30, 1000)
 	Turn(Hand_Right, x_axis, -math.rad(20), math.rad(200))
@@ -12,7 +14,13 @@ local function AttackAnimation()
 	Turn(Hand_Right, z_axis, math.rad(0), math.rad(50))
 end
 
-local function DoCastAnimation()
+local function DoCastAnimation(castFunc, tx, tz)
+	if tx then
+		local ux, _, uz = Spring.GetUnitPosition(unitID)
+		local dx, dz = tx - ux, tz - uz
+		shared.FaceDirection(dx, dz)
+	end
+	
 	Turn(Hand_Right, x_axis, math.rad(200), math.rad(100))
 	Turn(Hand_Left, x_axis, math.rad(200), math.rad(100))
 	Turn(Hand_Right, z_axis, -math.rad(50), math.rad(100))
@@ -21,6 +29,9 @@ local function DoCastAnimation()
 	Move(Torso, z_axis, 40, 100)
 	Sleep(1000)
 	Move(Torso, z_axis, 0, 500)
+	if castFunc then
+		castFunc()
+	end
 
 	Turn(Hand_Left, z_axis, math.rad(0), math.rad(200))
 	Turn(Hand_Right, z_axis, math.rad(0), math.rad(200))
@@ -28,8 +39,8 @@ local function DoCastAnimation()
 	Turn(Hand_Right, x_axis, math.rad(0), math.rad(200))
 end
 
-function script.CastAnimation()
-	StartThread(DoCastAnimation)
+function script.CastAnimation(castFunc, tx, tz)
+	StartThread(DoCastAnimation, castFunc, tx, tz)
 end
 
 function script.QueryWeapon()
@@ -40,7 +51,6 @@ function script.AimWeapon()
 	return true
 end
 
-local shared = include("shared.lua")
 function script.Create()
 	shared.Init(Torso)
 end

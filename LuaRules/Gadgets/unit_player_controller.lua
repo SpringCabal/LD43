@@ -196,7 +196,7 @@ function HandleLuaMessage(msg)
 		for i = 1, #msg_table do
 			msg_table[i] = tonumber(msg_table[i])
 		end
-		GG.UseSpell(controlledID, unpack(msg_table))
+		GG.UseSpell(controlledID, msg_table[1], msg_table[2], msg_table[3], msg_table[4])
 	end
 end
 
