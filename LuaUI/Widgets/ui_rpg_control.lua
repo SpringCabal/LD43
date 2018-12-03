@@ -12,8 +12,6 @@ end
 
 -------------------------------------------------------------------
 -------------------------------------------------------------------
-local mouseControl1 = false
-local mouseControl3 = false
 include('keysym.h.lua')
 local UP = KEYSYMS.UP
 local DOWN = KEYSYMS.DOWN
@@ -59,9 +57,9 @@ end
 
 local function MouseControl()
 	local mx, my, lmb, mmb, rmb = Spring.GetMouseState()
-	if lmb and mouseControl1 then
+	if lmb then
 		HoldMouse(MOVE, mx, my)
-	elseif rmb and mouseControl3 then
+	elseif rmb then
 		HoldMouse(ATTACK, mx, my)
 	end
 end
@@ -74,14 +72,12 @@ function widget:MousePress(mx, my, button)
 	-- if Spring.IsAboveMiniMap(mx, my) then
 	-- 	return true
 	-- end
-
+	
 	local alt, ctrl, meta, shift = Spring.GetModKeyState()
 	if button == 1 then
-		mouseControl1 = true
 		HoldMouse(MOVE, mx, my)
 		return true
 	elseif button == 3 then
-		mouseControl3 = true
 		HoldMouse("attmove", mx, my)
 		return true
 	end
@@ -102,9 +98,7 @@ function widget:GameFrame()
 		pressSpace = 1
 	end
 
-	if mouseControl1 or mouseControl3 then
-		MouseControl()
-	end
+	MouseControl()
 end
 
 function widget:DrawScreen()
@@ -113,11 +107,6 @@ function widget:DrawScreen()
 			gl.Text("Press Space", vsx * 0.4, vsy * 0.4, 20)
 		gl.PopMatrix()
 	end
-end
-
-function widget:MouseRelease(mx, my, button)
-	mouseControl1 = false
-	mouseControl3 = false
 end
 
 -- handles weapon switching and abilities
