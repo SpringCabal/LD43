@@ -145,7 +145,7 @@ local function DrainNearbyUnits(collectorID, required, canPartial)
 
 	UnNeutralUnits(toUnNeutral)
 	if canPartial then
-		return false, DoPartial()
+		return false, DoPartial(toKill, required, x, y, z)
 	end
 	return false
 end
