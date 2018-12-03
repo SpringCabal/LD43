@@ -1,6 +1,6 @@
 local Hand_Right = piece("Hand_Right")
 local Torso = piece("Torso")
-local canAttackAnimate = false
+local isSword = false
 
 local function AttackAnimation()
 	Move(Hand_Right, y_axis, -30, 1000)
@@ -28,10 +28,12 @@ local shared = include("shared.lua")
 function script.Create()
 	local unitDefID = Spring.GetUnitDefID(unitID)
 	if UnitDefs[unitDefID].name == "swordsman" then
-		canAttackAnimate = true
+		isSword = true
+		shared.InitSound("sounds/bravedeathyell.wav", 0.2)
+	else
+		shared.InitSound("sounds/panicdeathyell.wav", 0.2)
 	end
 	shared.Init(Torso, 3)
-	
 end
 
 function script.StartMoving()
@@ -49,7 +51,7 @@ end
 
 function script.FireWeapon()
 	shared.AttackBob()
-	if canAttackAnimate then
+	if isSword then
 		StartThread(AttackAnimation)
 	end
 	return true

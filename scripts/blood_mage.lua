@@ -148,8 +148,9 @@ function script.AimWeapon()
 end
 
 function script.Create()
-		Spring.SetUnitRulesParam(unitID, "unorkable", 1)
+	Spring.SetUnitRulesParam(unitID, "unorkable", 1)
 	shared.Init(Torso)
+	shared.InitSound("sounds/death_player.wav", 1)
 end
 
 function script.StartMoving()

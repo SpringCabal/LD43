@@ -9,6 +9,9 @@ local staticBobScale = 2
 local sizeScale = 1
 local dead = false
 
+local deathSound
+local deathSoundChance = 1
+
 local bobPiece
 
 local function Bob()
@@ -48,6 +51,11 @@ function sharedFunc.Init(_bobPiece, _bobScale, _sizeScale)
 	sizeScale = _sizeScale or sizeScale
 	
 	staticBobScale = bobScale
+end
+
+function sharedFunc.InitSound(_deathSound, _deathSoundChance)
+	deathSound = _deathSound
+	deathSoundChance = _deathSoundChance
 end
 
 function sharedFunc.StartMoving()
@@ -134,6 +142,13 @@ function script.Killed(recentDamage, maxHealth)
 	Signal(SIG_STUN)
 	Signal(SIG_BUFF)
 	Signal(SIG_MOVE)
+	
+	if deathSound and math.random() < deathSoundChance then
+		local x, y, z = Spring.GetUnitPosition(unitID)
+		if x then
+			GG.PlaySound(deathSound, 8, x, y, z)
+		end
+	end
 	
 	Spring.SetUnitCollisionVolumeData(unitID, 5, 5, 5, 0, 0, 0, 0, 1, 0)
 	Spring.SetUnitSelectionVolumeData(unitID, 5, 5, 5, 0, 0, 0, -1, 1, 0)

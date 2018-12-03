@@ -45,12 +45,15 @@ function script.Create()
 		tossStr = 12
 		deunorkable = true
 		StartThread(UpdatePosition)
+		shared.InitSound("sounds/bossdeathyell.wav", 1)
 	elseif unitDefName == "orkbig" then
 		shared.Init(Torso, 2, 2)
 		tossRadius = 120
 		tossStr = 5
+		shared.InitSound("sounds/bigorkdeathyell.wav", 1)
 	else
 		shared.Init(Torso, 3, 0.9)
+		shared.InitSound("sounds/smallorkdeathyell.wav", 0.2)
 	end
 end
 

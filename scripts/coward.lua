@@ -16,6 +16,7 @@ end
 local shared = include("shared.lua")
 function script.Create()
 	shared.Init(Torso, 3)
+	shared.InitSound("sounds/panicdeathyell.wav", 0.2)
 end
 
 function script.StartMoving()
@@ -31,11 +32,18 @@ function script.BlockShot(num, targetID)
 		return true
 	end
 	local tx, _, tz = Spring.GetUnitPosition(targetID)
-	local ux, _, uz = Spring.GetUnitPosition(unitID)
+	local ux, uy, uz = Spring.GetUnitPosition(unitID)
 	local dx, dz = tx - ux, tz - uz
 	local cx = ux - dx
 	local cz = uz - dz
 	local cy = Spring.GetGroundHeight(cx, cz)
+	
+	if deathSound and math.random() < 0.15 then
+		local x, y, z = Spring.GetUnitPosition(unitID)
+		if x then
+			GG.PlaySound("sounds/runawayyell.wav", 8, ux, uy, uz)
+		end
+	end
 	
 	Spring.GiveOrderToUnit(unitID, CMD.MOVE, {cx, cy, cz}, {})
 	return false
