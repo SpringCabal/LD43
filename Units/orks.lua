@@ -43,7 +43,7 @@ local OrkSmall = Humanoid:New {
 local OrkBig = Humanoid:New {
 	-- General
 	name                = "OrkBig",
-	movementClass       = "Defender",
+	movementClass       = "BigUnit",
 	objectName 			= "OrkBig.dae",
 	script              = "ork.lua",
 	maxDamage           = 1200,
@@ -51,8 +51,8 @@ local OrkBig = Humanoid:New {
 
 	maxVelocity         = 4,
 
-	footprintX          = 2,
-	footprintZ          = 2,
+	footprintX          = 4,
+	footprintZ          = 4,
 
 	collisionVolumeType      = 'CylY',
 	collisionVolumeScales    = '102.0 69.0 102.0',
@@ -74,7 +74,7 @@ local OrkBig = Humanoid:New {
 local OrkBoss = Humanoid:New {
 	-- General
 	name                = "OrkBoss",
-	movementClass       = "Defender",
+	movementClass       = "BigUnit",
 	objectName 			= "OrkBoss.dae",
 	script              = "ork.lua",
 	maxDamage           = 5000,
@@ -82,8 +82,8 @@ local OrkBoss = Humanoid:New {
 
 	maxVelocity         = 5.1,
 
-	footprintX          = 2,
-	footprintZ          = 2,
+	footprintX          = 4,
+	footprintZ          = 4,
 
 	collisionVolumeType      = 'CylY',
 	collisionVolumeScales    = '320 235 320',

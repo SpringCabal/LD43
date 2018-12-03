@@ -1,6 +1,6 @@
 local BigOrkAxe = MeleeWeapon:New {
 	name                  = "BigOrkAxe",
-	range                 = 280,
+	range                 = 120,
 	reloadTime            = 2.5,
 	areaOfEffect          = 60,
 	-- targeting & accuracy
@@ -14,7 +14,7 @@ local BigOrkAxe = MeleeWeapon:New {
 
 local BossOrkAxe = MeleeWeapon:New {
 	name                  = "BossOrkAxe",
-	range                 = 400,
+	range                 = 200,
 	reloadTime            = 3.0,
 	areaOfEffect          = 100,
 	-- targeting & accuracy

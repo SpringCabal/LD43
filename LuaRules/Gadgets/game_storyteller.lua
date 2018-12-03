@@ -142,9 +142,17 @@ local function findPosition(defName)
 	local cX = 5310
 	local cZ = 5250
 	local radius = 3200
-	local angle = math.random()*math.pi*2
+	local angle = math.random()*300
+	if angle > 45 and angle < 75 then
+		angle = angle + 300 - 45
+	end
+	if angle > 130 and angle < 160 then
+		angle = angle + 330 - 130
+	end
+	
+	angle = angle*math.pi/180
 	local x = cX + math.cos(angle)*radius
-	local z = cZ + math.sin(angle)*radius
+	local z = cZ - math.sin(angle)*radius
 	
 	local y = Spring.GetGroundHeight(x, z)
 	return x, y, z

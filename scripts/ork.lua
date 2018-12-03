@@ -30,12 +30,12 @@ function script.Create()
 	unitDefName = UnitDefs[unitDefID].name
 	if unitDefName == "orkboss" then
 		shared.Init(Torso, 8, 10)
-		tossRadius = 240
+		tossRadius = 200
 		tossStr = 12
 		Spring.SetUnitRulesParam(unitID, "unorkable", 1)
 	elseif unitDefName == "orkbig" then
 		shared.Init(Torso, 5, 5)
-		tossRadius = 160
+		tossRadius = 120
 		tossStr = 5
 		Spring.SetUnitRulesParam(unitID, "unorkable", 1)
 	else

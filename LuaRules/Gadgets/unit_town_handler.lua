@@ -135,12 +135,13 @@ local housePos = {
 
 local villagerArea = {
 	{
-		x = 4800,
+		x = 4900,
 		z = 4950,
-		width = 400,
-		height = 500,
+		width = 300,
+		height = 400,
 		units = {
-			swordsman = 5,
+			swordsman = 10,
+			crossbowman = 2,
 			coward = 2,
 			peasant = 3,
 		}
@@ -391,6 +392,7 @@ local function SpawnVillager(area, unitDefID)
 	-- Spring.SetUnitNoMinimap(unitID, true)
 	--Spring.Utilities.UnitEcho(unitID, tries)
 	villagers.Add(unitID, area)
+	--Spring.MoveCtrl.SetGroundMoveTypeData(unitID, "maneuverLeash", 3) -- Does not appear to work
 end
 
 local function FillVillagerAreas()

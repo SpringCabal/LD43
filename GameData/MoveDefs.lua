@@ -14,6 +14,17 @@ local moveDefs  =    {
 		allowRawMovement = true,
 	},
 	{
+		name             = "BigUnit",
+		footprintX       = 4,
+		footprintZ       = 4,
+		maxWaterDepth    = 10,
+		maxSlope         = 60,
+		crushStrength    = 5,
+		speedModClass    = 1,
+		heatmapping      = false,
+		allowRawMovement = true,
+	},
+	{
 		name             = "Player",
 		footprintX       = 2,
 		footprintZ       = 2,

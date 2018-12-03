@@ -31,6 +31,7 @@ function script.Create()
 		canAttackAnimate = true
 	end
 	shared.Init(Torso, 3)
+	
 end
 
 function script.StartMoving()
@@ -49,6 +50,8 @@ end
 function script.FireWeapon()
 	shared.AttackBob()
 	Spring.ClearUnitGoal(unitID)
-	StartThread(AttackAnimation)
+	if canAttackAnimate then
+		StartThread(AttackAnimation)
+	end
 	return true
 end
