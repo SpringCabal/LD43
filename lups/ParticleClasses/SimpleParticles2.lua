@@ -381,6 +381,8 @@ function SimpleParticles2:Destroy()
 end
 
 function SimpleParticles2:Visible()
+  if true then return true end
+
   local radius = self.radius +
                  self.frame*self.sphereGrowth --FIXME: frame is only updated on Update()
   local posX,posY,posZ = self.pos[1],self.pos[2],self.pos[3]
