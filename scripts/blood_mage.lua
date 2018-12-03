@@ -5,13 +5,19 @@ local Torso = piece("Torso")
 local shared = include("shared.lua")
 
 local function AttackAnimation()
-	Move(Hand_Right, y_axis, -30, 1000)
+	Move(Hand_Right, y_axis, -35, 500)
 	Turn(Hand_Right, x_axis, -math.rad(20), math.rad(200))
 	Turn(Hand_Right, z_axis, math.rad(30), math.rad(100))
+	
+	Turn(Torso, x_axis, -math.rad(5 + math.random()*2), math.rad(120))
+	Move(Torso, y_axis, -8 - math.random()*4, 45 + math.random()*10)
 	Sleep(100)
-	Move(Hand_Right, y_axis, 0, 500)
+	Move(Hand_Right, y_axis, 0, 200)
 	Turn(Hand_Right, x_axis, math.rad(0), math.rad(40))
 	Turn(Hand_Right, z_axis, math.rad(0), math.rad(50))
+	
+	Turn(Torso, x_axis, math.rad(0), math.rad(100))
+	Move(Torso, y_axis, 0, 30)
 end
 
 local function DoCastAnimation(castFunc, tx, tz)
