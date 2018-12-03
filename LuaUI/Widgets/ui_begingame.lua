@@ -233,7 +233,7 @@ function widget:GameFrame()
 	if init then
 		return
 	end
-	if mainWindow.parent then
+	if mainWindow and mainWindow.parent then
 		Spring.SendCommands("pause 1")
 	end
 	init = true
