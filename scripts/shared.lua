@@ -131,6 +131,12 @@ function script.Killed(recentDamage, maxHealth)
 	Signal(SIG_STUN)
 	Signal(SIG_BUFF)
 	Signal(SIG_MOVE)
+	
+	Spring.SetUnitCollisionVolumeData(unitID, 5, 5, 5, 0, 0, 0, 0, 1, 0)
+	Spring.SetUnitSelectionVolumeData(unitID, 5, 5, 5, 0, 0, 0, -1, 1, 0)
+	Spring.SetUnitNeutral(unitID, true)
+	GG.Attributes.AddEffect(unitID, "deathParalysis", {move = 0, reload = 0})
+	
 	dead = true
 	Turn(bobPiece, y_axis, math.rad(90), math.rad(250))
 	Move(bobPiece, z_axis, 2*bobScale, 20*bobScale)

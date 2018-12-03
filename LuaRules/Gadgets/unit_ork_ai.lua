@@ -23,6 +23,7 @@ local ENEMY_TEAM = 1
 local handledUnits = {
 	[UnitDefNames["orksmall"].id] = true,
 	[UnitDefNames["orkbig"].id] = true,
+	[UnitDefNames["orkboss"].id] = true,
 }
 
 local IterableMap = VFS.Include("LuaRules/Gadgets/Include/IterableMap.lua")
