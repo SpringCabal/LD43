@@ -4,6 +4,7 @@ local Torso = piece("Torso")
 local unitDefName = "orksmall"
 local tossRadius
 local tossStr
+local deunorkable
 
 local shared = include("shared.lua")
 
@@ -32,6 +33,7 @@ function script.Create()
 		shared.Init(Torso, 8, 10)
 		tossRadius = 200
 		tossStr = 12
+		deunorkable = true
 		Spring.SetUnitRulesParam(unitID, "unorkable", 1)
 	elseif unitDefName == "orkbig" then
 		shared.Init(Torso, 5, 5)
@@ -58,7 +60,7 @@ function script.BlockShot(num, targetID)
 		local x, _, z = Spring.GetUnitPosition(unitID)
 		local units = Spring.GetUnitsInCylinder(tx, tz, tossRadius)
 		for i = 1, #units do
-			if not Spring.GetUnitRulesParam(units[i], "unorkable") then
+			if units[i] ~= unitID and (deunorkable or (not Spring.GetUnitRulesParam(units[i], "unorkable"))) then
 				local ux, uy, uz = Spring.GetUnitPosition(units[i])
 				local dx, dz = ux - x, uz - z
 				local dist = math.sqrt(dx*dx + dz*dz)

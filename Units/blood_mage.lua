@@ -7,7 +7,7 @@ local BloodMage = Raw:New {
 	buildPic 			= "",
 	-- Sensors
 	sightDistance       = 800,
-	mass                = 300,
+	mass                = 900,
 
 	-- Commands
 	canMove             = true,

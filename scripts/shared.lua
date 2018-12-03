@@ -110,7 +110,10 @@ local function StunThread(duration)
 	
 	Spin(bobPiece, z_axis, math.rad(0), math.rad(400))
 	Turn(bobPiece, y_axis, math.rad(0), math.rad(180))
-	bobScale = staticBobScale*2
+	bobScale = staticBobScale
+	
+	Sleep(1000)
+	Spin(bobPiece, z_axis, math.rad(0), math.rad(400))
 end
 
 function script.Buff(duration)

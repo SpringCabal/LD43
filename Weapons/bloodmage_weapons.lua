@@ -27,14 +27,14 @@ local Fireball = RangedSpell:New {
 	name = "Fireball",
 
 	impactOnly = false,
-	areaOfEffect = 440,
-	craterAreaOfEffect = 350,
-	impulseFactor = 0.2,
-	explosionSpeed = 30,
+	areaOfEffect = 500,
+	craterAreaOfEffect = 500,
+	impulseFactor = 1,
+	explosionSpeed = 35,
 	craterBoost = 100,
 
     damage = {
-        default = 1000,
+        default = 1600,
 	},
 
 	customParams = {
@@ -44,25 +44,6 @@ local Fireball = RangedSpell:New {
 	}
 }
 
-local Web = RangedSpell:New {
-    name = "Web",
-
-    damage = {
-        default = 0,
-	},
-
-	rgbColor = {
-		0.3, 0.0, 0.6,
-	},
-
-	customParams = {
-		light_radius = 100,
-		light_fade_time = 1,
-		light_fade_offset = 10,
-	}
-}
-
 return {
 	Fireball = Fireball,
-	Web	 	 = Web,
 }

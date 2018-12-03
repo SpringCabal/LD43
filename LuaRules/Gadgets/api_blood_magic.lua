@@ -27,7 +27,6 @@ local CASTING_TIME = 1 * 33
 local CASTING_TIME_LONG = 1 * 33
 
 local fireballDefID = WeaponDefNames["fireball"].id
-local webDefID = WeaponDefNames["web"].id
 local CEG_SPAWN = [[feature_poof_spawner]]
 
 local function SpawnBloodEffect(unitID)
@@ -209,12 +208,12 @@ local function Dialysis(unitID, tx, ty, tz)
 	local x, y, z = Spring.GetUnitPosition(unitID)
 
 	local function castFunc()
-		local units = Spring.GetUnitsInCylinder(x, z, 500, ENEMY_TEAM)
+		local units = Spring.GetUnitsInCylinder(x, z, 650, ENEMY_TEAM)
 		for i = 1, #units do
 			local ux, uy, uz = Spring.GetUnitPosition(units[i])
 			local dx, dz = ux - x, uz - z
 			local dist = math.sqrt(dx*dx + dz*dz)
-			local impulse = 36*(1 - dist/600)
+			local impulse = 36*(1 - dist/1000)
 			Spring.AddUnitImpulse(units[i], impulse*dx/dist, impulse, impulse*dz/dist)
 		end
 	end

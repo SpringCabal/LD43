@@ -17,7 +17,7 @@ end
 local AIM_X = 5650
 local AIM_Z = 5720
 local AIM_VAR = 600
-local AIM_REACHED_VAR = AIM_Z*2
+local AIM_REACHED_VAR = 2000
 local ENEMY_TEAM = 1
 
 local handledUnits = {

@@ -36,7 +36,7 @@ weapons.DefenderSword = MeleeWeapon:New {
 	 -- soundStart            = [[SpearThrow]],
 	soundHit              = [[Hit]],
 	 damage                = {
-		default = 100,
+		default = 130,
 	}
 }
 
@@ -72,7 +72,7 @@ weapons.Staff = FancyMeleeWeapon:New {
 	reloadTime            = 0.8,
 	areaOfEffect          = 120,
 	 damage                = {
-		default = 300,
+		default = 275,
 	}
 }
 
