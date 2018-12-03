@@ -54,7 +54,7 @@ local OrkBig = Humanoid:New {
 	footprintX          = 4,
 	footprintZ          = 4,
 
-	collisionVolumeType      = 'CylY',
+	collisionVolumeType      = 'ellipsoid',
 	collisionVolumeScales    = '96 96 96',
 	noChaseCategory = [[HOUSE]],
 
@@ -92,8 +92,8 @@ local OrkBoss = Humanoid:New {
 	footprintX          = 4,
 	footprintZ          = 4,
 
-	collisionVolumeType      = 'CylY',
-	collisionVolumeScales    = '220 180 220',
+	collisionVolumeType      = 'ellipsoid',
+	collisionVolumeScales    = '220 220 220',
 	noChaseCategory = [[HOUSE]],
 
 	iconType = "orkboss",

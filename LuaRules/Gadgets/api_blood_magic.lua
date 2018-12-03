@@ -15,10 +15,10 @@ end
 local houseDefID = UnitDefNames["house"].id
 local BLOOD_MAGIC_RANGE = 600
 
-local FIREBALL_COST = 800
-local BUFF_COST = 500
-local STUN_COST = 800
-local THROW_COST = 1500
+local FIREBALL_COST = 1000
+local BUFF_COST = 900
+local STUN_COST = 1200
+local THROW_COST = 1800
 
 local PLAYER_TEAM = 0
 local ENEMY_TEAM = 1

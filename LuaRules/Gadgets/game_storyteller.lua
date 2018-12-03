@@ -63,7 +63,8 @@ function GetStory()
 			name = "spawn",
 			humanName = "First Night",
 			units = {
-				orksmall = 40
+				orksmall = 50,
+				orkbig = 1,
 			},
 			team = enemyTeam,
 			time = 1,
@@ -72,7 +73,7 @@ function GetStory()
 			name = "spawn",
 			humanName = "Second Night",
 			units = {
-				orksmall = 50,
+				orksmall = 60,
 				orkbig = 3,
 			},
 			team = enemyTeam,
@@ -83,7 +84,7 @@ function GetStory()
 			humanName = "Getting Bigger",
 			units = {
 				orksmall = 70,
-				orkbig = 10,
+				orkbig = 12,
 			},
 			team = enemyTeam,
 			time = 30,
@@ -92,7 +93,7 @@ function GetStory()
 			name = "spawn",
 			humanName = "Quick Followup",
 			units = {
-				orksmall = 50,
+				orksmall = 70,
 				orkbig = 10,
 			},
 			team = enemyTeam,
@@ -103,7 +104,7 @@ function GetStory()
 			humanName = "Big Ork Wave",
 			units = {
 				orksmall = 30,
-				orkbig = 25,
+				orkbig = 30,
 			},
 			team = enemyTeam,
 			time = 35,
@@ -112,7 +113,7 @@ function GetStory()
 			name = "spawn",
 			humanName = "The Swarm",
 			units = {
-				orksmall = 120,
+				orksmall = 150,
 				orkbig = 10,
 			},
 			team = enemyTeam,
@@ -121,16 +122,25 @@ function GetStory()
 		{  -- Night 7
 			name = "spawn",
 			humanName = "Final Boss",
+			ableToWin = true,
 			units = {
-				orksmall = 60,
-				orkbig = 10,
+				orksmall = 80,
+				orkbig = 20,
 				orkboss = 1,
 			},
 			team = enemyTeam,
 			time = 20,
 		},
-		{
-		name = "outro",
+		{  -- Forever spawn
+			name = "spawn",
+			infiniteLoop = true,
+			humanName = "The Loop",
+			units = {
+				orksmall = 40,
+				orkbig = 15,
+			},
+			team = enemyTeam,
+			time = 20,
 		},
 	}
 end
@@ -213,7 +223,9 @@ function NextStep()
 	Spring.Log(LOG_SECTION, LOG.NOTICE, "Next step")
 	local step = story[1]
 	DoStep(step)
-	table.remove(story, 1)
+	if not step.infiniteLoop then
+		table.remove(story, 1)
+	end
 	if step.time then
 		waitFrames = step.time * GAME_FRAME_PER_SEC
 	elseif step.name == "spawn" then

@@ -62,7 +62,6 @@ weapons.CowardsEyes = MeleeWeapon:New {
 	accuracy              = 0.9,
 	turret                = true,
 	 -- soundStart            = [[SpearThrow]],
-	soundStart            = "runawayyell",
 	 damage                = {
 		default = 0,
 	}
