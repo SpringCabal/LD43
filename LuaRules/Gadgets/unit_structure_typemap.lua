@@ -17,7 +17,7 @@ end
 local spGetUnitDefID      = Spring.GetUnitDefID
 local IMPASSIBLE_TERRAIN = 137 -- Hope that this does not conflict with any maps
 
-local PLAYER_FUDGE = 8
+local PLAYER_FUDGE = 16
 
 -------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
@@ -49,26 +49,26 @@ local function GetUnitExtents(unitID, ud)
 		else
 			uz = math.floor(uz/16)*16+8
 		end
-	if zsize%16 == 0 then
+		if zsize%16 == 0 then
 			ux = math.floor((ux+8)/16)*16
 		else
 			ux = math.floor(ux/16)*16+8
 		end
-	minx = ux - zsize
+		minx = ux - zsize
 		minz = uz - xsize
 		maxx = ux + zsize
 		maxz = uz + xsize
 	end
-	return minx - 8, minz - 8, maxx, maxz
+	return minx, minz, maxx - 8, maxz - 8
 end
 
 local function SetTypemapSquare(minx, minz, maxx, maxz, value)
 	for x = minx, maxx, 8 do
 		for z = minz, maxz, 8 do
 			if value == IMPASSIBLE_TERRAIN and (x < minx + PLAYER_FUDGE or x > maxx - PLAYER_FUDGE or z < minz + PLAYER_FUDGE or z > maxz - PLAYER_FUDGE) then
-	Spring.SetMapSquareTerrainType(x, z, value)
+				Spring.SetMapSquareTerrainType(x, z, value + 1)
 			else
-	Spring.SetMapSquareTerrainType(x, z, value)
+				Spring.SetMapSquareTerrainType(x, z, value)
 			end
 		end
 	end
@@ -99,7 +99,7 @@ end
 
 function gadget:Initialize()
 	Spring.SetTerrainTypeData(IMPASSIBLE_TERRAIN, 0, 0, 0, 0)
-	Spring.SetTerrainTypeData(IMPASSIBLE_TERRAIN + 1, 0.5, 1, 1, 1)
+	Spring.SetTerrainTypeData(IMPASSIBLE_TERRAIN + 1, 0.4, 0, 0, 0)
 	local allUnits = Spring.GetAllUnits()
 	for i = 1, #allUnits do
 		local unitID = allUnits[i]
