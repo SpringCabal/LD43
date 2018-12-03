@@ -1,7 +1,7 @@
 
 local OrkSmall = Humanoid:New {
 	-- General
-	name                = "Ork Bruiser",
+	name                = "Ork",
 	movementClass       = "Defender",
 	objectName          = "OrkSmall.dae",
 	script              = "ork.lua",
@@ -84,7 +84,7 @@ local OrkBig = Humanoid:New {
 
 local OrkBoss = Humanoid:New {
 	-- General
-	name                = "Ork Biggun",
+	name                = "Ork Leader",
 	movementClass       = "BigUnit",
 	objectName          = "OrkBoss.dae",
 	script              = "ork.lua",

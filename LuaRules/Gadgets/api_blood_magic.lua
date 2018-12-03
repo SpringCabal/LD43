@@ -15,10 +15,12 @@ end
 local houseDefID = UnitDefNames["house"].id
 local BLOOD_MAGIC_RANGE = 600
 
-local FIREBALL_COST = 1000
-local BUFF_COST = 900
-local STUN_COST = 1000
-local THROW_COST = 1500
+local FIREBALL_COST = 1300
+local BUFF_COST = 1100
+local STUN_COST = 1300
+local THROW_COST = 1750
+
+local LIFE_BONUS = 250
 
 local PLAYER_TEAM = 0
 local ENEMY_TEAM = 1
@@ -108,7 +110,7 @@ local function DrainNearbyUnits(collectorID, required, canPartial)
 			Spring.TransferUnit(unitID, 2, false)
 			toUnNeutral[#toUnNeutral + 1] = unitID
 		else
-			local hp = Spring.GetUnitHealth(unitID)
+			local hp = Spring.GetUnitHealth(unitID) + LIFE_BONUS
 			if hp > required then
 				SpawnEffect(unitID, CEG_FLAMES)
 				MakeBloodTrail(x, y, z, unitID)
@@ -145,9 +147,12 @@ local function Transfusion(unitID)
 	if health >= maxHealth then
 		return
 	end
-	local manaFound, partialShortBy = DrainNearbyUnits(unitID, maxHealth - health, true)
+	local manaFound, partialShortBy = DrainNearbyUnits(unitID, LIFE_BONUS + maxHealth - health, true)
 	if not (manaFound or partialShortBy) then
 		return
+	end
+	if partialShortBy then
+		partialShortBy = partialShortBy - LIFE_BONUS
 	end
 
 	local function castFunc()
@@ -237,7 +242,7 @@ local function Migraine(unitID, tx, ty, tz)
 	end
 	
 	local function castFunc()
-		local units = Spring.GetUnitsInCylinder(tx, tz, 300, ENEMY_TEAM)
+		local units = Spring.GetUnitsInCylinder(tx, tz, 350, ENEMY_TEAM)
 		for i = 1, #units do
 			GG.StatusEffects.Stun(units[i], 320 + math.random()*80)
 		end
