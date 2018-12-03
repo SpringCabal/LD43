@@ -17,10 +17,10 @@ function script.Killed(recentDamage, maxHealth)
 		GG.PlaySound("sounds/house_fall.wav", 10, x, y, z)
 	end
 	
-	Move(House, z_axis, -500, 700)
-	Turn(House, x_axis, math.random() - 0.5, math.random())
-	Turn(House, y_axis, math.random() - 0.5, math.random())
-	Turn(House, z_axis, (math.random() - 0.5)/2, math.random()/2)
-	Sleep(1000)
+	Move(House, z_axis, -250, 250)
+	Turn(House, x_axis, (math.random() - 0.5)/2, math.random()/2)
+	Turn(House, y_axis, (math.random() - 0.5)/2, math.random()/2)
+	Turn(House, z_axis, (math.random() - 0.5)/4, math.random()/4)
+	Sleep(1200)
 	return 0
 end

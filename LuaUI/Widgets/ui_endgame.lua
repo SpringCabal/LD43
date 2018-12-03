@@ -96,7 +96,7 @@ local function SetupControls(isVictory)
 			y = 175,
 			width = 100,
 			parent = window_endgame,
-			caption = (Spring.GetGameRulesParam("alliesDrained") or 0) .. " were found mysteriously drained\nof blood.",
+			caption = (Spring.GetGameRulesParam("alliesDrained") or 0) .. " of the fallen were found mysteriously\ndrained of blood.",
 			fontsize = 20,
 			textColor = {1,1,1,1},
 		}
