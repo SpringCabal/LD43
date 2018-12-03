@@ -72,6 +72,16 @@ local function SetTypemapSquare(minx, minz, maxx, maxz, value)
 			end
 		end
 	end
+	
+	if GG.Terrain_Texture_changeBlockList then
+		local drawingList = {}
+		for x = minx, maxx, 8 do
+			for z = minz, maxz, 8 do
+				drawingList[#drawingList+1] = {x = x, z = z, tex = 2, edge = false}
+			end
+		end
+		GG.Terrain_Texture_changeBlockList(drawingList)
+	end
 end
 
 -------------------------------------------------------------------------------

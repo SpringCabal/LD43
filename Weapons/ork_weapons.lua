@@ -72,7 +72,7 @@ local Firebomb = Weapon:New {
 	 -- soundStart            = [[SpearThrow]],
 	soundHit              = [[Hit]],
 	 damage                = {
-		default = 600,
+		default = 450,
 	}
 }
 

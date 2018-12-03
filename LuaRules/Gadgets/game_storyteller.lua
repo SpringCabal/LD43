@@ -71,58 +71,36 @@ function GetStory()
 		-- },
 		{ -- Night 1
 			name = "spawn",
+			humanName = "First Night",
 			units = {
-				orksmall = 35
+				orksmall = 40
 			},
 			team = enemyTeam,
 			time = 1,
 		},
-		{
-			name = "intro",
-			about = "{Wave has spawned text.}",
-			time = 12,
-		},
 		{  -- Night 2
 			name = "spawn",
+			humanName = "Second Night",
 			units = {
 				orksmall = 50,
 				orkbig = 3,
 			},
 			team = enemyTeam,
-			time = 20,
-		},
-		{
-			name = "intro",
-			about = "Some more info.",
-			time = 20,
-		},
-		{
-			name = "intro",
-			about = "Another wave...",
-			time = 1,
+			time = 35,
 		},
 		{ -- Night 3
 			name = "spawn",
+			humanName = "Getting Bigger",
 			units = {
 				orksmall = 70,
 				orkbig = 10,
 			},
 			team = enemyTeam,
-			time = 10,
-		},
-		{
-			name = "intro",
-			-- about = "food_healing",
-			about = "INFOOOOOOOOOOOO",
-			time = 1,
-		},
-		{
-		name = "intro",
-		about = "MORE WAVES.",
-			time = 3,
+			time = 30,
 		},
 		{  -- Night 4
 			name = "spawn",
+			humanName = "Quick Followup",
 			units = {
 				orksmall = 50,
 				orkbig = 10,
@@ -132,30 +110,34 @@ function GetStory()
 		},
 		{  -- Night 5
 			name = "spawn",
+			humanName = "Big Ork Wave",
 			units = {
-				orksmall = 50,
-				orkbig = 10,
+				orksmall = 30,
+				orkbig = 25,
 			},
 			team = enemyTeam,
-			time = 10,
+			time = 35,
 		},
 		{  -- Night 6
 			name = "spawn",
+			humanName = "The Swarm",
 			units = {
-				orksmall = 150,
+				orksmall = 120,
+				orkbig = 5,
 			},
 			team = enemyTeam,
-			time = 10,
+			time = 30,
 		},
 		{  -- Night 7
 			name = "spawn",
+			humanName = "Final Boss",
 			units = {
-				orksmall = 100,
-				orkbig = 20,
+				orksmall = 50,
+				orkbig = 10,
 				orkboss = 1,
 			},
 			team = enemyTeam,
-			time = 1,
+			time = 20,
 		},
 		{
 		name = "outro",
@@ -220,6 +202,7 @@ end
 
 function DoStep(step)
 	if step.name == "spawn" then
+		Spring.Echo("spawn", step.humanName)
 		SpawnUnits(step.units, step.team)
 	elseif step.name == "intro" then
 		DoIntro(step.about)
