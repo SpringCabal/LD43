@@ -41,7 +41,7 @@ function script.BlockShot(num, targetID)
 	if deathSound and math.random() < 0.15 then
 		local x, y, z = Spring.GetUnitPosition(unitID)
 		if x then
-			GG.PlaySound("sounds/runawayyell.wav", 8, ux, uy, uz)
+			GG.PlaySound("sounds/runawayyell.wav", 10, ux, uy, uz)
 		end
 	end
 	

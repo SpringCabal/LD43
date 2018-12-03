@@ -146,7 +146,7 @@ function script.Killed(recentDamage, maxHealth)
 	if deathSound and math.random() < deathSoundChance then
 		local x, y, z = Spring.GetUnitPosition(unitID)
 		if x then
-			GG.PlaySound(deathSound, 8, x, y, z)
+			GG.PlaySound(deathSound, 10, x, y, z)
 		end
 	end
 	

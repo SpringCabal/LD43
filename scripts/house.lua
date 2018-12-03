@@ -14,7 +14,7 @@ function script.Killed(recentDamage, maxHealth)
 	
 	local x, y, z = Spring.GetUnitPosition(unitID)
 	if x then
-		GG.PlaySound("sounds/house_fall.wav", 8, x, y, z)
+		GG.PlaySound("sounds/house_fall.wav", 10, x, y, z)
 	end
 	
 	Move(House, z_axis, -500, 700)
