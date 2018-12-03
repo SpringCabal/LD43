@@ -1,13 +1,13 @@
 function widget:GetInfo()
-  return {
-	name      = "Keybinds",
-	desc      = "",
-	author    = "Bluestone",
-	date      = "in the future",
-	license   = "GPL-v2",
-	layer     = -10000,
-	enabled   = true,
-  }
+	return {
+		name      = "Keybinds",
+		desc      = "",
+		author    = "Bluestone",
+		date      = "in the future",
+		license   = "GPL-v2",
+		layer     = -10000,
+		enabled   = true,
+	}
 end
 
 local bindText, mouseText
@@ -112,7 +112,7 @@ function MakeBindingText()
 	end
 end
 
-function  AddLine(text, x_, y_)
+function AddLine(text, x_, y_)
 	children[#children+1] = Chili.Label:New{
 		x = x_,
 		bottom = y_,

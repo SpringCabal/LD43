@@ -24,12 +24,29 @@ local units = IterableMap.New()
 
 local StatusEffects = {}
 
-function StatusEffects.Adrenaline(unitID, endFrame)
+function StatusEffects.Adrenaline(unitID, duration)
 	local data = units.Get(unitID) or {}
 	
 	GG.Attributes.AddEffect(unitID, "buff", {move = 2, reload = 2})
+	local env = Spring.UnitScript.GetScriptEnv(unitID)
+	if env.script.Buff then
+		Spring.UnitScript.CallAsUnit(unitID, env.script.Buff, duration)
+	end
 	
-	data.adrenalineEnd = endFrame
+	data.adrenalineEnd = Spring.GetGameFrame() + duration
+	units.Set(unitID, data) -- Also adds
+end
+
+function StatusEffects.Stun(unitID, duration)
+	local data = units.Get(unitID) or {}
+	
+	GG.Attributes.AddEffect(unitID, "stun", {move = 0.1, reload = 0})
+	local env = Spring.UnitScript.GetScriptEnv(unitID)
+	if env.script.Stun then
+		Spring.UnitScript.CallAsUnit(unitID, env.script.Stun, duration)
+	end
+	
+	data.stunEnd = Spring.GetGameFrame() + duration
 	units.Set(unitID, data) -- Also adds
 end
 
@@ -37,6 +54,11 @@ local function CheckUnit(unitID, data, frame)
 	if data.adrenalineEnd and (frame > data.adrenalineEnd) then
 		GG.Attributes.RemoveEffect(unitID, "buff")
 		data.adrenalineEnd = nil
+	end
+	
+	if data.stunEnd and (frame > data.stunEnd) then
+		GG.Attributes.RemoveEffect(unitID, "stun")
+		data.stunEnd = nil
 	end
 	
 	if not (data.adrenalineEnd or data.stunEnd) then
