@@ -29,16 +29,36 @@ local CASTING_TIME_LONG = 1 * 33
 local alliesDrained = 0
 
 local fireballDefID = WeaponDefNames["fireball"].id
-local CEG_SPAWN = [[feature_poof_spawner]]
+
+local CEG_FLAMES = [[feature_poof_spawner]]
+local CEG_MIGRAINE = [[migraine_pulse_spawner]]
+local CEG_ADRENALINE = [[adrenaline_sparkles]]
 
 local function SpawnBloodEffect(unitID)
 	local x, _, z, _, y = Spring.GetUnitPosition(unitID, true)
-	Spring.SpawnCEG(CEG_SPAWN,
+	Spring.SpawnCEG(CEG_FLAMES,
 		x,y,z,
 		0,0,0,
 		20, 20
 	)
 end
+
+local function SpawnMigraineEffect(x, y, z)
+	Spring.SpawnCEG(CEG_MIGRAINE,
+		x,y + 50,z,
+		0,0,0,
+		20, 20
+	)
+end
+
+local function SpawnAdrenalineEffect(x, y, z)
+	Spring.SpawnCEG(CEG_ADRENALINE,
+		x,y,z,
+		0,0,0,
+		20, 20
+	)
+end
+
 
 local function UnNeutralUnits(units)
 	for i = 1, #units do
@@ -172,14 +192,15 @@ local function Migraine(unitID, tx, ty, tz)
 	if not manaFound then
 		return
 	end
-	
+
 	local function castFunc()
 		local units = Spring.GetUnitsInCylinder(tx, tz, 250, ENEMY_TEAM)
 		for i = 1, #units do
 			GG.StatusEffects.Stun(units[i], 220 + math.random()*30)
 		end
+		SpawnMigraineEffect(tx, ty, tz)
 	end
-	
+
 	local env = Spring.UnitScript.GetScriptEnv(unitID)
 	Spring.UnitScript.CallAsUnit(unitID, env.script.CastAnimation, castFunc, 2, tx, tz)
 	Spring.SetGameRulesParam("castingFreeze", Spring.GetGameFrame() + CASTING_TIME)
@@ -198,6 +219,8 @@ local function Adrenaline(unitID, tx, ty, tz)
 		for i = 1, #units do
 			GG.StatusEffects.Adrenaline(units[i], 320 + math.random()*60)
 		end
+		local ux, uy, uz = Spring.GetUnitPosition(unitID)
+		SpawnAdrenalineEffect(ux, uy, uz)
 	end
 
 	local env = Spring.UnitScript.GetScriptEnv(unitID)

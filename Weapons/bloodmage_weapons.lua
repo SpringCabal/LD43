@@ -41,7 +41,9 @@ local Fireball = RangedSpell:New {
 		light_radius = 350,
 		light_fade_time = 1,
 		light_fade_offset = 10,
-	}
+	},
+
+	cegTag = "fireball_ball"
 }
 
 return {

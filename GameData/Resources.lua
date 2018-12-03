@@ -38,6 +38,8 @@ local	resources = {
 			muzzlefront			= 'muzzlefront.tga',
 			largebeam			= 'largelaserfalloff.tga',
 			fireball            = 'FireBall.png',
+			fireball_rot        = 'fireball-rotated.png',
+			migraine            = 'migraine.png',
 		},
 	}
 }

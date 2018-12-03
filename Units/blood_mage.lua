@@ -62,7 +62,7 @@ local BloodMage = Raw:New {
 	selectionVolumeOffsets = [[0 0 0]],
 	selectionVolumeScales  = [[2 2 2]],
 	selectionVolumeType    = [[ellipsoid]],
-	
+
 	-- General
 	name                = "BloodMage",
 	movementClass       = "Player",
