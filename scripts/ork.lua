@@ -40,7 +40,7 @@ function script.Create()
 	unitDefName = UnitDefs[unitDefID].name
 	Spring.SetUnitRulesParam(unitID, "unorkable", 1)
 	if unitDefName == "orkboss" then
-		shared.Init(Torso, 8, 10)
+		shared.Init(Torso, 2, 2)
 		tossRadius = 200
 		tossStr = 12
 		deunorkable = true

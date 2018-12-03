@@ -57,6 +57,7 @@ local OrkBig = Humanoid:New {
 
 	collisionVolumeType      = 'ellipsoid',
 	collisionVolumeScales    = '96 96 96',
+	collisionVolumeOffsets    = '0 -12 0',
 	selectionVolumeOffsets = [[0 0 0]],
 	selectionVolumeScales  = [[96 96 96]],
 	selectionVolumeType    = [[ellipsoid]],
@@ -99,6 +100,7 @@ local OrkBoss = Humanoid:New {
 
 	collisionVolumeType      = 'ellipsoid',
 	collisionVolumeScales    = '220 220 220',
+	collisionVolumeOffsets    = '0 -30 0',
 	selectionVolumeOffsets = [[0 0 0]],
 	selectionVolumeScales  = [[220 220 220]],
 	selectionVolumeType    = [[ellipsoid]],
@@ -108,6 +110,8 @@ local OrkBoss = Humanoid:New {
 
 	customParams = {
 		ork = true,
+		hscale = 2.5,
+		vscale = 2.5,
 	},
 
 	weapons = {
