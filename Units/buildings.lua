@@ -52,6 +52,54 @@ oooooooooooo
 	objectName 			= "House.dae",
 }
 
+
+local StreetLight = Unit:New {
+	buildPic            = "",
+	buildCostMetal        = 0.1, -- used only for power XP calcs
+	buildCostEnergy       = 0.1, -- used only for power XP calcs
+	buildTime             = 0.1, -- used only for power XP calcs
+	maxSlope              = 100,
+	canMove             = false,
+	maxVelocity         = 0,
+--     canGuard            = false,
+--     canPatrol           = false,
+--     canRepeat           = false,
+	 --pushResistant       = true,
+	-- customParams = {
+	-- 	hscale = 0.5,
+	-- 	vscale = 0.2,
+	-- },
+	 collisionVolumeScales   = '30 50 30',
+	collisionVolumeTest     = 1,
+	collisionVolumeType     = 'Box',
+	footprintX          = 2,
+	footprintZ          = 2,
+	category            = "HOUSE",
+	yardmap =
+[[
+oooo
+oooo
+oooo
+oooo
+]],
+	mass                = 50,
+	minCollisionSpeed   = 1,
+	repairable          = false,
+	sightDistance       = 800,
+	stealth             = true,
+	upright             = true,
+	name                = "StreetLight",
+	activateWhenBuilt   = true,
+	idletime            = 120, --in simframes
+	idleautoheal        = 0,
+	autoheal            = 0,
+	maxDamage           = 100,
+	onoffable           = true,
+	script              = "streetlight.lua",
+	objectName 			= "StreetLight.dae",
+}
+
 return {
-	house = House
+	house = House,
+	StreetLight = StreetLight,
 }
