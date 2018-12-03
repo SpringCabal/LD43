@@ -678,6 +678,7 @@ function widget:Initialize()
 	Spring.SendCommands("minimap simplecolors 1")
 	Spring.SendCommands("minimap unitexp 0.3")
 	Spring.SendCommands("minimap unitsize 1.2")
+	Spring.SendCommands("minimap fullproxy 0")
 	if (Spring.GetMiniMapDualScreen()) then
 		Spring.Echo("ChiliMinimap: auto disabled (DualScreen is enabled).")
 		widgetHandler:RemoveWidget()

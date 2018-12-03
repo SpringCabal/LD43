@@ -47,7 +47,7 @@ local function getMouseCoordinate(mx,my)
 end
 
 local function HoldMouse(command, mx, my)
-	local traceType, pos = Spring.TraceScreenRay(mx, my, true)
+	local traceType, pos = Spring.TraceScreenRay(mx, my, true, false)
 	if not pos then
 		return false
 	end
@@ -71,9 +71,9 @@ function widget:MousePress(mx, my, button)
 		return false
 	end
 
-	if Spring.IsAboveMiniMap(mx, my) then
-		return false
-	end
+	-- if Spring.IsAboveMiniMap(mx, my) then
+	-- 	return true
+	-- end
 
 	local alt, ctrl, meta, shift = Spring.GetModKeyState()
 	if button == 1 then
