@@ -10,13 +10,36 @@ function widget:GetInfo()
 	}
 end
 
-local bindText, mouseText
 local Chili, screen0
 local children = {}
 local x,y,h
 
 local purple = "\255\255\10\255"
 local white = "\255\255\255\255"
+
+
+local bindText = { -- keybinds told to player
+	--purple .. "Q : " .. white .. "swap pull / push",
+	purple .. "1 : " .. white .. "Transfusion",
+	purple .. "2 : " .. white .. "Heartburn",
+	purple .. "3 : " .. white .. "Migraine",
+	purple .. "4 : " .. white .. "Adrenaline",
+	purple .. "5 : " .. white .. "Dialysis",
+	purple .. "Left click: " .. white .. "Move",
+	purple .. "Right click : " .. white .. "Attack",
+	purple .. "Ctrl+Q : " .. white .. "Quit",
+}
+local bindDesc = {
+	'Absorb health',
+	'Cast a fireball',
+	'Stun enemies',
+	'Speed up',
+	'Knockback enemies'
+}
+
+WG.Bindings = bindText
+WG.BindingDescription = bindDesc
+
 
 local function SetBindings()
 	local binds = { --real keybinds
@@ -65,25 +88,12 @@ end
 function widget:Initialize()
 	gameMode = Spring.GetGameRulesParam("gameMode")
 	UpdateGameMode()
-	 bindText = { -- keybinds told to player
-		--purple .. "Q : " .. white .. "swap pull / push",
-		purple .. "1 : " .. white .. "Transfusion",
-		purple .. "2 : " .. white .. "Heartburn",
-		purple .. "3 : " .. white .. "Migraine",
-		purple .. "4 : " .. white .. "Adrenaline",
-		purple .. "5 : " .. white .. "Dialysis",
-		purple .. "Left click: " .. white .. "Move",
-		purple .. "Right click : " .. white .. "Attack",
-		purple .. "Ctrl+Q : " .. white .. "Quit",
-	}
-	 mouseText = {
-	}
-	  if (not WG.Chili) then
+	if (not WG.Chili) then
 		return
 	end
 	Chili = WG.Chili
 	screen0 = Chili.Screen0
-	 MakeBindingText()
+	MakeBindingText()
 end
 
 function widget:Shutdown()
@@ -100,12 +110,8 @@ function MakeBindingText()
 		screen0:RemoveChild(child)
 	end
 	h = 24
-	y = h*(#bindText + #mouseText)
+	y = h*(#bindText)
 	x = 10
-	 for _,text in ipairs(mouseText) do
-		AddLine(text,x,y)
-		y = y - h
-	end
 	for _,text in ipairs(bindText) do
 		AddLine(text,x,y)
 		y = y - h
@@ -127,5 +133,16 @@ function widget:Update()
 	if gameMode ~= newGameMode then
 		gameMode = newGameMode
 		UpdateGameMode()
+	end
+end
+
+WG.ShowBindingText = function(visible)
+	if not children then
+		return
+	end
+	for _, ch in pairs(children) do
+		if ch.visible ~= visible then
+			ch:SetVisibility(visible)
+		end
 	end
 end
