@@ -46,10 +46,24 @@ local function SetupAi(unitID)
 	Spring.GiveOrderToUnit(unitID, CMD.FIGHT, {dx, dy, dz}, {})
 end
 
-local function CheckIdle(unitID)
-	if fleeMode or (Spring.GetCommandQueue(unitID, 0) ~= 0) then
+local function CheckIdle(unitID, frame)
+	if fleeMode then
 		return
 	end
+	
+	-- Anti-stuck
+	local _,_,_,speed = Spring.GetUnitVelocity(unitID)
+	if speed and speed < 0.02 then
+		local reloadFrame = Spring.GetUnitWeaponState(unitID, 1, "reloadFrame")
+		if reloadFrame + 90 < frame then
+			SetupAi(unitID)
+		end
+	end
+	
+	if (Spring.GetCommandQueue(unitID, 0) ~= 0) then
+		return
+	end
+	
 	local dx = AIM_X + math.random()*AIM_REACHED_VAR - AIM_REACHED_VAR/2
 	local dz = AIM_Z + math.random()*AIM_REACHED_VAR - AIM_REACHED_VAR/2
 	local dy = Spring.GetGroundHeight(dx, dz)
@@ -79,9 +93,9 @@ end
 --------------------------------------------------------------------------------
 
 function gadget:GameFrame(frame)
-	local count = math.ceil(aiUnits.GetIndexMax()/30)
+	local count = math.ceil(aiUnits.GetIndexMax()/80)
 	for i = 1, count do
-		CheckIdle(aiUnits.Next())
+		CheckIdle(aiUnits.Next(), frame)
 	end
 end
 

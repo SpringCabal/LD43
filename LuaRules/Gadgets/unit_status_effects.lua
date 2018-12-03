@@ -19,6 +19,11 @@ end
 
 local IterableMap = VFS.Include("LuaRules/Gadgets/Include/IterableMap.lua")
 
+local resist = {
+	[UnitDefNames["orkboss"].id] = true,
+	[UnitDefNames["bloodmage"].id] = true,
+}
+
 local PLAYER_TEAM = 0
 local units = IterableMap.New()
 
@@ -27,7 +32,12 @@ local StatusEffects = {}
 function StatusEffects.Adrenaline(unitID, duration)
 	local data = units.Get(unitID) or {}
 	
-	GG.Attributes.AddEffect(unitID, "buff", {move = 2, reload = 2})
+	if resist[Spring.GetUnitDefID(unitID) or -1] then
+		GG.Attributes.AddEffect(unitID, "buff", {move = 1.6, reload = 2})
+	else
+		GG.Attributes.AddEffect(unitID, "buff", {move = 2, reload = 2})
+	end
+	
 	local env = Spring.UnitScript.GetScriptEnv(unitID)
 	if env.script.Buff then
 		Spring.UnitScript.CallAsUnit(unitID, env.script.Buff, duration)
@@ -39,6 +49,10 @@ end
 
 function StatusEffects.Stun(unitID, duration)
 	local data = units.Get(unitID) or {}
+	
+	if resist[Spring.GetUnitDefID(unitID) or -1] then
+		duration = duration*0.6
+	end
 	
 	GG.Attributes.AddEffect(unitID, "stun", {move = 0.1, reload = 0})
 	local env = Spring.UnitScript.GetScriptEnv(unitID)

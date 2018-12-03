@@ -45,7 +45,7 @@ end
 
 local function SpawnMigraineEffect(x, y, z)
 	Spring.SpawnCEG(CEG_MIGRAINE,
-		x,y + 50,z,
+		x,y,z,
 		0,0,0,
 		20, 20
 	)

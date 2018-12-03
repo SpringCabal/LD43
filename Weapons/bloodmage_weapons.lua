@@ -34,6 +34,7 @@ local Fireball = RangedSpell:New {
 	craterBoost = 100,
 	soundStart             = "firebombfire",
 	soundHit               = "fireballhit",
+	edgeEffectiveness = 0.9,
 
     damage = {
         default = 1600,

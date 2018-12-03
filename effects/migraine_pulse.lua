@@ -2,7 +2,7 @@ return {
     ["migraine_pulse_spawner"] = {
         poof01 = {
         class              = [[CExpGenSpawner]],
-        count              = [[1]],
+        count              = [[18]],
         air                = true,
         ground             = true,
         water              = true,
@@ -10,7 +10,7 @@ return {
         unit               = true,
         nounit             = true,
         properties = {
-                delay              = 5,
+				delay              = [[0 i20]],
                 damage             = [[d1]],
                 explosionGenerator = [[custom:migraine_pulse]],
             },
@@ -19,35 +19,33 @@ return {
 
 
     ["migraine_pulse"] = {
-        explosionwave = {
-          class              = [[CSimpleParticleSystem]],
-          count              = 10,
-          air                = true,
-          ground             = true,
-          water              = true,
-          underwater         = true,
-          unit               = true,
-          nounit             = true,
-
-          properties = {
-            alwaysvisible      = true,
-            -- colormap           = [[1 0 0 0.15	0 0 0 0.0]],
-            directional        = false,
-            -- emitrot            = 0,
-            -- emitrotspread      = 180,
-            numParticles       = 50,
-            particleLife       = 0,
-            particleLifeSpread = 33 * 0.5,
-            particleSize       = 1,
-            particleSizeSpread = 120,
-            -- pos                = [[r20 r-20, -50, r20 r-20]],
-            sizegrowth         = 10, -- same as groundflash circlegrowth
-            sizemod            = 0.90,
-            --texture            = [[fireball_rot]],
-            texture            = [[migraine]],
-
-            colormap = "0.5 0.1 1.0 0.0    1.0 0.1 0.5 1",
-          },
-        },
+		usedefaultexplosions = false,
+		
+		groundflash = {
+		  circlealpha        = 1,
+		  circlegrowth       = 12,
+		  flashalpha         = 2.15,
+		  flashsize          = 68,
+		  ttl                = 22,
+		  color = {
+			[1]  = 1,
+			[2]  = 0.89999997615814,
+			[3]  = 0.60000002384186,
+		  },
+		},
+		sphere = {
+		  air                = true,
+		  class              = [[CSpherePartSpawner]],
+		  count              = 1,
+		  ground             = true,
+		  water              = true,
+		  underwater 		 = true,
+		  properties = {
+			alpha              = 0.5,
+			color              = [[1,0,1]],
+			expansionspeed     = 12,
+			ttl                = 22,
+		  },
+		},
       },
 }

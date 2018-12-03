@@ -57,6 +57,9 @@ local OrkBig = Humanoid:New {
 
 	collisionVolumeType      = 'ellipsoid',
 	collisionVolumeScales    = '96 96 96',
+	selectionVolumeOffsets = [[0 0 0]],
+	selectionVolumeScales  = [[96 96 96]],
+	selectionVolumeType    = [[ellipsoid]],
 	noChaseCategory = [[HOUSE]],
 
 	iconType = "orkbig",
@@ -96,6 +99,9 @@ local OrkBoss = Humanoid:New {
 
 	collisionVolumeType      = 'ellipsoid',
 	collisionVolumeScales    = '220 220 220',
+	selectionVolumeOffsets = [[0 0 0]],
+	selectionVolumeScales  = [[220 220 220]],
+	selectionVolumeType    = [[ellipsoid]],
 	noChaseCategory = [[HOUSE]],
 
 	iconType = "orkboss",

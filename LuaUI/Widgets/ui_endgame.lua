@@ -143,7 +143,7 @@ local function SetupControls(isVictory)
 				nameBox = nil
 				restartButton = nil
 				submitButton = nil
-				Spring.SendCommands("cheat", "luarules reload", "cheat")
+				Spring.SendCommands("cheat 1", "luarules reload", "cheat 0")
 				window_endgame:Dispose()
 				window_endgame = nil
 				frame_delay = Spring.GetGameFrame()
