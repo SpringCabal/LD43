@@ -205,6 +205,7 @@ local function Adrenaline(unitID, tx, ty, tz)
 	local env = Spring.UnitScript.GetScriptEnv(unitID)
 	Spring.UnitScript.CallAsUnit(unitID, env.script.CastAnimation, castFunc, 1, tx, tz)
 	Spring.SetGameRulesParam("castingFreeze", Spring.GetGameFrame() + CASTING_TIME_SHORT)
+	Spring.ClearUnitGoal(unitID)
 end
 
 local function Migraine(unitID, tx, ty, tz)
