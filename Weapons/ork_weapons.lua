@@ -1,20 +1,22 @@
 local BigOrkAxe = MeleeWeapon:New {
 	name                  = "BigOrkAxe",
-	range                 = 150,
-	reloadTime            = 3.0,
+	range                 = 280,
+	reloadTime            = 2.5,
+	areaOfEffect          = 60,
 	-- targeting & accuracy
 	accuracy              = 0.9,
 	 -- soundStart            = [[SpearThrow]],
 	soundHit              = [[Hit]],
 	 damage                = {
-		default = 300,
+		default = 250,
 	}
 }
 
 local BossOrkAxe = MeleeWeapon:New {
 	name                  = "BossOrkAxe",
-	range                 = 200,
+	range                 = 400,
 	reloadTime            = 3.0,
+	areaOfEffect          = 100,
 	-- targeting & accuracy
 	accuracy              = 0.9,
 	 -- soundStart            = [[SpearThrow]],

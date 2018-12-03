@@ -35,10 +35,10 @@ function sharedFunc.AttackBob()
 	if dead then
 		return
 	end
-	Move(bobPiece, y_axis, -20, 500)
+	Move(bobPiece, y_axis, -10 - 10*sizeScale, 250 + 250*sizeScale)
 	Turn(bobPiece, y_axis, -math.rad(20), math.rad(200))
 	Sleep(100)
-	Move(bobPiece, y_axis, 0, 250)
+	Move(bobPiece, y_axis, 0, 100 + 150*sizeScale)
 	Turn(bobPiece, y_axis, math.rad(0), math.rad(120))
 end
 

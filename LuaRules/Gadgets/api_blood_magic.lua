@@ -18,7 +18,7 @@ local BLOOD_MAGIC_RANGE = 600
 local FIREBALL_COST = 800
 local BUFF_COST = 500
 local STUN_COST = 800
-local THROW_COST = 1800
+local THROW_COST = 1500
 
 local PLAYER_TEAM = 0
 local ENEMY_TEAM = 1
@@ -45,13 +45,30 @@ local function UnNeutralUnits(units)
 	end
 end
 
-local function DrainNearbyUnits(collectorID, required)
+local function DoPartial(toKill, required)
+	if #toKill == 0 then
+		return false
+	end
+	
+	for i = 1, #toKill do
+		SpawnBloodEffect(toKill[i])
+		Spring.DestroyUnit(toKill[i], true)
+	end
+	
+	return required
+end
+
+local function DrainNearbyUnits(collectorID, required, canPartial)
 	local toKill = {}
 	local toUnNeutral = {}
+	local total = 0
 	for i = 1, 20 do
 		local unitID = Spring.GetUnitNearestAlly(collectorID, BLOOD_MAGIC_RANGE)
 		if not unitID then
 			UnNeutralUnits(toUnNeutral)
+			if canPartial then
+				return false, DoPartial(toKill, required)
+			end
 			return false
 		end
 		if Spring.GetUnitDefID(unitID) == houseDefID then
@@ -80,6 +97,9 @@ local function DrainNearbyUnits(collectorID, required)
 	end
 
 	UnNeutralUnits(toUnNeutral)
+	if canPartial then
+		return false, DoPartial()
+	end
 	return false
 end
 
@@ -88,14 +108,14 @@ local function Transfusion(unitID)
 	if health >= maxHealth then
 		return
 	end
-	local manaFound = DrainNearbyUnits(unitID, maxHealth - health)
-	if not manaFound then
+	local manaFound, partialShortBy = DrainNearbyUnits(unitID, maxHealth - health)
+	if not (manaFound or partialShortBy) then
 		return
 	end
 
 	local function castFunc()
 		if Spring.ValidUnitID(unitID) then
-			Spring.SetUnitHealth(unitID, maxHealth)
+			Spring.SetUnitHealth(unitID, maxHealth - (partialShortBy or 0))
 			SpawnBloodEffect(unitID)
 		end
 	end
@@ -189,12 +209,12 @@ local function Dialysis(unitID, tx, ty, tz)
 	local x, y, z = Spring.GetUnitPosition(unitID)
 	
 	local function castFunc()
-		local units = Spring.GetUnitsInCylinder(x, z, 400, ENEMY_TEAM)
+		local units = Spring.GetUnitsInCylinder(x, z, 500, ENEMY_TEAM)
 		for i = 1, #units do
 			local ux, uy, uz = Spring.GetUnitPosition(units[i])
 			local dx, dz = ux - x, uz - z
 			local dist = math.sqrt(dx*dx + dz*dz)
-			local impulse = 32*(1 - dist/800)
+			local impulse = 36*(1 - dist/600)
 			Spring.AddUnitImpulse(units[i], impulse*dx/dist, impulse, impulse*dz/dist)
 		end
 	end

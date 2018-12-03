@@ -6,7 +6,7 @@ local OrkSmall = Humanoid:New {
 	objectName          = "OrkSmall.dae",
 	script              = "ork.lua",
 	maxDamage           = 500,
-	-- mass                = 50, -- does this even matter?
+	mass                = 80,
 	footprintX          = 2,
 	footprintZ          = 2,
 
@@ -46,7 +46,7 @@ local OrkBig = Humanoid:New {
 	movementClass       = "Defender",
 	objectName 			= "OrkBig.dae",
 	script              = "ork.lua",
-	maxDamage           = 1000,
+	maxDamage           = 1200,
 	-- mass                = 50, -- does this even matter?
 
 	maxVelocity         = 4,
@@ -77,7 +77,7 @@ local OrkBoss = Humanoid:New {
 	movementClass       = "Defender",
 	objectName 			= "OrkBoss.dae",
 	script              = "ork.lua",
-	maxDamage           = 1600,
+	maxDamage           = 5000,
 	-- mass                = 50, -- does this even matter?
 
 	maxVelocity         = 5.1,

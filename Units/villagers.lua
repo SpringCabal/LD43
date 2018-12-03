@@ -6,9 +6,12 @@ units.Peasant = Humanoid:New {
 	movementClass       = "Defender",
 	objectName 			= "HumanWithStick.dae",
 	script              = "Swordsman.lua",
-	maxDamage           = 500,
+	maxDamage           = 600,
 
 	collisionVolumeScales    = '37 43 37',
+	selectionVolumeOffsets = [[0 0 0]],
+	selectionVolumeScales  = [[20 20 20]],
+	selectionVolumeType    = [[ellipsoid]],
 	maxVelocity         = 6,
 
 	iconType = "peasant",
@@ -26,10 +29,13 @@ units.Coward = Humanoid:New {
 	movementClass       = "Defender",
 	objectName 			= "HumanWithStick.dae",
 	script              = "Coward.lua",
-	maxDamage           = 500,
+	maxDamage           = 600,
 	movestate           = 0,
 
 	collisionVolumeScales    = '37 43 37',
+	selectionVolumeOffsets = [[0 0 0]],
+	selectionVolumeScales  = [[20 20 20]],
+	selectionVolumeType    = [[ellipsoid]],
 	maxVelocity         = 6,
 
 	iconType = "peasant",
@@ -50,6 +56,9 @@ units.Crossbowman = Humanoid:New {
 	maxDamage           = 600,
 
 	collisionVolumeScales    = '37 46 37',
+	selectionVolumeOffsets = [[0 0 0]],
+	selectionVolumeScales  = [[20 20 20]],
+	selectionVolumeType    = [[ellipsoid]],
 	maxVelocity         = 6,
 
 	iconType = "crossbowman",
@@ -73,9 +82,13 @@ units.Swordsman = Humanoid:New {
 	objectName 			= "Swordsman.dae",
 	script              = "swordsman.lua",
 	maxDamage           = 800,
-	moveState           = 2,
+	moveState           = 2, -- 2 results in large swarms
+	mass                = 80,
 
 	collisionVolumeScales    = '23 34 23',
+	selectionVolumeOffsets = [[0 0 0]],
+	selectionVolumeScales  = [[20 20 20]],
+	selectionVolumeType    = [[ellipsoid]],
 	maxVelocity         = 6,
 	footprintX 			= 2,
 	footprintZ 			= 2,

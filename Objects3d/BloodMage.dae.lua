@@ -1,5 +1,5 @@
 model = {
-	  radius = 10.0,
+	  radius = 5.0,
 	  height = 20.0,
 	  midpos = {0,30,0},
 	  tex1 = "BloodMageTexture.png",

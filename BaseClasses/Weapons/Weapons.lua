@@ -39,7 +39,7 @@ weapons.FancyMeleeWeapon = Weapon:New {
 	avoidFeature          = false,
 	collideFriendly       = false,
 	collideFeature        = false,
-	noExplode               = true,
+	noExplode             = true,
 	
 	areaOfEffect          = 0, -- Causes camera jitter
 	

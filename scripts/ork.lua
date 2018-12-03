@@ -1,6 +1,11 @@
 local Hand_Right = piece("Hand_Right")
 local Hand_Left = piece("Hand_Left")
 local Torso = piece("Torso")
+local unitDefName = "orksmall"
+local tossRadius
+local tossStr
+
+local shared = include("shared.lua")
 
 local function AttackAnimation()
 	Move(Hand_Right, y_axis, -30, 1000)
@@ -20,11 +25,19 @@ function script.AimWeapon()
 	return true
 end
 
-local shared = include("shared.lua")
 function script.Create()
 	local unitDefID = Spring.GetUnitDefID(unitID)
-	if UnitDefs[unitDefID].name == "orkbig" then
+	unitDefName = UnitDefs[unitDefID].name
+	if unitDefName == "orkboss" then
+		shared.Init(Torso, 8, 10)
+		tossRadius = 240
+		tossStr = 12
+		Spring.SetUnitRulesParam(unitID, "unorkable", 1)
+	elseif unitDefName == "orkbig" then
 		shared.Init(Torso, 5, 5)
+		tossRadius = 160
+		tossStr = 5
+		Spring.SetUnitRulesParam(unitID, "unorkable", 1)
 	else
 		shared.Init(Torso, 3)
 	end
@@ -40,6 +53,20 @@ end
 
 function script.BlockShot(num, targetID)
 	shared.FaceTarget(targetID)
+	if targetID and tossRadius then
+		local tx, _, tz = Spring.GetUnitPosition(targetID)
+		local x, _, z = Spring.GetUnitPosition(unitID)
+		local units = Spring.GetUnitsInCylinder(tx, tz, tossRadius)
+		for i = 1, #units do
+			if not Spring.GetUnitRulesParam(units[i], "unorkable") then
+				local ux, uy, uz = Spring.GetUnitPosition(units[i])
+				local dx, dz = ux - x, uz - z
+				local dist = math.sqrt(dx*dx + dz*dz)
+				local impulse = tossStr*(1 - dist/(3*tossRadius))
+				Spring.AddUnitImpulse(units[i], impulse*dx/dist, impulse, impulse*dz/dist)
+			end
+		end
+	end
 	return false
 end
 

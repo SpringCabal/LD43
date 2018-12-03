@@ -7,7 +7,7 @@ local BloodMage = Raw:New {
 	buildPic 			= "",
 	-- Sensors
 	sightDistance       = 800,
-	mass                = 120,
+	mass                = 300,
 
 	-- Commands
 	canMove             = true,
@@ -28,13 +28,13 @@ local BloodMage = Raw:New {
 	upright             = true,
 	minCollisionSpeed   = 1000000,
 	pushResistant       = false,
-	maxVelocity         = 20,
+	maxVelocity         = 22,
 	turnInPlace         = false,
 	turnInPlaceSpeedLimit = 0,
 	-- maxVelocity's default value of "0" is odd, unless the default is a "building"?
 	-- then again, acceleration is not 0 by default..
-	acceleration        = 8,
-	brakeRate           = 8,
+	acceleration        = 10,
+	brakeRate           = 10,
 	turnRate            = 1000 / 0.16,
 	-- degrees per seconds = 0.16 * turnRate
 	-- what a bizarre calculation, is this turnRate / (2 * pi)?
@@ -59,6 +59,10 @@ local BloodMage = Raw:New {
 	collisionVolumeType      = 'CylY',
 	collisionVolumeScales    = '37 60 37',
 
+	selectionVolumeOffsets = [[0 0 0]],
+	selectionVolumeScales  = [[2 2 2]],
+	selectionVolumeType    = [[ellipsoid]],
+	
 	-- General
 	name                = "BloodMage",
 	movementClass       = "Player",

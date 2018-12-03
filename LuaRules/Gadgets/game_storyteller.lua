@@ -53,16 +53,6 @@ function gadget:Initialize()
 end
 
 function GetStory()
-	-- Spawn a few pirates
-	-- Spawn a drilling boat
-	-- Introduce food and healing
-	-- Spawn pirates and a drilling boat
-	-- Introduce selling
-	-- Spawn stuff
-	-- Introduce heat
-	-- Spawn stuff
-	-- Introduce global warming ("It's getting warmer")
-	-- Spawn stuff
 	return {
 		-- {
 		--     name = "intro",
@@ -123,7 +113,7 @@ function GetStory()
 			humanName = "The Swarm",
 			units = {
 				orksmall = 120,
-				orkbig = 5,
+				orkbig = 10,
 			},
 			team = enemyTeam,
 			time = 30,
@@ -132,7 +122,7 @@ function GetStory()
 			name = "spawn",
 			humanName = "Final Boss",
 			units = {
-				orksmall = 50,
+				orksmall = 60,
 				orkbig = 10,
 				orkboss = 1,
 			},

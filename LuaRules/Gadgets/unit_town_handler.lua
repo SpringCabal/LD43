@@ -135,6 +135,50 @@ local housePos = {
 
 local villagerArea = {
 	{
+		x = 4800,
+		z = 4950,
+		width = 400,
+		height = 500,
+		units = {
+			swordsman = 5,
+			coward = 2,
+			peasant = 3,
+		}
+	},
+	{
+		x = 6370,
+		z = 5000,
+		width = 400,
+		height = 400,
+		units = {
+			swordsman = 5,
+			coward = 2,
+			peasant = 3,
+		}
+	},
+	{
+		x = 5600,
+		z = 4500,
+		width = 400,
+		height = 400,
+		units = {
+			swordsman = 5,
+			coward = 2,
+			peasant = 3,
+		}
+	},
+	{
+		x = 6000,
+		z = 6800,
+		width = 400,
+		height = 400,
+		units = {
+			swordsman = 5,
+			coward = 2,
+			peasant = 3,
+		}
+	},
+	{
 		x = 4930,
 		z = 7070,
 		width = 180,
@@ -183,13 +227,13 @@ local villagerArea = {
 		}
 	},
 	{
-		x = 6600,
+		x = 6700,
 		z = 4900,
-		width = 180,
+		width = 360,
 		height = 180,
 		units = {
-			swordsman = 5,
-			crossbowman = 2,
+			swordsman = 7,
+			crossbowman = 3,
 		}
 	},
 	{
@@ -243,11 +287,13 @@ local villagerArea = {
 	{
 		x = 4930,
 		z = 5700,
-		width = 180,
-		height = 400,
+		width = 300,
+		height = 600,
 		units = {
-			swordsman = 4,
+			swordsman = 6,
 			crossbowman = 2,
+			coward = 5,
+			peasant = 5,
 		}
 	},
 	{
@@ -258,8 +304,8 @@ local villagerArea = {
 		units = {
 			swordsman = 30,
 			crossbowman = 8,
-			coward = 65,
-			peasant = 15,
+			coward = 35,
+			peasant = 20,
 		}
 	},
 	{
@@ -282,8 +328,8 @@ local villagerArea = {
 		units = {
 			swordsman = 7,
 			crossbowman = 2,
-			coward = 22,
-			peasant = 8,
+			coward = 15,
+			peasant = 10,
 		}
 	},
 	{
@@ -294,8 +340,8 @@ local villagerArea = {
 		units = {
 			swordsman = 8,
 			crossbowman = 3,
-			coward = 25,
-			peasant = 15,
+			coward = 20,
+			peasant = 20,
 		}
 	},
 	{
@@ -306,8 +352,8 @@ local villagerArea = {
 		units = {
 			swordsman = 15,
 			crossbowman = 2,
-			coward = 22,
-			peasant = 8,
+			coward = 15,
+			peasant = 15,
 		}
 	},
 }

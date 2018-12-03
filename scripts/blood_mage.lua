@@ -108,6 +108,7 @@ function script.AimWeapon()
 end
 
 function script.Create()
+		Spring.SetUnitRulesParam(unitID, "unorkable", 1)
 	shared.Init(Torso)
 end
 
