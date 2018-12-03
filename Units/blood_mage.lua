@@ -66,6 +66,8 @@ local BloodMage = Raw:New {
 	script              = "blood_mage.lua",
 	maxDamage           = 1600,
 
+	iconType = "bloodmage",
+
 	weapons = {
 		{
 			name = "Staff",

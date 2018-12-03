@@ -311,6 +311,7 @@ local function SpawnHouses()
 		local x = math.floor(housePos[i][1]/16)*16
 		local z = math.floor(housePos[i][2]/16)*16
 		local unitID = Spring.CreateUnit(houseDefID, x, Spring.GetGroundHeight(x, z), z, math.floor(math.random()*4), 0, false, false)
+		Spring.SetUnitNoMinimap(unitID, true)
 	end
 end
 
@@ -327,6 +328,7 @@ local function SpawnVillager(area, unitDefID)
 		tries = tries + 1
 	end
 	local unitID = Spring.CreateUnit(unitDefID, x, y, z, math.floor(math.random()*4), 0, false, false)
+	-- Spring.SetUnitNoMinimap(unitID, true)
 	--Spring.Utilities.UnitEcho(unitID, tries)
 	villagers.Add(unitID, area)
 end

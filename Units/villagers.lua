@@ -11,6 +11,8 @@ units.Peasant = Humanoid:New {
 	collisionVolumeScales    = '37 43 37',
 	maxVelocity         = 6,
 
+	iconType = "peasant",
+
 	weapons = {
 		{
 			name = "DefenderSpear",
@@ -30,6 +32,8 @@ units.Coward = Humanoid:New {
 	collisionVolumeScales    = '37 43 37',
 	maxVelocity         = 6,
 
+	iconType = "coward",
+
 	weapons = {
 		{
 			name = "CowardsEyes",
@@ -47,6 +51,8 @@ units.Crossbowman = Humanoid:New {
 
 	collisionVolumeScales    = '37 46 37',
 	maxVelocity         = 6,
+
+	iconType = "crossbowman",
 
 	customParams = {
 		hscale = 1,

@@ -25,8 +25,8 @@ function widget:Initialize()
 	 -- remove Springs default UI stuff
 	Spring.SendCommands("ResBar 0", "ToolTip 0", "Clock 0", "Info 0")
 	Spring.SendCommands("showhealthbars 0")
-	gl.SlaveMiniMap(true)
-	gl.ConfigMiniMap(-1,-1,-1,-1)
+	-- gl.SlaveMiniMap(true)
+	-- gl.ConfigMiniMap(-1,-1,-1,-1)
 end
 
 -- sets status to ready & hide pre-game UI

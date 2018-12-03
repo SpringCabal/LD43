@@ -26,6 +26,8 @@ local OrkSmall = Humanoid:New {
 		vscale = 1,
 	},
 
+	iconType = "orksmall",
+
 	weapons = {
 		{
 			name = "Bite",
@@ -55,6 +57,8 @@ local OrkBig = Humanoid:New {
 	collisionVolumeType      = 'CylY',
 	collisionVolumeScales    = '102.0 69.0 102.0',
 
+	iconType = "orkbig",
+
 	customParams = {
 		ork = true,
 	},
@@ -83,6 +87,8 @@ local OrkBoss = Humanoid:New {
 
 	collisionVolumeType      = 'CylY',
 	collisionVolumeScales    = '320 235 320',
+
+	iconType = "orkboss",
 
 	customParams = {
 		ork = true,
