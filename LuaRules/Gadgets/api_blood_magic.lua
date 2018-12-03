@@ -49,12 +49,12 @@ local function DoPartial(toKill, required)
 	if #toKill == 0 then
 		return false
 	end
-	
+
 	for i = 1, #toKill do
 		SpawnBloodEffect(toKill[i])
 		Spring.DestroyUnit(toKill[i], true)
 	end
-	
+
 	return required
 end
 
@@ -82,9 +82,9 @@ local function DrainNearbyUnits(collectorID, required, canPartial)
 				required = 0
 
 				UnNeutralUnits(toUnNeutral)
-				for i = 1, #toKill do
-					SpawnBloodEffect(toKill[i])
-					Spring.DestroyUnit(toKill[i], true)
+				for j = 1, #toKill do
+					SpawnBloodEffect(toKill[j])
+					Spring.DestroyUnit(toKill[j], true)
 				end
 
 				return true
@@ -108,7 +108,7 @@ local function Transfusion(unitID)
 	if health >= maxHealth then
 		return
 	end
-	local manaFound, partialShortBy = DrainNearbyUnits(unitID, maxHealth - health)
+	local manaFound, partialShortBy = DrainNearbyUnits(unitID, maxHealth - health, true)
 	if not (manaFound or partialShortBy) then
 		return
 	end
@@ -119,7 +119,7 @@ local function Transfusion(unitID)
 			SpawnBloodEffect(unitID)
 		end
 	end
-	
+
 	local env = Spring.UnitScript.GetScriptEnv(unitID)
 	Spring.UnitScript.CallAsUnit(unitID, env.script.CastAnimation, castFunc, 1, tx, tz)
 	Spring.SetGameRulesParam("castingFreeze", Spring.GetGameFrame() + CASTING_TIME_SHORT)
@@ -155,7 +155,7 @@ local function Heartburn(unitID, tx, ty, tz)
 		})
 		Spring.SetProjectileGravity(proID, -gravity)
 	end
-	
+
 	local env = Spring.UnitScript.GetScriptEnv(unitID)
 	Spring.UnitScript.CallAsUnit(unitID, env.script.CastAnimation, castFunc, 2, tx, tz)
 	Spring.SetGameRulesParam("castingFreeze", Spring.GetGameFrame() + CASTING_TIME)
@@ -187,14 +187,14 @@ local function Adrenaline(unitID, tx, ty, tz)
 		return
 	end
 	local x, y, z = Spring.GetUnitPosition(unitID)
-	
+
 	local function castFunc()
 		local units = Spring.GetUnitsInCylinder(x, z, 350, PLAYER_TEAM)
 		for i = 1, #units do
 			GG.StatusEffects.Adrenaline(units[i], 320 + math.random()*60)
 		end
 	end
-	
+
 	local env = Spring.UnitScript.GetScriptEnv(unitID)
 	Spring.UnitScript.CallAsUnit(unitID, env.script.CastAnimation, castFunc, 1, tx, tz)
 	Spring.SetGameRulesParam("castingFreeze", Spring.GetGameFrame() + CASTING_TIME_SHORT)
@@ -207,7 +207,7 @@ local function Dialysis(unitID, tx, ty, tz)
 		return
 	end
 	local x, y, z = Spring.GetUnitPosition(unitID)
-	
+
 	local function castFunc()
 		local units = Spring.GetUnitsInCylinder(x, z, 500, ENEMY_TEAM)
 		for i = 1, #units do
@@ -218,7 +218,7 @@ local function Dialysis(unitID, tx, ty, tz)
 			Spring.AddUnitImpulse(units[i], impulse*dx/dist, impulse, impulse*dz/dist)
 		end
 	end
-	
+
 	local env = Spring.UnitScript.GetScriptEnv(unitID)
 	Spring.UnitScript.CallAsUnit(unitID, env.script.CastAnimation, castFunc, 2, tx, tz)
 	Spring.SetGameRulesParam("castingFreeze", Spring.GetGameFrame() + CASTING_TIME)
