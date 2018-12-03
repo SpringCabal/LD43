@@ -50,7 +50,7 @@ weapons.DefenderSpear = FancyMeleeWeapon:New {
 	 -- soundStart            = [[SpearThrow]],
 	soundStart            = "stickswing",
 	 damage                = {
-		default = 90,
+		default = 75,
 	}
 }
 
