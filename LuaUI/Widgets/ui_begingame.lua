@@ -23,7 +23,7 @@ local playerName = ""
 local storyTxt = [[
 Usually the militia is more than a match for the occasional orkish raid. As the towns blood mage your contibuted is limited to patching up any wounded (at a heavy discount, of course). This time is different. Everyone who can weild a pitchfork is being urged to fight. A gigantic army headed by a fearsome (and massive) leader is approaching. There is no way the militia is up to the task, and, alas, your spells and effects are too weak to tip the balance.
 
-Unless... you were to crack open your book of Forbidden Magic. Powered by more than pricked fingers and vials of sheeps blood, these spells may just be the tool required to save us. Well, most of us. The townsfolk will understand as, if any of us are to see the dawn...
+Unless... you were to crack open your book of Forbidden Magic. Powered by more than pricked fingers and vials of sheep blood, these spells may just be the tool required to save us. Well, most of us. The townsfolk will understand as, if any of us are to see the dawn...
 
 
 ]] .. '\255\255\190\190Sacrifices must be made.\b'

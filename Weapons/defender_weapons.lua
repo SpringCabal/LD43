@@ -75,6 +75,7 @@ weapons.Staff = FancyMeleeWeapon:New {
 	impactOnly            = false,
 	soundStart            = "staffswing",
 	soundHit              = "staffhit",
+	soundHitVolume        = 5,
 	edgeEffectiveness = 0.9,
 	 damage                = {
 		default = 300,
