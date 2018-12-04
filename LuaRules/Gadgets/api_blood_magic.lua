@@ -163,15 +163,15 @@ local function Transfusion(unitID)
 		partialShortBy = partialShortBy - LIFE_BONUS
 	end
 
+	local x, _, z, _, y = Spring.GetUnitPosition(unitID, true)
 	local function castFunc()
+		GG.PlaySound("sounds/heal_spell.wav", 30, x, y, z)
 		if Spring.ValidUnitID(unitID) then
 			Spring.SetUnitHealth(unitID, maxHealth - (partialShortBy or 0))
 			SpawnEffect(unitID, CEG_HEALTH)
 		end
 	end
 
-	local x, _, z, _, y = Spring.GetUnitPosition(unitID, true)
-	GG.PlaySound("sounds/heal_spell.wav", 30, x, y, z)
 	
 	local env = Spring.UnitScript.GetScriptEnv(unitID)
 	Spring.UnitScript.CallAsUnit(unitID, env.script.CastAnimation, castFunc, 1, tx, tz)
@@ -194,6 +194,7 @@ local function Heartburn(unitID, tx, ty, tz)
 
 	local x, y, z = Spring.GetUnitPosition(unitID)
 	local function castFunc()
+		GG.PlaySound("sounds/fireballfire.wav", 12, x, y, z)
 		ty = Spring.GetGroundHeight(tx, tz) + 20
 		y = y + 120
 		local dx, dy, dz = tx - x, ty - y, tz - z
@@ -227,6 +228,7 @@ local function Adrenaline(unitID, tx, ty, tz)
 	local x, y, z = Spring.GetUnitPosition(unitID)
 
 	local function castFunc()
+		GG.PlaySound("sounds/buff_spell.wav", 30, x, y, z)
 		local units = Spring.GetUnitsInCylinder(x, z, 450, PLAYER_TEAM)
 		for i = 1, #units do
 			if Spring.GetUnitDefID(units[i]) ~= houseDefID then
@@ -237,7 +239,6 @@ local function Adrenaline(unitID, tx, ty, tz)
 		end
 		SpawnEffectPosition(x, y, z, CEG_ADRENALINE)
 	end
-	GG.PlaySound("sounds/buff_spell.wav", 30, x, y, z)
 
 	local env = Spring.UnitScript.GetScriptEnv(unitID)
 	Spring.UnitScript.CallAsUnit(unitID, env.script.CastAnimation, castFunc, 1, tx, tz)
@@ -254,6 +255,7 @@ local function Migraine(unitID, tx, ty, tz)
 	end
 	
 	local function castFunc()
+		GG.PlaySound("sounds/curse_spell.wav", 30, tx, ty, tz)
 		local units = Spring.GetUnitsInCylinder(tx, tz, 450, ENEMY_TEAM)
 		for i = 1, #units do
 			local ux, uy, uz = Spring.GetUnitPosition(units[i])
@@ -263,7 +265,6 @@ local function Migraine(unitID, tx, ty, tz)
 		end
 		SpawnEffectPosition(tx, ty, tz, CEG_MIGRAINE)
 	end
-	GG.PlaySound("sounds/curse_spell.wav", 30, tx, ty, tz)
 	
 	local env = Spring.UnitScript.GetScriptEnv(unitID)
 	Spring.UnitScript.CallAsUnit(unitID, env.script.CastAnimation, castFunc, 3, tx, tz)
@@ -281,6 +282,7 @@ local function Dialysis(unitID, tx, ty, tz)
 	local x, y, z = Spring.GetUnitPosition(unitID)
 
 	local function castFunc()
+		GG.PlaySound("sounds/throw_spell.wav", 30, x, y, z)
 		local units = Spring.GetUnitsInCylinder(x, z, 700, ENEMY_TEAM)
 		for i = 1, #units do
 			local health = Spring.GetUnitHealth(units[i])
@@ -294,7 +296,6 @@ local function Dialysis(unitID, tx, ty, tz)
 		end
 		SpawnEffectPosition(x, y, z, CEG_DIALYSIS)
 	end
-	GG.PlaySound("sounds/throw_spell.wav", 30, x, y, z)
 
 	local env = Spring.UnitScript.GetScriptEnv(unitID)
 	Spring.UnitScript.CallAsUnit(unitID, env.script.CastAnimation, castFunc, 3, tx, tz)
