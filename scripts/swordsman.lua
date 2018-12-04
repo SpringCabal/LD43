@@ -29,9 +29,9 @@ function script.Create()
 	local unitDefID = Spring.GetUnitDefID(unitID)
 	if UnitDefs[unitDefID].name == "swordsman" then
 		isSword = true
-		shared.InitSound("sounds/bravedeathyell.wav", 0.2)
+		shared.InitSound("sounds/bravedeathyell.wav", 0.6)
 	else
-		shared.InitSound("sounds/panicdeathyell.wav", 0.2)
+		shared.InitSound("sounds/panicdeathyell.wav", 0.6)
 	end
 	shared.Init(Torso, 3)
 end

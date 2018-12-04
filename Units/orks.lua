@@ -90,7 +90,7 @@ local OrkBoss = Humanoid:New {
 	objectName          = "OrkBoss.dae",
 	script              = "ork.lua",
 	maxDamage           = 12000,
-	mass                = 150,
+	mass                = 160,
 
 	maxVelocity         = 5.1,
 	turnRate            = 800 / 0.16,

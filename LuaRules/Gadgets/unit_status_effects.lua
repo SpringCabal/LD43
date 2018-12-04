@@ -33,7 +33,7 @@ function StatusEffects.Adrenaline(unitID, duration)
 	local data = units.Get(unitID) or {}
 	
 	if resist[Spring.GetUnitDefID(unitID) or -1] then
-		GG.Attributes.AddEffect(unitID, "buff", {move = 1.8, reload = 3})
+		GG.Attributes.AddEffect(unitID, "buff", {move = 1.8, reload = 2.5})
 	else
 		GG.Attributes.AddEffect(unitID, "buff", {move = 2, reload = 2.5})
 	end
@@ -51,7 +51,7 @@ function StatusEffects.Stun(unitID, duration)
 	local data = units.Get(unitID) or {}
 	
 	if resist[Spring.GetUnitDefID(unitID) or -1] then
-		duration = duration*0.6
+		duration = duration*0.5
 	end
 	
 	GG.Attributes.AddEffect(unitID, "stun", {move = 0.1, reload = 0})

@@ -53,7 +53,7 @@ function script.Create()
 		shared.InitSound("sounds/bigorkdeathyell.wav", 1)
 	else
 		shared.Init(Torso, 3, 0.9)
-		shared.InitSound("sounds/smallorkdeathyell.wav", 0.2)
+		shared.InitSound("sounds/smallorkdeathyell.wav", 0.6)
 	end
 end
 

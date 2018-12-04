@@ -10,7 +10,7 @@ function widget:GetInfo()
   }
 end
 
-local VOLUME = 0.15
+local VOLUME = 0.20
 local BUFFER = 0.015
 
 local playingTime = 0
@@ -18,7 +18,7 @@ local dtTime = 0
 local trackTime
 local startedPlaying = false
 -- FIXME: add the music file path here
-local musicFile
+local musicFile = "sounds/music.ogg"
 
 local function StartPlaying()
 	playingTime = 0

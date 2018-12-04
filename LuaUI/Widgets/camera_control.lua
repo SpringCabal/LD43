@@ -53,9 +53,9 @@ function SetGameMode(gameMode)
 	else
 		s = {
 			dist = 1000,
-			px = 10.2821,
+			px = 5580,
 			py = 436.300781,
-			pz = 271.06079,
+			pz = 7100,
 			rz = 0,
 			dx = 0,
 			dy = -0.8283768,

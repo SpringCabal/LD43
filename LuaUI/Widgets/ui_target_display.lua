@@ -29,7 +29,7 @@ function GetColor(colormap,slider)
   end
   if (slider<0) then slider=0 elseif(slider>1) then slider=1 end
   local posn  = 1+(coln-1) * slider
-  local iposn = math.floor(posn)
+	local iposn = math.max(1, math.min(coln - 1, math.floor(posn)))
   local aa    = posn - iposn
   local ia    = 1-aa
 
@@ -77,7 +77,7 @@ local function makeBar(name)
 		parent = window,
 		x      = 0,
         y      = 0,
-		bottom = 30,
+		bottom = "52%",
 		right  = 0,
 	}
 
@@ -85,7 +85,7 @@ local function makeBar(name)
 	lblName = Chili.Progressbar:New{
 		parent = window,
 		x      = 0,
-        y      = 50,
+		bottom = "52%",
 		bottom = 0,
 		right  = 0,
 		color = {

@@ -36,6 +36,7 @@ local Bite = FancyMeleeWeapon:New {
 	impactOnly            = true,
 	 -- soundStart            = [[SpearThrow]],
 	soundStart             = "smallorkattack",
+	soundStartVolume       = 1,
 	 damage                = {
 		default = 9,
 	}
@@ -75,6 +76,8 @@ local Firebomb = Weapon:New {
 	 -- soundStart            = [[SpearThrow]],
 	soundStart             = "firebombfire",
 	soundHit               = "firebombhit",
+	soundStartVolume       = 5,
+	soundHitVolume         = 5,
 	 damage                = {
 		default = 450,
 	}

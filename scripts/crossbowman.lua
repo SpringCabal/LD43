@@ -22,7 +22,7 @@ end
 local shared = include("shared.lua")
 function script.Create()
 	shared.Init(Torso, 3)
-	shared.InitSound("sounds/bravedeathyell.wav", 0.2)
+	shared.InitSound("sounds/bravedeathyell.wav", 0.6)
 end
 
 function script.StartMoving()

@@ -298,6 +298,7 @@ function widget:TextCommand(command)
 end
 
 function widget:Initialize()
+	Spring.SendCommands('console 0')
 	if Spring.GetGameRulesParam("gameMode") == "test" then
 		widgetHandler:RemoveWidget(self)
 		return
@@ -318,7 +319,6 @@ end
 
 function widget:Shutdown()
 	Spring.SendCommands('unbind f8 ' .. COMMAND_NAME)
-	Spring.SendCommands('console 1')
 	if window then
 		window:Dispose()
 	end
