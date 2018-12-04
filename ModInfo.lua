@@ -1,7 +1,7 @@
 local modinfo = {
-	name = "Ludum Dare 43",
+	name = "To the last Drop",
 	shortname = "LD43",
-	version = "$VERSION",
+	version = "1",
 	description = "LD43 game",
 
 	modtype = "1",

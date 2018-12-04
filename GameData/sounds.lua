@@ -31,6 +31,8 @@ local defaultOpts = {
 	gainmod = 0,
 }
 
+local VFSUtils = VFS.Include('gamedata/VFSUtils.lua')
+
 local function AutoAdd(subDir, generalOpts)
 	generalOpts = generalOpts or {}
 	local opts
