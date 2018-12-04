@@ -67,7 +67,7 @@ end
 function gadget:Initialize()
 	if Spring.GetGameRulesParam("gameMode") == nil then
 		modOptions = Spring.GetModOptions()
-		local gameMode = modOptions.gameMode
+		local gameMode = modOptions.gameMode or modOptions.gamemode
 		SafeSetGameMode(gameMode)
 	end
 end

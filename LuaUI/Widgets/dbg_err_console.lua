@@ -298,6 +298,10 @@ function widget:TextCommand(command)
 end
 
 function widget:Initialize()
+	if Spring.GetGameRulesParam("gameMode") == "test" then
+		widgetHandler:RemoveWidget(self)
+		return
+	end
 	Chili	= WG.Chili
 	screen = Chili.Screen0
 	Menu	 = WG.MainMenu
