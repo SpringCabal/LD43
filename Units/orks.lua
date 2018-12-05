@@ -92,7 +92,7 @@ local OrkBoss = Humanoid:New {
 	maxDamage           = 12000,
 	mass                = 160,
 
-	maxVelocity         = 5.1,
+	maxVelocity         = 6.2,
 	turnRate            = 800 / 0.16,
 
 	footprintX          = 4,

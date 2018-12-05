@@ -15,20 +15,21 @@ end
 local houseDefID = UnitDefNames["house"].id
 local BLOOD_MAGIC_RANGE = 600
 
-local FIREBALL_COST = 1000
-local BUFF_COST = 1000
-local STUN_COST = 1200
-local THROW_COST = 1600
+local FIREBALL_COST = 1350
+local BUFF_COST = 1350
+local STUN_COST = 1350
+local THROW_COST = 1700
 
-local LIFE_BONUS = 250
+local LIFE_BONUS = 500
 
 local PLAYER_TEAM = 0
 local ENEMY_TEAM = 1
-local CASTING_TIME_SHORT = 1 * 8
-local CASTING_TIME = 1 * 12
-local CASTING_TIME_LONG = 1 * 25
+local CASTING_TIME_SHORT = 8
+local CASTING_TIME = 12
+local CASTING_TIME_LONG = 18
 
 local alliesDrained = 0
+local delayedEffect = {}
 
 local fireballDefID = WeaponDefNames["fireball"].id
 
@@ -256,12 +257,15 @@ local function Migraine(unitID, tx, ty, tz)
 	
 	local function castFunc()
 		GG.PlaySound("sounds/curse_spell.wav", 30, tx, ty, tz)
+		local frame = Spring.GetGameFrame()
 		local units = Spring.GetUnitsInCylinder(tx, tz, 450, ENEMY_TEAM)
 		for i = 1, #units do
 			local ux, uy, uz = Spring.GetUnitPosition(units[i])
 			local dx, dz = ux - tx, uz - tz
 			local dist = math.sqrt(dx*dx + dz*dz)
-			GG.StatusEffects.Stun(units[i], (1 - dist/1000)*(400 + math.random()*80))
+			local effectTime = frame + math.ceil(dist/30)
+			delayedEffect[effectTime] = delayedEffect[effectTime] or {}
+			delayedEffect[effectTime][#delayedEffect[effectTime] + 1] = {4, units[i], (1 - dist/1000)*(400 + math.random()*80)}
 		end
 		SpawnEffectPosition(tx, ty, tz, CEG_MIGRAINE)
 	end
@@ -283,7 +287,8 @@ local function Dialysis(unitID, tx, ty, tz)
 
 	local function castFunc()
 		GG.PlaySound("sounds/throw_spell.wav", 30, x, y, z)
-		local units = Spring.GetUnitsInCylinder(x, z, 700, ENEMY_TEAM)
+		local frame = Spring.GetGameFrame()
+		local units = Spring.GetUnitsInCylinder(x, z, 850, ENEMY_TEAM)
 		for i = 1, #units do
 			local health = Spring.GetUnitHealth(units[i])
 			Spring.SetUnitHealth(units[i], math.max(health - 1500, health/2))
@@ -291,8 +296,10 @@ local function Dialysis(unitID, tx, ty, tz)
 			local ux, uy, uz = Spring.GetUnitPosition(units[i])
 			local dx, dz = ux - x, uz - z
 			local dist = math.sqrt(dx*dx + dz*dz)
-			local impulse = 36*(1 - dist/1000)
-			Spring.AddUnitImpulse(units[i], impulse*dx/dist, impulse, impulse*dz/dist)
+			local impulse = 36*(1 - dist/1600)
+			local effectTime = frame + math.ceil(dist/80)
+			delayedEffect[effectTime] = delayedEffect[effectTime] or {}
+			delayedEffect[effectTime][#delayedEffect[effectTime] + 1] = {5, units[i], impulse*dx/dist, impulse, impulse*dz/dist}
 		end
 		SpawnEffectPosition(x, y, z, CEG_DIALYSIS)
 	end
@@ -312,6 +319,24 @@ local function UseSpell(unitID, spellID, tx, ty, tz)
 	Spring.Echo('Casting spell: ', spellID, unitID)
 	local spell = spells[spellID]
 	spell(unitID, tx, ty, tz)
+end
+
+function gadget:GameFrame(n)
+	if delayedEffect[n] then
+		local units = delayedEffect[n]
+		for i = 1, #units do
+			if Spring.ValidUnitID(units[i][2]) then
+				if units[i][1] == 5 then
+					Spring.AddUnitImpulse(units[i][2], units[i][3], units[i][4], units[i][5])
+				elseif units[i][1] == 4 then
+					GG.StatusEffects.Stun(units[i][2], units[i][3])
+				elseif units[i][1] == 3 then
+				
+				end
+			end
+		end
+		delayedEffect[n] = nil
+	end
 end
 
 function gadget:Initialize()

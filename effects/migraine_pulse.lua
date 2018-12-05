@@ -26,7 +26,7 @@ return {
 		  circlegrowth       = 12,
 		  flashalpha         = 2.15,
 		  flashsize          = 68,
-		  ttl                = 26,
+		  ttl                = 32,
 		  color = {
 			[1]  = 1,
 			[2]  = 0.89999997615814,
@@ -44,7 +44,7 @@ return {
 			alpha              = 0.5,
 			color              = [[1,0,1]],
 			expansionspeed     = 12,
-			ttl                = 26,
+			ttl                = 32,
 		  },
 		},
       },

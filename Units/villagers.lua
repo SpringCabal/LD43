@@ -6,7 +6,7 @@ units.Peasant = Humanoid:New {
 	movementClass       = "Defender",
 	objectName 			= "Villager.dae",
 	script              = "Swordsman.lua",
-	maxDamage           = 500,
+	maxDamage           = 450,
 
 	collisionVolumeScales    = '28 34 28',
 	selectionVolumeOffsets = [[0 0 0]],
@@ -27,6 +27,8 @@ units.Peasant = Humanoid:New {
 		},
 		{
 			name = "BraveEyes",
+			mainDir = [[0 1 0]],
+			maxAngleDif  = 10,
 		}
 	},
 }
@@ -37,7 +39,7 @@ units.Coward = Humanoid:New {
 	movementClass       = "Defender",
 	objectName 			= "VillagerNoWeapon.dae",
 	script              = "Coward.lua",
-	maxDamage           = 400,
+	maxDamage           = 200,
 	movestate           = 0,
 
 	collisionVolumeScales    = '28 34 28',
@@ -116,7 +118,9 @@ units.Swordsman = Humanoid:New {
 			name = "DefenderSword",
 		},
 		{
-			name = "BravestEyes",
+			name = "BraveEyes",
+			mainDir = [[0 1 0]],
+			maxAngleDif  = 10,
 		}
 	},
 }

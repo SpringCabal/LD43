@@ -22,7 +22,6 @@ local enemyTeam = 1
 local gaiaTeam = Spring.GetGaiaTeamID()
 
 local story
-local s11n
 local lastStepFrame
 local waitFrames
 local spawnAreas
@@ -38,7 +37,6 @@ function gadget:Initialize()
 	lastStepFrame = -math.huge
 	waitFrames = 0
 	story = GetStory()
-	s11n = GG.s11n:GetUnitBridge()
 
 	for _, unitID in pairs(Spring.GetAllUnits()) do
 		-- Spring.DestroyUnit(unitID, false, true)
@@ -107,7 +105,7 @@ function GetStory()
 				orkbig = 6,
 			},
 			team = enemyTeam,
-			time = 22,
+			time = 20,
 		},
 		{  -- Night 5
 			name = "spawn",
@@ -117,7 +115,7 @@ function GetStory()
 				orkbig = 28,
 			},
 			team = enemyTeam,
-			time = 27,
+			time = 24,
 		},
 		{  -- Night 6
 			name = "spawn",
@@ -153,11 +151,21 @@ function GetStory()
 			name = "spawn",
 			humanName = "More Nights",
 			units = {
-				orksmall = 70,
+				orksmall = 45,
+				orkbig = 15,
+			},
+			team = enemyTeam,
+			time = 10,
+		},
+		{  --  More Nights
+			name = "spawn",
+			humanName = "More Nights 2",
+			units = {
+				orksmall = 50,
 				orkbig = 10,
 			},
 			team = enemyTeam,
-			time = 20,
+			time = 25,
 		},
 		{  -- Night 7
 			name = "spawn",
@@ -191,7 +199,7 @@ local function findPosition(defName)
 	--local z = math.random(area.minz, area.maxz)
 	local cX = 5650
 	local cZ = 5700
-	local radius = 3000 + math.random()*300
+	local radius = 3000 + math.random()*200
 	local angle = math.random()*320
 	if angle > 65 and angle < 85 then
 		angle = angle + 320 - 50
@@ -210,32 +218,9 @@ end
 
 function SpawnUnits(units, team)
 	for defName, count in pairs(units) do
-		local obj = {
-			defName = defName,
-			team = team,
-		}
-		if todoIsDecal then -- TODO
-			obj.team = gaiaTeam
-			obj.neutral = true
-			obj.blocking = {
-				blockEnemyPushing = true,
-				blockHeightChanges = false,
-				crushable = false,
-				isBlocking = true,
-				isProjectileCollidable = false,
-				isRaySegmentCollidable = false,
-				isSolidObjectCollidable = true,
-			}
-		end
-
 		for i = 1, count do
 			local x, y, z = findPosition(defName)
-			obj.pos = {
-				x = x,
-				y = y,
-				z = z,
-			}
-			s11n:Add(obj)
+			Spring.CreateUnit(defName, x, y, z, 0, team, false, true)
 		end
 	end
 end
@@ -315,6 +300,7 @@ function gadget:GameFrame()
 			return
 		end
 	end
+	
 	local frame = Spring.GetGameFrame()
 	if IsNextStepTime() then
 		NextStep()

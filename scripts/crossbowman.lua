@@ -21,6 +21,10 @@ end
 
 local shared = include("shared.lua")
 function script.Create()
+	local ux, uy, uz = Spring.GetUnitPosition(unitID)
+	Spring.GiveOrderToUnit(unitID, CMD.REPEAT, {1}, {})
+	Spring.GiveOrderToUnit(unitID, CMD.FIGHT, {ux, uy, uz}, {})
+	
 	shared.Init(Torso, 3)
 	shared.InitSound("sounds/bravedeathyell.wav", 0.6)
 end

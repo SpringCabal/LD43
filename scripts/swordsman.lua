@@ -55,21 +55,9 @@ function script.StopMoving()
 	shared.StopMoving()
 end
 
-local function ResetMaxRange()
-	Signal(SIG_RESET)
-	SetSignalMask(SIG_RESET)
-	
-	Sleep(4500)
-	Spring.SetUnitMaxRange(unitID, eyeRange)
-	Spring.SetUnitWeaponState(unitID, 2, "range", eyeRange)
-end
-
 function script.BlockShot(num, targetID)
 	if num == 2 then -- Eyes
-		Spring.SetUnitMaxRange(unitID, weaponRange)
-		Spring.SetUnitWeaponState(unitID, 2, "reloadFrame", Spring.GetGameFrame() + 30)
-		Spring.SetUnitWeaponState(unitID, 2, "range", weaponRange)
-		StartThread(ResetMaxRange)
+		Spring.SetUnitWeaponState(unitID, 2, "reloadFrame", Spring.GetGameFrame() + 300)
 		return true
 	end
 	shared.FaceTarget(targetID)
