@@ -13,7 +13,7 @@
 			"auto_start" : false,
 			"no_downloads" : true,
 			"launch": {
-			"game": "Ludum Dare 43 $VERSION",
+			"game": "To the last Drop $VERSION",
 			"map": "Eyam"
 			}
 		},

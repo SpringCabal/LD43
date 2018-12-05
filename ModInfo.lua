@@ -1,7 +1,7 @@
 local modinfo = {
 	name = "To the last Drop",
 	shortname = "LD43",
-	version = "1",
+	version = "$VERSION",
 	description = "LD43 game",
 
 	modtype = "1",
