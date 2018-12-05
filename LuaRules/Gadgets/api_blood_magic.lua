@@ -18,9 +18,10 @@ local BLOOD_MAGIC_RANGE = 600
 local FIREBALL_COST = 1350
 local BUFF_COST = 1350
 local STUN_COST = 1350
-local THROW_COST = 1700
+local THROW_COST = 1350
 
 local LIFE_BONUS = 500
+local UNIT_GRAVITY = (Game.gravity/30/30)
 
 local PLAYER_TEAM = 0
 local ENEMY_TEAM = 1
@@ -38,7 +39,7 @@ local CEG_FLAMES = [[feature_poof_spawner]]
 local CEG_HEALTH = [[feature_slurp_spawner]]
 local CEG_MIGRAINE = [[migraine_pulse_spawner]]
 local CEG_ADRENALINE = [[adrenaline_sparkles]]
-local CEG_DIALYSIS = [[gtfo_pulse]]
+local CEG_POULTICE = [[gtfo_pulse]]
 
 local SOUND_DRAIN = "sounds/blooddrain.wav"
 
@@ -278,7 +279,7 @@ local function Migraine(unitID, tx, ty, tz)
 	Spring.ClearUnitGoal(unitID)
 end
 
-local function Dialysis(unitID, tx, ty, tz)
+local function Poultice(unitID, tx, ty, tz)
 	local manaFound = DrainNearbyUnits(unitID, THROW_COST)
 	if not manaFound then
 		return
@@ -288,20 +289,23 @@ local function Dialysis(unitID, tx, ty, tz)
 	local function castFunc()
 		GG.PlaySound("sounds/throw_spell.wav", 30, x, y, z)
 		local frame = Spring.GetGameFrame()
-		local units = Spring.GetUnitsInCylinder(x, z, 850, ENEMY_TEAM)
+		local units = Spring.GetUnitsInCylinder(x, z, 700, ENEMY_TEAM)
 		for i = 1, #units do
-			local health = Spring.GetUnitHealth(units[i])
-			Spring.SetUnitHealth(units[i], math.max(health - 1500, health/2))
-			
 			local ux, uy, uz = Spring.GetUnitPosition(units[i])
-			local dx, dz = ux - x, uz - z
+			local dx, dy, dz = x - ux, y - uy, z - uz
 			local dist = math.sqrt(dx*dx + dz*dz)
-			local impulse = 36*(1 - dist/1600)
-			local effectTime = frame + math.ceil(dist/80)
+			local flyTime = 75 + math.floor((dist + math.random()*40 - 20)/60)
+			local wx, wy, wz = Spring.GetUnitVelocity(units[i])
+			local vx, vy, vz = dx/flyTime - wx, flyTime*UNIT_GRAVITY/2 + dy/flyTime - wy, dz/flyTime - wz
+			local effectTime = frame + math.ceil(dist/50)
 			delayedEffect[effectTime] = delayedEffect[effectTime] or {}
-			delayedEffect[effectTime][#delayedEffect[effectTime] + 1] = {5, units[i], impulse*dx/dist, impulse, impulse*dz/dist}
+			delayedEffect[effectTime][#delayedEffect[effectTime] + 1] = {5, units[i], vx, vy, vz}
+			local env = Spring.UnitScript.GetScriptEnv(units[i])
+			if env and env.script.StopMoving then
+				Spring.UnitScript.CallAsUnit(units[i], env.script.StopMoving)
+			end
 		end
-		SpawnEffectPosition(x, y, z, CEG_DIALYSIS)
+		SpawnEffectPosition(x, y, z, CEG_POULTICE)
 	end
 
 	local env = Spring.UnitScript.GetScriptEnv(unitID)
@@ -313,7 +317,7 @@ local function Dialysis(unitID, tx, ty, tz)
 end
 
 -- ID mapping as well
-local spells = { Transfusion, Heartburn, Adrenaline, Migraine, Dialysis }
+local spells = { Transfusion, Heartburn, Adrenaline, Migraine, Poultice }
 
 local function UseSpell(unitID, spellID, tx, ty, tz)
 	Spring.Echo('Casting spell: ', spellID, unitID)

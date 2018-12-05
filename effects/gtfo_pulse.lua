@@ -4,10 +4,10 @@ return {
 		
 		groundflash = {
 		  circlealpha        = 0.5,
-		  circlegrowth       = 55,
+		  circlegrowth       = 50,
 		  flashalpha         = 1.2,
 		  flashsize          = 68,
-		  ttl                = 18,
+		  ttl                = 13,
 		  color = {
 			[1]  = 0.2,
 			[2]  = 1,
@@ -20,12 +20,12 @@ return {
 		  count              = 1,
 		  ground             = true,
 		  water              = true,
-		  underwater 		 = true,
+		  underwater         = true,
 		  properties = {
 			alpha              = 0.5,
 			color              = [[0.2,1,0]],
-			expansionspeed     = 55,
-			ttl                = 18,
+			expansionspeed     = 50,
+			ttl                = 13,
 		  },
 		},
       },

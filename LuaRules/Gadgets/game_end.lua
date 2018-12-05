@@ -38,6 +38,9 @@ function gadget:Initialize()
 end
 
 function gadget:GameFrame(frame)
+	if Spring.IsGameOver() then
+		return
+	end
 	if frame > initializeFrame + 2 and Spring.GetGameRulesParam("gameEnd") == "victoryPossible" then
 		for _, defID in pairs(defs) do
 			if Spring.GetTeamUnitDefCount(ENEMY_TEAM, defID) > 0 then

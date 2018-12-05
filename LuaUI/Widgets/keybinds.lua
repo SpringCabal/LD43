@@ -26,7 +26,7 @@ local bindText = { -- keybinds told to player
 	purple .. "2 : " .. white .. "Heartburn",
 	purple .. "3 : " .. white .. "Adrenaline",
 	purple .. "4 : " .. white .. "Migraine",
-	purple .. "5 : " .. white .. "Dialysis",
+	purple .. "5 : " .. white .. "Poultice",
 	purple .. "Left click: " .. white .. "Move",
 	purple .. "Right click : " .. white .. "Attack",
 	purple .. "Ctrl+Q : " .. white .. "Quit",
@@ -37,7 +37,7 @@ local bindDesc = {
 	'Causes a burning sensation.',
 	'Really gets you (and your allies) moving.',
 	'Unbearable headaches for your foes.',
-	'Removes orks from the vicinity.',
+	'Draws orks towards you.',
 }
 
 WG.Bindings = bindText
