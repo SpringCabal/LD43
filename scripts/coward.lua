@@ -47,6 +47,6 @@ function script.BlockShot(num, targetID)
 	
 	Spring.GiveOrderToUnit(unitID, CMD.MOVE, {cx, cy, cz}, {})
 	
-	Spring.SetUnitWeaponState(unitID, 2, "reloadFrame", Spring.GetGameFrame() + 180)
+	Spring.SetUnitWeaponState(unitID, 1, "reloadFrame", Spring.GetGameFrame() + 180)
 	return true
 end
