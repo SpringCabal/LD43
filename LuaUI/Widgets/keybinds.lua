@@ -37,7 +37,7 @@ local bindDesc = {
 	'Causes a burning sensation.',
 	'Really gets you (and your allies) moving.',
 	'Unbearable headaches for your foes.',
-	'Removes toxins (and orks).',
+	'Removes orks from the vicinity.',
 }
 
 WG.Bindings = bindText
