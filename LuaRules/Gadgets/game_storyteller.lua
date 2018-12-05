@@ -179,9 +179,9 @@ local function findPosition(defName)
 	--local area = spawnAreas[math.random(#spawnAreas)]
 	--local x = math.random(area.minx, area.maxx)
 	--local z = math.random(area.minz, area.maxz)
-	local cX = 5700
-	local cZ = 5850
-	local radius = 3200
+	local cX = 5650
+	local cZ = 5700
+	local radius = 3000 + math.random()*300
 	local angle = math.random()*320
 	if angle > 65 and angle < 85 then
 		angle = angle + 320 - 50
