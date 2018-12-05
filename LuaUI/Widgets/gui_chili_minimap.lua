@@ -32,6 +32,7 @@ local offscreentex
 local fadeShader
 local alphaLoc
 local boundsLoc
+local mainBoundsLoc
 
 --//
 
@@ -497,6 +498,18 @@ options = {
 	--]]
 }
 
+local EDGE_FADE_PIXELS = 1 -- Fade on minimap edge.
+local MINIMAP_SCALE = 1.5 -- Scale of drawn minimap. Only works in the range (0, 2).
+local SOURCE_SIZE = 600 -- Should be less than screen height and width.
+local SCREEN_X = 0 -- Position on screen. Range of [0, 1].
+local SCREEN_Y = 0 -- Position on screen. Range of [0, 1].
+
+-- Position of top left of minimap as a proportion of world map width. Range of [0, 1].
+local MAP_X = 0.37
+local MAP_Z = 0.32
+local MAP_X_SIZE = 0.35
+local MAP_Z_SIZE = 0.45
+
 function WG.Minimap_SetOptions(aspect, opacity, resizable, buttonRight, minimizable)
 	if aspect == 'arwindow' or aspect == 'armap' or aspect == 'arnone' then 
 		options.use_map_ratio.value = aspect
@@ -666,6 +679,9 @@ local leftClickDraggingCamera = false
 -- 	end
 -- end
 
+
+
+
 local function CleanUpFBO()
   if (gl.DeleteFBO) and fbo ~= nil then
     gl.DeleteFBO(fbo or 0)
@@ -720,12 +736,13 @@ function widget:Initialize()
 			fadeShader = gl.CreateShader({
 			vertex = [[
 				varying vec2 texCoord;
+				uniform vec2 mainbounds;
 
           void main() {
 			texCoord = gl_Vertex.xy * 0.5 + 0.5;
-			texCoord /= 1.3;
-			texCoord.y += 0.04;
-			texCoord.x += 0.13;
+			texCoord /= ]] .. MINIMAP_SCALE ..[[;
+			texCoord.y += mainbounds.y;
+			texCoord.x += mainbounds.x;
 			gl_Position = vec4(gl_Vertex.xyz, 1.0);
           }
 			]],
@@ -737,7 +754,7 @@ function widget:Initialize()
 
 		      varying vec2 texCoord;
 
-		      const float edgeFadePixels = 16.0;
+		      const float edgeFadePixels = ]] .. EDGE_FADE_PIXELS .. [[;
 
 		      void main(void) {
 		        vec4 color = texture2D(tex0, texCoord.st);
@@ -761,6 +778,7 @@ function widget:Initialize()
 		    uniform = {
               alpha = 0,
               bounds = {0,0,0,0},
+              mainbounds = {0,0},
               screen = {0,0},
 			},
 		  })
@@ -771,6 +789,7 @@ function widget:Initialize()
 		  else
 			  alphaLoc = gl.GetUniformLocation(fadeShader, 'alpha')
 				boundsLoc = gl.GetUniformLocation(fadeShader, 'bounds')
+				mainBoundsLoc = gl.GetUniformLocation(fadeShader, 'mainbounds')
 				screenLoc = gl.GetUniformLocation(fadeShader, 'screen')
 		  end
 		else --Shader Generation impossible, clean up FBO
@@ -834,8 +853,8 @@ function widget:DrawScreen()
 		last_window_x = window.x
 		last_window_y = window.y
 
-		cx,cy = map_panel:LocalToScreen(cx,cy)
-		gl.ConfigMiniMap(cx*(WG.uiScale or 1),(vsy-ch-cy)*(WG.uiScale or 1),cw*(WG.uiScale or 1),ch*(WG.uiScale or 1))
+		cx,cy = map_panel:LocalToScreen(cx, cy)
+		gl.ConfigMiniMap(0, vsy/2, SOURCE_SIZE, SOURCE_SIZE)
 	end
 
 	-- Do this even if the fadeShader can't exist, just so that all hiding code still behaves properly
@@ -890,8 +909,19 @@ function widget:DrawScreen()
 		gl.Texture(0, offscreentex)
 		gl.UseShader(fadeShader)
 		gl.Uniform(alphaLoc, alpha * 3)
-		local px, py = window.x + lx * 2.5, vsy - window.y - ly * 3
-		gl.Uniform(boundsLoc, (px/vsx) * 12, ((py - lh)/vsy) * 0.8, (lw/vsx) * 0.7, (lh/vsy) * 0.9)
+		
+		gl.Uniform(boundsLoc,
+			MAP_X * SOURCE_SIZE/vsx, 
+			1 - (MAP_Z + MAP_Z_SIZE)*SOURCE_SIZE/vsy,
+			MAP_X_SIZE*SOURCE_SIZE/vsx, 
+			MAP_Z_SIZE*SOURCE_SIZE/vsy
+		)
+		
+		gl.Uniform(mainBoundsLoc,
+			(MAP_X*SOURCE_SIZE/vsx) - SCREEN_X/MINIMAP_SCALE, 
+			1 - 1/MINIMAP_SCALE + SCREEN_Y/MINIMAP_SCALE - ((MAP_Z)*SOURCE_SIZE/vsy)
+		)
+		
 		gl.Uniform(screenLoc, vsx, vsy)
 		-- Spring.Echo("Bounds: "..(window.x + lx)/vsx..", "..(window.y + ly)/vsy..", "..((window.x + lx) + lw)/vsx..", "..((window.y + ly) + lh)/vsy)
 		gl.TexRect(-1, 1, 1, -1)
