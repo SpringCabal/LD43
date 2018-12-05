@@ -46,14 +46,17 @@ function script.Create()
 		deunorkable = true
 		StartThread(UpdatePosition)
 		shared.InitSound("sounds/bossdeathyell.wav", 1)
+		Spring.SetUnitMaxRange(unitID, 200)
 	elseif unitDefName == "orkbig" then
 		shared.Init(Torso, 2, 2)
 		tossRadius = 120
 		tossStr = 5
 		shared.InitSound("sounds/bigorkdeathyell.wav", 1)
+		Spring.SetUnitMaxRange(unitID, 120)
 	else
 		shared.Init(Torso, 3, 0.9)
 		shared.InitSound("sounds/smallorkdeathyell.wav", 0.6)
+		Spring.SetUnitMaxRange(unitID, 80)
 	end
 end
 

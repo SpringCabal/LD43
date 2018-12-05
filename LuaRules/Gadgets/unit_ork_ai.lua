@@ -52,13 +52,13 @@ local function CheckIdle(unitID, frame)
 	end
 	
 	-- Anti-stuck
-	local _,_,_,speed = Spring.GetUnitVelocity(unitID)
-	if speed and speed < 0.02 then
-		local reloadFrame = Spring.GetUnitWeaponState(unitID, 1, "reloadFrame")
-		if reloadFrame + 90 < frame then
-			SetupAi(unitID)
-		end
-	end
+	--local _,_,_,speed = Spring.GetUnitVelocity(unitID)
+	--if speed and speed < 0.02 then
+	--	local reloadFrame = Spring.GetUnitWeaponState(unitID, 1, "reloadFrame")
+	--	if reloadFrame + 90 < frame then
+	--		SetupAi(unitID)
+	--	end
+	--end
 	
 	if (Spring.GetCommandQueue(unitID, 0) ~= 0) then
 		return

@@ -13,6 +13,8 @@ if addon.InGetInfo then
 	}
 end
 
+local USE_CTRL_PANEL = false
+
 local function DummyHandler(xIcons, yIcons, cmdCount, commands)
 	handler.commands   = commands
 	handler.commands.n = cmdCount
@@ -21,6 +23,24 @@ local function DummyHandler(xIcons, yIcons, cmdCount, commands)
 end
 
 function addon.Initialize()
-	RegisterGlobal("LayoutButtons", DummyHandler)
+	if USE_CTRL_PANEL then
+		Spring.LoadCtrlPanelConfig([[xIcons         3
+yIcons         10
+prevPageSlot   j0
+deadIconSlot   j1
+nextPageSlot   j2
+xIconSize      0.05
+yIconSize      0.05
+
+xPos           0.000
+yPos           0.147
+xSelectionPos  0.018
+ySelectionPos  0.115]])
+		Spring.LoadCmdColorsConfig([[alwaysDrawQueue 1]])
+		Spring.ForceLayoutUpdate()
+
+	else
+		RegisterGlobal("LayoutButtons", DummyHandler)
+	end
 end
 

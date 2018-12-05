@@ -10,6 +10,8 @@ function widget:GetInfo()
 	}
 end
 
+include("keysym.h.lua")
+
 local Chili, screen0
 local children = {}
 local x,y,h
@@ -86,6 +88,30 @@ local function UpdateGameMode()
 		Spring.SendCommands("bind any+- slowdown")
 	end
 	SetBindings()
+end
+
+local function cheatAll()
+	if gameMode == "play" then
+		return
+	end
+	if not Spring.IsCheatingEnabled() then
+		Spring.SendCommands{"cheat"}
+	end
+	Spring.SendCommands{"spectator"}
+	if not Spring.IsGodModeEnabled() then
+		Spring.SendCommands{"godmode"}
+	end
+end
+
+function widget:KeyPress(key, modifier, isRepeat)
+	if modifier.ctrl then
+		if key == KEYSYMS.G then
+			--Spring.SendCommands{"give empiricaldpser 1"} -- Replace with some common test unit.
+		end
+		if key == KEYSYMS.V then
+			cheatAll()
+		end
+	end
 end
 
 function widget:Initialize()
