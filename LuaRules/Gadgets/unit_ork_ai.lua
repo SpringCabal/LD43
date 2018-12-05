@@ -83,7 +83,7 @@ local function SetupFlee(unitID)
 	local cz = uz + 4000*dz/dist
 	local cy = Spring.GetGroundHeight(cx, cz)
 	
-	Spring.GiveOrderToUnit(unitID, CMD.FIRESTATE_HOLDFIRE, {0}, {})
+	Spring.GiveOrderToUnit(unitID, CMD.FIRE_STATE, {0}, {})
 	GG.Attributes.AddEffect(unitID, "flee", {reload = 0})
 	Spring.Utilities.GiveClampedOrderToUnit(unitID, CMD.MOVE, {cx, cy, cz}, {})
 end

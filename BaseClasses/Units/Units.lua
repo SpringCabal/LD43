@@ -15,7 +15,7 @@ local Humanoid = Unit:New {
 	-- 	should they even be part of the engine? Lua it!
 	canPatrol           = true,
 	canGuard            = true,
-	canRepeat           = false,
+	canRepeat           = true,
 	footprintX          = 2,
 	footprintZ          = 2,
 	fireState           = 2,       -- Should auto-attack by default.

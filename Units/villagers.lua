@@ -24,6 +24,9 @@ units.Peasant = Humanoid:New {
 	weapons = {
 		{
 			name = "DefenderSpear",
+		},
+		{
+			name = "BraveEyes",
 		}
 	},
 }
@@ -92,7 +95,7 @@ units.Swordsman = Humanoid:New {
 	objectName 			= "Swordsman.dae",
 	script              = "swordsman.lua",
 	maxDamage           = 800,
-	moveState           = 2, -- 2 results in large swarms
+	moveState           = 1, -- 2 results in large swarms
 	mass                = 80,
 
 	collisionVolumeScales    = '28 34 28',
@@ -113,6 +116,9 @@ units.Swordsman = Humanoid:New {
 	weapons = {
 		{
 			name = "DefenderSword",
+		},
+		{
+			name = "BravestEyes",
 		}
 	},
 }

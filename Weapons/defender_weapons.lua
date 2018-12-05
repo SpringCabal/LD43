@@ -67,6 +67,32 @@ weapons.CowardsEyes = MeleeWeapon:New {
 	}
 }
 
+weapons.BraveEyes = MeleeWeapon:New {
+	name                  = "BraveEyes",
+	range                 = 300,
+	reloadTime            = 3,
+	-- targeting & accuracy
+	accuracy              = 0.9,
+	turret                = true,
+	 -- soundStart            = [[SpearThrow]],
+	 damage                = {
+		default = 0,
+	}
+}
+
+weapons.BravestEyes = MeleeWeapon:New {
+	name                  = "BravestEyes",
+	range                 = 460,
+	reloadTime            = 3,
+	-- targeting & accuracy
+	accuracy              = 0.9,
+	turret                = true,
+	 -- soundStart            = [[SpearThrow]],
+	 damage                = {
+		default = 0,
+	}
+}
+
 weapons.Staff = FancyMeleeWeapon:New {
 	name                  = "Staff",
 	reloadTime            = 0.8,
