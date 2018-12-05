@@ -30,7 +30,7 @@ weapons.CrossBow = Weapon:New {
 
 weapons.DefenderSword = FancyMeleeWeapon:New {
 	name                  = "DefenderSword",
-	range                 = 80,
+	range                 = 60,
 	reloadTime            = 1.2,
 	-- targeting & accuracy
 	accuracy              = 0.9,
@@ -43,7 +43,7 @@ weapons.DefenderSword = FancyMeleeWeapon:New {
 
 weapons.DefenderSpear = FancyMeleeWeapon:New {
 	name                  = "DefenderSpear",
-	range                 = 80,
+	range                 = 100,
 	reloadTime            = 1.4,
 	-- targeting & accuracy
 	accuracy              = 0.9,

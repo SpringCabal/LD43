@@ -53,7 +53,6 @@ function script.Create()
 		tossStr = 5
 		shared.InitSound("sounds/bigorkdeathyell.wav", 1)
 		Spring.SetUnitMaxRange(unitID, 120)
-		if not Spring.MoveCtrl.GetTag(unitID) then
 	else
 		shared.Init(Torso, 3, 0.9)
 		shared.InitSound("sounds/smallorkdeathyell.wav", 0.6)

@@ -34,9 +34,6 @@ function script.Create()
 		shared.InitSound("sounds/panicdeathyell.wav", 0.6)
 	end
 	shared.Init(Torso, 3)
-	if not Spring.MoveCtrl.GetTag(unitID) then
-		Spring.MoveCtrl.SetGroundMoveTypeData(unitID, "maneuverLeash", 10)
-	end
 end
 
 function script.StartMoving()

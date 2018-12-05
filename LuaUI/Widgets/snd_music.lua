@@ -10,8 +10,6 @@ function widget:GetInfo()
   }
 end
 
-if true then return false end
-
 local VOLUME = 0.20
 local BUFFER = 0.015
 

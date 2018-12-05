@@ -10,7 +10,7 @@ function gadget:GetInfo()
 		date      = "LD43",
 		license   = "GPL-v2",
 		layer     = 0,
-		enabled   = false
+		enabled   = true
 	}
 end
 

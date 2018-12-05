@@ -24,11 +24,7 @@ units.Peasant = Humanoid:New {
 	weapons = {
 		{
 			name = "DefenderSpear",
-		},
-		{
-			name = "CowardsEyes",
-			onlyTargetCategory = [[NONE]],
-		},
+		}
 	},
 }
 
