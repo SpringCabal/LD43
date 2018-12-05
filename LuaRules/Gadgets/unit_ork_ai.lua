@@ -10,7 +10,7 @@ function gadget:GetInfo()
 		date      = "2 December 2018",
 		license   = "GPL-v2",
 		layer     = 0,
-		enabled   = true
+		enabled   = false
 	}
 end
 

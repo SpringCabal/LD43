@@ -13,7 +13,7 @@ if addon.InGetInfo then
 	}
 end
 
-local USE_CTRL_PANEL = false
+local USE_CTRL_PANEL = true
 
 local function DummyHandler(xIcons, yIcons, cmdCount, commands)
 	handler.commands   = commands
