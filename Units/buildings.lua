@@ -49,7 +49,7 @@ oooooooooooo
 	idletime            = 120, --in simframes
 	idleautoheal        = 0,
 	autoheal            = 0,
-	maxDamage           = 1600,
+	maxDamage           = 2000,
 	onoffable           = true,
 	script              = "house.lua",
 	objectName 			= "House.dae",

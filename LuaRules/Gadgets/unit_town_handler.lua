@@ -134,19 +134,19 @@ local housePos = {
 }
 
 local villagerArea = {
-	{
+	[1] = {
 		x = 4900,
 		z = 4950,
 		width = 300,
 		height = 400,
 		units = {
-			swordsman = 10,
+			swordsman = 8,
 			crossbowman = 2,
 			coward = 2,
 			peasant = 3,
 		}
 	},
-	{
+	[2] = {
 		x = 6370,
 		z = 5000,
 		width = 400,
@@ -157,7 +157,7 @@ local villagerArea = {
 			peasant = 3,
 		}
 	},
-	{
+	[3] = {
 		x = 5600,
 		z = 4500,
 		width = 400,
@@ -168,18 +168,18 @@ local villagerArea = {
 			peasant = 3,
 		}
 	},
-	{
-		x = 6000,
-		z = 6800,
-		width = 400,
-		height = 400,
+	[4] = {
+		x = 5900,
+		z = 6850,
+		width = 500,
+		height = 500,
 		units = {
 			swordsman = 5,
-			coward = 2,
-			peasant = 3,
+			coward = 5,
+			peasant = 6,
 		}
 	},
-	{
+	[5] = 	{
 		x = 4930,
 		z = 7070,
 		width = 180,
@@ -188,7 +188,7 @@ local villagerArea = {
 			swordsman = 5,
 		}
 	},
-	{
+	[6] = {
 		x = 5580,
 		z = 7330,
 		width = 180,
@@ -197,7 +197,7 @@ local villagerArea = {
 			swordsman = 5,
 		}
 	},
-	{
+	[7] = {
 		x = 5400,
 		z = 6950,
 		width = 500,
@@ -207,17 +207,17 @@ local villagerArea = {
 			crossbowman = 6,
 		}
 	},
-	{
+	[8] = {
 		x = 5740,
-		z = 6300,
+		z = 6320,
 		width = 180,
-		height = 180,
+		height = 300,
 		units = {
 			swordsman = 5,
 			crossbowman = 2,
 		}
 	},
-	{
+	[9] = {
 		x = 6850,
 		z = 6191,
 		width = 180,
@@ -227,7 +227,7 @@ local villagerArea = {
 			crossbowman = 2,
 		}
 	},
-	{
+	[10] = {
 		x = 6700,
 		z = 4900,
 		width = 360,
@@ -237,17 +237,18 @@ local villagerArea = {
 			crossbowman = 3,
 		}
 	},
-	{
-		x = 6250,
-		z = 5700,
-		width = 180,
-		height = 180,
+	[11] = {
+		x = 6450,
+		z = 5500,
+		width = 300,
+		height = 300,
 		units = {
 			swordsman = 5,
 			crossbowman = 2,
+			peasant = 3,
 		}
 	},
-	{
+	[12] = {
 		x = 4850,
 		z = 4450,
 		width = 180,
@@ -256,7 +257,7 @@ local villagerArea = {
 			swordsman = 5,
 		}
 	},
-	{
+	[13] = {
 		x = 5230,
 		z = 4130,
 		width = 180,
@@ -265,7 +266,7 @@ local villagerArea = {
 			swordsman = 5,
 		}
 	},
-	{
+	[14] = {
 		x = 5170,
 		z = 4480,
 		width = 240,
@@ -275,7 +276,7 @@ local villagerArea = {
 			crossbowman = 5,
 		}
 	},
-	{
+	[15] = {
 		x = 5600,
 		z = 5100,
 		width = 180,
@@ -285,31 +286,31 @@ local villagerArea = {
 			crossbowman = 2,
 		}
 	},
-	{
+	[16] = {
 		x = 4930,
 		z = 5700,
 		width = 300,
 		height = 600,
 		units = {
 			swordsman = 6,
-			crossbowman = 2,
-			coward = 5,
+			crossbowman = 1,
+			coward = 8,
 			peasant = 5,
 		}
 	},
-	{
+	[17] = {
 		x = 5680,
 		z = 5750,
-		width = 1200,
-		height = 1200,
+		width = 1500,
+		height = 1400,
 		units = {
 			swordsman = 30,
 			crossbowman = 8,
-			coward = 18,
-			peasant = 24,
+			coward = 40,
+			peasant = 90,
 		}
 	},
-	{
+	[18] = {
 		x = 5110,
 		z = 6500,
 		width = 700,
@@ -317,23 +318,23 @@ local villagerArea = {
 		units = {
 			swordsman = 12,
 			crossbowman = 4,
-			coward = 6,
+			coward = 12,
 			peasant = 8,
 		}
 	},
-	{
-		x = 6130,
-		z = 6740,
+	[19] = {
+		x = 6300,
+		z = 6600,
 		width = 900,
 		height = 900,
 		units = {
 			swordsman = 7,
 			crossbowman = 2,
-			coward = 15,
-			peasant = 10,
+			coward = 16,
+			peasant = 12,
 		}
 	},
-	{
+	[20] = {
 		x = 5500,
 		z = 5000,
 		width = 1600,
@@ -341,11 +342,11 @@ local villagerArea = {
 		units = {
 			swordsman = 8,
 			crossbowman = 3,
-			coward = 20,
+			coward = 25,
 			peasant = 20,
 		}
 	},
-	{
+	[21] = {
 		x = 6500,
 		z = 6000,
 		width = 900,
@@ -381,7 +382,8 @@ local function SpawnVillager(area, unitDefID)
 	local y = Spring.GetGroundHeight(x, z)
 	local facing = math.floor(math.random()*4)
 	local tries = 1
-	while tries < 8 and Spring.TestBuildOrder(unitDefID, x, y, z, facing) ~= 2 do
+	while (tries < 4 and Spring.TestBuildOrder(unitDefID, x, y, z, facing) ~= 2) or 
+		(tries >= 4 and tries < 8 and Spring.TestBuildOrder(unitDefID, x, y, z, facing) == 0) do
 		x = area.x + area.width*math.random() - area.width/2
 		z = area.z + area.height*math.random() - area.height/2
 		y = Spring.GetGroundHeight(x, z)
@@ -396,14 +398,18 @@ local function SpawnVillager(area, unitDefID)
 end
 
 local function FillVillagerAreas()
+	local totalVillagers = 0
 	for i = 1, #villagerArea do
+		--Spring.MarkerAddPoint(villagerArea[i].x, 0, villagerArea[i].z, i)
 		for unitDefname, count in pairs(villagerArea[i].units) do
 			local unitDefID = UnitDefNames[unitDefname].id
 			for j = 1, count do
 				SpawnVillager(villagerArea[i], unitDefID)
 			end
+			totalVillagers = totalVillagers + count
 		end
 	end
+	Spring.Echo("totalVillagers", totalVillagers)
 end
 
 local function SpawnBloodMage(x, z)

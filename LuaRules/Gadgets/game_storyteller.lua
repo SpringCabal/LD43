@@ -67,7 +67,7 @@ function GetStory()
 				orkbig = 1,
 			},
 			team = enemyTeam,
-			time = 1,
+			time = 8,
 		},
 		{ -- Night 1
 			name = "spawn",
@@ -77,7 +77,7 @@ function GetStory()
 				orkbig = 2,
 			},
 			team = enemyTeam,
-			time = 10,
+			time = 12,
 		},
 		{  -- Night 2
 			name = "spawn",
@@ -87,7 +87,7 @@ function GetStory()
 				orkbig = 3,
 			},
 			team = enemyTeam,
-			time = 25,
+			time = 16,
 		},
 		{ -- Night 3
 			name = "spawn",
@@ -97,7 +97,7 @@ function GetStory()
 				orkbig = 8,
 			},
 			team = enemyTeam,
-			time = 12,
+			time = 10,
 		},
 		{  -- Night 4
 			name = "spawn",
@@ -107,7 +107,7 @@ function GetStory()
 				orkbig = 6,
 			},
 			team = enemyTeam,
-			time = 25,
+			time = 20,
 		},
 		{  -- Night 5
 			name = "spawn",
@@ -117,7 +117,7 @@ function GetStory()
 				orkbig = 28,
 			},
 			team = enemyTeam,
-			time = 25,
+			time = 20,
 		},
 		{  -- Night 6
 			name = "spawn",
@@ -137,7 +137,7 @@ function GetStory()
 				orkbig = 2,
 			},
 			team = enemyTeam,
-			time = 35,
+			time = 28,
 		},
 		{  --  More Nights
 			name = "spawn",
@@ -159,18 +159,18 @@ function GetStory()
 				orkboss = 1,
 			},
 			team = enemyTeam,
-			time = 30,
+			time = 18,
 		},
 		{  -- Forever spawn
 			name = "spawn",
 			infiniteLoop = true,
 			humanName = "The Loop",
 			units = {
-				orksmall = 35,
+				orksmall = 30,
 				orkbig = 3,
 			},
 			team = enemyTeam,
-			time = 20,
+			time = 12,
 		},
 	}
 end
