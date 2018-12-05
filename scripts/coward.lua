@@ -34,8 +34,8 @@ function script.BlockShot(num, targetID)
 	local tx, _, tz = Spring.GetUnitPosition(targetID)
 	local ux, uy, uz = Spring.GetUnitPosition(unitID)
 	local dx, dz = tx - ux, tz - uz
-	local cx = ux - dx
-	local cz = uz - dz
+	local cx = ux - dx + math.random()*50 - 25
+	local cz = uz - dz + math.random()*50 - 25
 	local cy = Spring.GetGroundHeight(cx, cz)
 	
 	if deathSound and math.random() < 0.35 then

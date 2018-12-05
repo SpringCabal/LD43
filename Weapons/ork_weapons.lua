@@ -1,21 +1,21 @@
 local BigOrkAxe = FancyMeleeWeapon:New {
 	name                  = "BigOrkAxe",
 	range                 = 120,
-	reloadTime            = 2.5,
+	reloadTime            = 2.8,
 	impactOnly            = true,
 	-- targeting & accuracy
 	accuracy              = 0.9,
 	 -- soundStart            = [[SpearThrow]],
 	soundStart             = "bigorkattack",
 	 damage                = {
-		default = 200,
+		default = 180,
 	}
 }
 
 local BossOrkAxe = FancyMeleeWeapon:New {
 	name                  = "BossOrkAxe",
 	range                 = 200,
-	reloadTime            = 2.5,
+	reloadTime            = 3.5,
 	areaOfEffect          = 220,
 	-- targeting & accuracy
 	accuracy              = 0.9,

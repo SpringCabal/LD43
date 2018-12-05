@@ -140,10 +140,9 @@ local villagerArea = {
 		width = 300,
 		height = 400,
 		units = {
-			swordsman = 8,
+			swordsman = 7,
 			crossbowman = 2,
 			coward = 2,
-			peasant = 3,
 		}
 	},
 	[2] = {
@@ -152,7 +151,7 @@ local villagerArea = {
 		width = 400,
 		height = 400,
 		units = {
-			swordsman = 5,
+			swordsman = 6,
 			coward = 5,
 			crossbowman = 2,
 			peasant = 6,
@@ -165,7 +164,7 @@ local villagerArea = {
 		height = 400,
 		units = {
 			swordsman = 5,
-			coward = 4,
+			coward = 1,
 			peasant = 3,
 		}
 	},
@@ -176,7 +175,7 @@ local villagerArea = {
 		height = 500,
 		units = {
 			swordsman = 6,
-			coward = 9,
+			coward = 1,
 			peasant = 10,
 		}
 	},
@@ -279,10 +278,10 @@ local villagerArea = {
 		}
 	},
 	[15] = {
-		x = 5600,
+		x = 5700,
 		z = 5100,
-		width = 180,
-		height = 180,
+		width = 280,
+		height = 220,
 		units = {
 			swordsman = 5,
 			crossbowman = 2,
@@ -296,31 +295,31 @@ local villagerArea = {
 		units = {
 			swordsman = 6,
 			crossbowman = 1,
-			coward = 8,
-			peasant = 5,
+			coward = 3,
+			peasant = 12,
 		}
 	},
 	[17] = {
 		x = 5680,
 		z = 5750,
-		width = 1200,
-		height = 1200,
+		width = 1000,
+		height = 1000,
 		units = {
-			swordsman = 25,
+			swordsman = 20,
 			crossbowman = 8,
-			coward = 35,
-			peasant = 24,
+			coward = 75,
+			peasant = 16,
 		}
 	},
 	[18] = {
 		x = 5110,
 		z = 6500,
-		width = 700,
+		width = 500,
 		height = 800,
 		units = {
 			swordsman = 12,
 			crossbowman = 4,
-			coward = 12,
+			coward = 5,
 			peasant = 8,
 		}
 	},
@@ -332,8 +331,8 @@ local villagerArea = {
 		units = {
 			swordsman = 7,
 			crossbowman = 2,
-			coward = 16,
-			peasant = 12,
+			coward = 6,
+			peasant = 16,
 		}
 	},
 	[20] = {
@@ -344,8 +343,8 @@ local villagerArea = {
 		units = {
 			swordsman = 8,
 			crossbowman = 3,
-			coward = 20,
-			peasant = 20,
+			coward = 10,
+			peasant = 30,
 		}
 	},
 	[21] = {
@@ -356,8 +355,8 @@ local villagerArea = {
 		units = {
 			swordsman = 15,
 			crossbowman = 2,
-			coward = 12,
-			peasant = 18,
+			coward = 6,
+			peasant = 15,
 		}
 	},
 	[22] = {

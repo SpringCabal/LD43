@@ -37,14 +37,14 @@ units.Coward = Humanoid:New {
 	movementClass       = "Defender",
 	objectName 			= "VillagerNoWeapon.dae",
 	script              = "Coward.lua",
-	maxDamage           = 450,
+	maxDamage           = 400,
 	movestate           = 0,
 
 	collisionVolumeScales    = '28 34 28',
 	selectionVolumeOffsets = [[0 0 0]],
 	selectionVolumeScales  = [[20 20 20]],
 	selectionVolumeType    = [[ellipsoid]],
-	maxVelocity         = 5,
+	maxVelocity            = 3,
 
 	customParams = {
 		hscale = 1,
@@ -94,7 +94,7 @@ units.Swordsman = Humanoid:New {
 	movementClass       = "Defender",
 	objectName 			= "Swordsman.dae",
 	script              = "swordsman.lua",
-	maxDamage           = 700,
+	maxDamage           = 750,
 	moveState           = 1, -- 2 results in large swarms
 	mass                = 80,
 

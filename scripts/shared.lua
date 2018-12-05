@@ -7,17 +7,24 @@ local bobScale = 2
 local timeScale = 1
 local staticBobScale = 2
 local sizeScale = 1
-local dead = false
+local isOrk = false
 
 local deathSound
 local deathSoundChance = 1
 
 local bobPiece
+local firstBobRun = true
+local dead = false
 
 local function Bob()
 	Signal(SIG_MOVE)
 	SetSignalMask(SIG_MOVE)
-
+	
+	if isOrk and firstBobRun then
+		Sleep(math.ceil(math.random()*464)) -- Randomly offset animation
+		firstBobRun = false
+	end
+	
 	while true do
 		Move(bobPiece, z_axis, 3*bobScale, 20*bobScale)
 		Sleep(100*timeScale)
@@ -45,10 +52,11 @@ function sharedFunc.AttackBob()
 	Turn(bobPiece, y_axis, math.rad(0), math.rad(120))
 end
 
-function sharedFunc.Init(_bobPiece, _bobScale, _sizeScale)
+function sharedFunc.Init(_bobPiece, _bobScale, _sizeScale, _isOrk)
 	bobPiece = _bobPiece
 	bobScale = _bobScale or bobScale
 	sizeScale = _sizeScale or sizeScale
+	isOrk = _isOrk
 	
 	staticBobScale = bobScale
 end

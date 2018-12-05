@@ -20,7 +20,7 @@ local BUFF_COST = 1000
 local STUN_COST = 1200
 local THROW_COST = 1600
 
-local LIFE_BONUS = 300
+local LIFE_BONUS = 250
 
 local PLAYER_TEAM = 0
 local ENEMY_TEAM = 1

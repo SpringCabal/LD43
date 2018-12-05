@@ -40,7 +40,7 @@ function script.Create()
 	unitDefName = UnitDefs[unitDefID].name
 	Spring.SetUnitRulesParam(unitID, "unorkable", 1)
 	if unitDefName == "orkboss" then
-		shared.Init(Torso, 2, 2)
+		shared.Init(Torso, 2, 2, true)
 		tossRadius = 200
 		tossStr = 10
 		deunorkable = true
@@ -48,13 +48,13 @@ function script.Create()
 		shared.InitSound("sounds/bossdeathyell.wav", 1)
 		Spring.SetUnitMaxRange(unitID, 200)
 	elseif unitDefName == "orkbig" then
-		shared.Init(Torso, 2, 2)
+		shared.Init(Torso, 2, 2, true)
 		tossRadius = 120
 		tossStr = 5
 		shared.InitSound("sounds/bigorkdeathyell.wav", 1)
 		Spring.SetUnitMaxRange(unitID, 120)
 	else
-		shared.Init(Torso, 3, 0.9)
+		shared.Init(Torso, 3, 0.9, true)
 		shared.InitSound("sounds/smallorkdeathyell.wav", 0.6)
 		Spring.SetUnitMaxRange(unitID, 80)
 	end

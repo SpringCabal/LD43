@@ -56,8 +56,8 @@ local OrkBig = Humanoid:New {
 	footprintZ          = 4,
 
 	collisionVolumeType      = 'ellipsoid',
-	collisionVolumeScales    = '96 96 96',
-	collisionVolumeOffsets    = '0 -12 0',
+	collisionVolumeScales    = '64 64 64',
+	collisionVolumeOffsets    = '0 0 0',
 	selectionVolumeOffsets = [[0 0 0]],
 	selectionVolumeScales  = [[96 96 96]],
 	selectionVolumeType    = [[ellipsoid]],

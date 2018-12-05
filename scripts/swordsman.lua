@@ -4,7 +4,7 @@ local isSword = false
 
 local SIG_RESET = 32
 local eyeRange = 420
-local weaponRange = 80
+local weaponRange = 70
 
 local function AttackAnimation()
 	Move(Hand_Right, y_axis, -30, 1000)
@@ -67,7 +67,7 @@ end
 function script.BlockShot(num, targetID)
 	if num == 2 then -- Eyes
 		Spring.SetUnitMaxRange(unitID, weaponRange)
-		Spring.SetUnitWeaponState(unitID, 2, "reloadFrame", Spring.GetGameFrame() + 120)
+		Spring.SetUnitWeaponState(unitID, 2, "reloadFrame", Spring.GetGameFrame() + 30)
 		Spring.SetUnitWeaponState(unitID, 2, "range", weaponRange)
 		StartThread(ResetMaxRange)
 		return true
