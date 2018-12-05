@@ -301,13 +301,13 @@ local villagerArea = {
 	[17] = {
 		x = 5680,
 		z = 5750,
-		width = 1500,
-		height = 1400,
+		width = 1200,
+		height = 1200,
 		units = {
 			swordsman = 30,
 			crossbowman = 8,
-			coward = 40,
-			peasant = 90,
+			coward = 20,
+			peasant = 30,
 		}
 	},
 	[18] = {
