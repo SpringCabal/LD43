@@ -11,6 +11,7 @@ function widget:GetInfo()
 	}
 end
 
+local DEFAULT_TOGGLE_ON = false
 local ssub = string.sub
 local slen = string.len
 local sfind = string.find
@@ -315,6 +316,10 @@ function widget:Initialize()
 	hack = true
 	Spring.SendCommands('bind f8 ' .. COMMAND_NAME)
 	Spring.SendCommands('console 0')
+	
+	if not DEFAULT_TOGGLE_ON then
+		window:SetVisibility(false)
+	end
 end
 
 function widget:Shutdown()
