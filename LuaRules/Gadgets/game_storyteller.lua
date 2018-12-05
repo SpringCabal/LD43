@@ -121,23 +121,33 @@ function GetStory()
 		},
 		{  -- Night 6
 			name = "spawn",
-			humanName = "The Swarm",
+			humanName = "The Swarm 1",
 			units = {
-				orksmall = 95,
-				orkbig = 3,
+				orksmall = 60,
+				orkbig = 1,
 			},
 			team = enemyTeam,
-			time = 8,
+			time = 4,
 		},
-		{  -- Night 6a
+		{  -- Night 6
 			name = "spawn",
-			humanName = "The Swarm",
+			humanName = "The Swarm 2",
 			units = {
-				orksmall = 100,
+				orksmall = 65,
 				orkbig = 2,
 			},
 			team = enemyTeam,
-			time = 28,
+			time = 4,
+		},
+		{  -- Night 6a
+			name = "spawn",
+			humanName = "The Swarm 3",
+			units = {
+				orksmall = 70,
+				orkbig = 2,
+			},
+			team = enemyTeam,
+			time = 25,
 		},
 		{  --  More Nights
 			name = "spawn",
@@ -159,7 +169,7 @@ function GetStory()
 				orkboss = 1,
 			},
 			team = enemyTeam,
-			time = 18,
+			time = 20,
 		},
 		{  -- Forever spawn
 			name = "spawn",

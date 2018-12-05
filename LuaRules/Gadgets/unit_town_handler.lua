@@ -153,8 +153,9 @@ local villagerArea = {
 		height = 400,
 		units = {
 			swordsman = 5,
-			coward = 2,
-			peasant = 3,
+			coward = 5,
+			crossbowman = 2,
+			peasant = 6,
 		}
 	},
 	[3] = {
@@ -164,7 +165,7 @@ local villagerArea = {
 		height = 400,
 		units = {
 			swordsman = 5,
-			coward = 2,
+			coward = 4,
 			peasant = 3,
 		}
 	},
@@ -174,9 +175,9 @@ local villagerArea = {
 		width = 500,
 		height = 500,
 		units = {
-			swordsman = 5,
-			coward = 5,
-			peasant = 6,
+			swordsman = 6,
+			coward = 9,
+			peasant = 10,
 		}
 	},
 	[5] = 	{
@@ -199,12 +200,13 @@ local villagerArea = {
 	},
 	[7] = {
 		x = 5400,
-		z = 6950,
-		width = 500,
+		z = 7050,
+		width = 700,
 		height = 300,
 		units = {
 			swordsman = 8,
 			crossbowman = 6,
+			peasant = 5,
 		}
 	},
 	[8] = {
@@ -224,7 +226,7 @@ local villagerArea = {
 		height = 180,
 		units = {
 			swordsman = 5,
-			crossbowman = 2,
+			crossbowman = 3,
 		}
 	},
 	[10] = {
@@ -290,7 +292,7 @@ local villagerArea = {
 		x = 4930,
 		z = 5700,
 		width = 300,
-		height = 600,
+		height = 800,
 		units = {
 			swordsman = 6,
 			crossbowman = 1,
@@ -304,10 +306,10 @@ local villagerArea = {
 		width = 1200,
 		height = 1200,
 		units = {
-			swordsman = 30,
+			swordsman = 25,
 			crossbowman = 8,
-			coward = 20,
-			peasant = 30,
+			coward = 35,
+			peasant = 24,
 		}
 	},
 	[18] = {
@@ -342,7 +344,7 @@ local villagerArea = {
 		units = {
 			swordsman = 8,
 			crossbowman = 3,
-			coward = 25,
+			coward = 20,
 			peasant = 20,
 		}
 	},
@@ -356,6 +358,18 @@ local villagerArea = {
 			crossbowman = 2,
 			coward = 12,
 			peasant = 18,
+		}
+	},
+	[22] = {
+		x = 6800,
+		z = 5600,
+		width = 300,
+		height = 700,
+		units = {
+			swordsman = 2,
+			crossbowman = 1,
+			peasant = 1,
+			coward = 2,
 		}
 	},
 }
@@ -402,6 +416,7 @@ local function FillVillagerAreas()
 	for i = 1, #villagerArea do
 		--Spring.MarkerAddPoint(villagerArea[i].x, 0, villagerArea[i].z, i)
 		for unitDefname, count in pairs(villagerArea[i].units) do
+			Spring.Echo("unitDefname", unitDefname)
 			local unitDefID = UnitDefNames[unitDefname].id
 			for j = 1, count do
 				SpawnVillager(villagerArea[i], unitDefID)
@@ -465,6 +480,7 @@ function gadget:Initialize()
 end
 
 function gadget:UnitDestroyed(unitID, unitDefID, teamID)
+	Spring.SetUnitNoMinimap(unitID, true) -- Update minimap faster in the event of unit death.
 	if villagers.Remove(unitID) then
 		villagersKilled = villagersKilled + 1
 		Spring.SetGameRulesParam("villagersKilled", villagersKilled)
