@@ -2,15 +2,15 @@
 -- See also; http://springrts.com/wiki/Units-WeaponDefs#damage
 
 local armorDefs = {
-	--[[ Example:
-	tanks = {
-		"supertank",
-		"megatank",
+	ally = {
+		"bloodmage",
+		"builder",
+		"house",
+		"coward",
+		"crossbowman",
+		"peasant",
+		"swordsman",
+		"streetlight",
 	},
-
-	infantry = {
-		"dude",
-	},
-	--]]
 }
 return armorDefs

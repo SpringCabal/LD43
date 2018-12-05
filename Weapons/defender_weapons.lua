@@ -105,6 +105,7 @@ weapons.Staff = FancyMeleeWeapon:New {
 	edgeEffectiveness = 0.9,
 	 damage                = {
 		default = 300,
+		ally = 0,
 	}
 }
 
