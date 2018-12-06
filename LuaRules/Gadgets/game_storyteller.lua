@@ -95,7 +95,7 @@ function GetStory()
 				orkbig = 8,
 			},
 			team = enemyTeam,
-			time = 10,
+			time = 8,
 		},
 		{  -- Night 4
 			name = "spawn",
@@ -125,7 +125,7 @@ function GetStory()
 				orkbig = 1,
 			},
 			team = enemyTeam,
-			time = 4,
+			time = 2,
 		},
 		{  -- Night 6
 			name = "spawn",
@@ -135,7 +135,7 @@ function GetStory()
 				orkbig = 2,
 			},
 			team = enemyTeam,
-			time = 4,
+			time = 2,
 		},
 		{  -- Night 6a
 			name = "spawn",
@@ -145,7 +145,7 @@ function GetStory()
 				orkbig = 2,
 			},
 			team = enemyTeam,
-			time = 26,
+			time = 25,
 		},
 		{  --  More Nights
 			name = "spawn",
@@ -155,7 +155,7 @@ function GetStory()
 				orkbig = 15,
 			},
 			team = enemyTeam,
-			time = 10,
+			time = 5,
 		},
 		{  --  More Nights
 			name = "spawn",
@@ -165,7 +165,7 @@ function GetStory()
 				orkbig = 10,
 			},
 			team = enemyTeam,
-			time = 25,
+			time = 22,
 		},
 		{  -- Night 7
 			name = "spawn",
@@ -177,7 +177,7 @@ function GetStory()
 				orkboss = 1,
 			},
 			team = enemyTeam,
-			time = 18,
+			time = 15,
 		},
 		{  -- Forever spawn
 			name = "spawn",

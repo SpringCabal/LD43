@@ -1,12 +1,12 @@
 -- WIP
 function widget:GetInfo()
 	return {
-		name		= 'Debug Err Console',
-		desc		= 'Displays errors',
-		author	= 'Bluestone',
-		date		= '2016',
+		name    = 'Debug Err Console',
+		desc    = 'Displays errors',
+		author  = 'Bluestone',
+		date    = '2016',
 		license = 'GNU GPL v2',
-		layer	 = 50,
+		layer   = 50,
 		enabled = true
 	}
 end
@@ -23,7 +23,7 @@ local COMMAND_NAME = "toggleErrorConsole"
 
 -- Config --
 local cfg = {
-	msgCap			= 50,
+	msgCap      = 50,
 	reloadLines = 50000,
 }
 local fontSize = 16
@@ -34,21 +34,21 @@ local onlyErrorsAndWarnings = false
 
 -- Text Colour Config --
 local color = {
-	oAlly = '\255\255\128\128', --enemy ally messages (seen only when spectating)
-	misc	= '\255\200\200\200', --everything else
-	game	= '\255\102\255\255', --server (autohost) chat
-	other = '\255\255\255\255', --normal chat color
-	ally	= '\255\001\255\001', --ally chat
-	spec	= '\255\255\255\001', --spectator chat
-	red	 = '\255\255\100\001',
-	orange= '\255\255\165\001',
-	blue	= '\255\001\255\255',
+	oAlly  = '\255\255\128\128', --enemy ally messages (seen only when spectating)
+	misc   = '\255\200\200\200', --everything else
+	game   = '\255\102\255\255', --server (autohost) chat
+	other  = '\255\255\255\255', --normal chat color
+	ally   = '\255\001\255\001', --ally chat
+	spec   = '\255\255\255\001', --spectator chat
+	red    = '\255\255\100\001',
+	orange = '\255\255\165\001',
+	blue   = '\255\001\255\255',
 }
 
 function loadWindow()
 	-- parent
 	window = Chili.Window:New {
-		parent	= screen,
+		parent    = screen,
 		draggable = false,
 		resizable = false,
 		x = 0,
@@ -60,32 +60,32 @@ function loadWindow()
 	-- chat box
 	local msgWindow = Chili.ScrollPanel:New{
 		verticalSmartScroll = true,
-		scrollPosX	= 0,
-		scrollPosY	= 0,
-		parent			= window,
-		x					 = 0,
-		y					 = 0,
-		right			 = 0,
-		height			= '82%',
-		padding		 = {0,0,0,0},
+		scrollPosX  = 0,
+		scrollPosY  = 0,
+		parent      = window,
+		x           = 0,
+		y           = 0,
+		right       = 0,
+		height      = '82%',
+		padding     = {0,0,0,0},
 		borderColor = {0,0,0,0},
 	}
 	log = Chili.TextBox:New {
 		parent			= msgWindow,
 		width			 = '100%',
-		padding		 = {0,0,0,0},
+		padding = {0,0,0,0},
 		align			 = "left",
 		valign			= "ascender",
-	selectable = true,
+		selectable  = true,
 		autoHeight	= true,
 		autoObeyLineHeight = true,
 		subTooltips = true,
-	font				= {
-		outline					= true,
-		autoOutlineColor = true,
-		outlineWidth		 = 4,
-		outlineWeight		= 3,
-		size						 = fontSize,
+		font = {
+			outline					= true,
+			autoOutlineColor = true,
+			outlineWidth		 = 4,
+			outlineWeight		= 3,
+			size						 = fontSize,
 		}
 	}
 	local el_size = 6
@@ -300,13 +300,13 @@ end
 
 function widget:Initialize()
 	Spring.SendCommands('console 0')
-	if Spring.GetGameRulesParam("gameMode") == "test" then
+	if Spring.GetGameRulesParam("gameMode") == "play" then
 		widgetHandler:RemoveWidget(self)
 		return
 	end
-	Chili	= WG.Chili
-	screen = Chili.Screen0
-	Menu	 = WG.MainMenu
+	Chili    = WG.Chili
+	screen   = Chili.Screen0
+	Menu     = WG.MainMenu
 	if WG.Connector then
 		self.openFileCallback = function(cmd) Spring.Echo('Opened in editor: ' .. tostring(cmd.path)) end
 		WG.Connector.Register("OpenFileFinished", self.openFileCallback)

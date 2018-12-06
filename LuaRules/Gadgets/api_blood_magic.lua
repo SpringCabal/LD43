@@ -179,7 +179,8 @@ local function Transfusion(unitID)
 	Spring.UnitScript.CallAsUnit(unitID, env.script.CastAnimation, castFunc, 1, tx, tz)
 	local frame = Spring.GetGameFrame()
 	Spring.SetGameRulesParam("castingFreeze", frame + CASTING_TIME_SHORT)
-	Spring.SetUnitRulesParam(unitID, "start_cast", frame)
+	Spring.SetGameRulesParam("castAnimTime", CASTING_TIME_SHORT + 8)
+	Spring.SetGameRulesParam("start_cast", frame)
 	Spring.ClearUnitGoal(unitID)
 end
 
@@ -218,7 +219,8 @@ local function Heartburn(unitID, tx, ty, tz)
 	Spring.UnitScript.CallAsUnit(unitID, env.script.CastAnimation, castFunc, 2, tx, tz)
 	local frame = Spring.GetGameFrame()
 	Spring.SetGameRulesParam("castingFreeze", frame + CASTING_TIME)
-	Spring.SetUnitRulesParam(unitID, "start_cast", frame)
+	Spring.SetGameRulesParam("castAnimTime", CASTING_TIME + 8)
+	Spring.SetGameRulesParam("start_cast", frame)
 	Spring.ClearUnitGoal(unitID)
 end
 
@@ -246,7 +248,8 @@ local function Adrenaline(unitID, tx, ty, tz)
 	Spring.UnitScript.CallAsUnit(unitID, env.script.CastAnimation, castFunc, 1, tx, tz)
 	local frame = Spring.GetGameFrame()
 	Spring.SetGameRulesParam("castingFreeze", frame + CASTING_TIME_SHORT)
-	Spring.SetUnitRulesParam(unitID, "start_cast", frame)
+	Spring.SetGameRulesParam("castAnimTime", CASTING_TIME_SHORT + 8)
+	Spring.SetGameRulesParam("start_cast", frame)
 	Spring.ClearUnitGoal(unitID)
 end
 
@@ -275,7 +278,8 @@ local function Migraine(unitID, tx, ty, tz)
 	Spring.UnitScript.CallAsUnit(unitID, env.script.CastAnimation, castFunc, 3, tx, tz)
 	local frame = Spring.GetGameFrame()
 	Spring.SetGameRulesParam("castingFreeze", frame + CASTING_TIME_LONG)
-	Spring.SetUnitRulesParam(unitID, "start_cast", frame)
+	Spring.SetGameRulesParam("castAnimTime", CASTING_TIME_LONG + 8)
+	Spring.SetGameRulesParam("start_cast", frame)
 	Spring.ClearUnitGoal(unitID)
 end
 
@@ -289,15 +293,15 @@ local function Poultice(unitID, tx, ty, tz)
 	local function castFunc()
 		GG.PlaySound("sounds/throw_spell.wav", 30, x, y, z)
 		local frame = Spring.GetGameFrame()
-		local units = Spring.GetUnitsInCylinder(x, z, 700, ENEMY_TEAM)
+		local units = Spring.GetUnitsInCylinder(x, z, 720, ENEMY_TEAM)
 		for i = 1, #units do
 			local ux, uy, uz = Spring.GetUnitPosition(units[i])
 			local dx, dy, dz = x - ux, y - uy, z - uz
 			local dist = math.sqrt(dx*dx + dz*dz)
-			local flyTime = 75 + math.floor((dist + math.random()*40 - 20)/60)
+			local flyTime = 45 + math.floor((dist + math.random()*20 - 10)/60)
 			local wx, wy, wz = Spring.GetUnitVelocity(units[i])
 			local vx, vy, vz = dx/flyTime - wx, flyTime*UNIT_GRAVITY/2 + dy/flyTime - wy, dz/flyTime - wz
-			local effectTime = frame + math.ceil(dist/50)
+			local effectTime = frame + math.ceil(dist/60)
 			delayedEffect[effectTime] = delayedEffect[effectTime] or {}
 			delayedEffect[effectTime][#delayedEffect[effectTime] + 1] = {5, units[i], vx, vy, vz}
 			local env = Spring.UnitScript.GetScriptEnv(units[i])
@@ -312,7 +316,8 @@ local function Poultice(unitID, tx, ty, tz)
 	Spring.UnitScript.CallAsUnit(unitID, env.script.CastAnimation, castFunc, 3, tx, tz)
 	local frame = Spring.GetGameFrame()
 	Spring.SetGameRulesParam("castingFreeze", frame + CASTING_TIME_LONG)
-	Spring.SetUnitRulesParam(unitID, "start_cast", frame)
+	Spring.SetGameRulesParam("castAnimTime", CASTING_TIME_LONG + 8)
+	Spring.SetGameRulesParam("start_cast", frame)
 	Spring.ClearUnitGoal(unitID)
 end
 

@@ -415,7 +415,6 @@ local function FillVillagerAreas()
 	for i = 1, #villagerArea do
 		--Spring.MarkerAddPoint(villagerArea[i].x, 0, villagerArea[i].z, i)
 		for unitDefname, count in pairs(villagerArea[i].units) do
-			Spring.Echo("unitDefname", unitDefname)
 			local unitDefID = UnitDefNames[unitDefname].id
 			for j = 1, count do
 				SpawnVillager(villagerArea[i], unitDefID)

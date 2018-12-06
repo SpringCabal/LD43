@@ -12,6 +12,7 @@ end
 
 local controlledDefID = UnitDefNames["bloodmage"].id
 local controlledID = nil
+local lightBoost = 1
 
 local STATIC_FLICKER_RATIO = 0.5
 
@@ -38,18 +39,25 @@ local function GetLight(beamLights, beamLightCount, pointLights, pointLightCount
 	flicker = math.sin(os.clock() * 3) / 3.14 * STATIC_FLICKER_RATIO
 	local x, y, z = Spring.GetUnitViewPosition(controlledID)
 
-	local castingFreeze = Spring.GetGameRulesParam("castingFreeze")
-	local multi = 1
-	local frame = Spring.GetGameFrame()
-	if castingFreeze and frame < castingFreeze then
-		local castingStart = Spring.GetUnitRulesParam(controlledID, "start_cast")
-		if not castingStart then
-			return beamLights, beamLightCount, pointLights, pointLightCount
+	local castingStart = Spring.GetGameRulesParam("start_cast")
+	local castingAnimTime = Spring.GetGameRulesParam("castAnimTime")
+	if castingStart and castingAnimTime then
+		local curr = Spring.GetGameFrame() - castingStart
+		if curr <= castingAnimTime*0.4 then
+			lightBoost = lightBoost + 0.45
+			if lightBoost > 3 then
+				lightBoost = 3
+			end
+		elseif curr <= castingAnimTime*0.55 then
+			lightBoost = lightBoost + 0.18
 		end
-		local curr = frame - castingStart
-		local total = castingFreeze - frame
-		local ratio = curr / total
-		multi = math.mix(1, 5, math.erf((ratio - 0.5) / 2)  / 2 + 0.5)
+	end
+	
+	if lightBoost > 1 then
+		lightBoost = lightBoost - 0.18
+		if lightBoost < 1 then
+			lightBoost = 1
+		end
 	end
 
 	pointLightCount = pointLightCount + 1
@@ -63,7 +71,7 @@ local function GetLight(beamLights, beamLightCount, pointLights, pointLightCount
 			b = 1,
 			radius = 1000
 		},
-		colMult = 2 * multi * (1 + flicker),
+		colMult = 2 * lightBoost * (1 + flicker),
 	}
 
 	return beamLights, beamLightCount, pointLights, pointLightCount
