@@ -7,7 +7,7 @@ COMM_EVENTS = {
 function GetEvent(msg)
 	for _, eventKey in pairs(COMM_EVENTS) do
 		if msg:sub(1, #eventKey) == eventKey then
-		return eventKey
+			return eventKey
 		end
 	end
 end
@@ -59,20 +59,18 @@ function ReloadFile(path)
 		". Reload manually")
 		return
 	end
-	Spring.Log(LOG_SECTION, LOG.NOTICE,
-		"Reloading addon: " .. tostring(addonName) .. "...")
-	 if luaContextName == "LuaUI" then
+	Spring.Log(LOG_SECTION, LOG.NOTICE,	"Reloading addon: " .. tostring(addonName) .. "...")
+	if luaContextName == "LuaUI" then
 		if widgetHandler:DisableWidget(addonName) then
-		widgetHandler:EnableWidget(addonName)
+			widgetHandler:EnableWidget(addonName)
 		else
-		widgetHandler:LoadWidget(path)
+			widgetHandler:LoadWidget(path)
 		end
 	elseif luaContextName == "LuaRules" then
 		if gadgetHandler:DisableGadget(addonName) then
-		gadgetHandler:EnableGadget(addonName)
+			gadgetHandler:EnableGadget(addonName)
 		else
-		Spring.Echo("enable")
-		gadgetHandler:EnableGadget(path)
+			gadgetHandler:EnableGadget(path)
 		end
 	end
 end

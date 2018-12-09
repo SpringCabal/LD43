@@ -165,10 +165,10 @@ function widget:Update()
 			local commandList = explode("\n", str)
 			commandList[1] = buffer .. commandList[1]
 			for i = 1, #commandList-1 do
-	local command = commandList[i]
-	if command ~= nil then
-		CommandReceived(command)
-	end
+				local command = commandList[i]
+				if command ~= nil then
+					CommandReceived(command)
+				end
 			end
 			buffer = commandList[#commandList]
 
