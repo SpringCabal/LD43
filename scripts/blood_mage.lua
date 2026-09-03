@@ -20,7 +20,7 @@ local function AttackAnimation()
 	Move(Torso, y_axis, 0, 30)
 end
 
-local function SmallCast(castFunc)
+local function SmallCast()
 	shared.StopMoving()
 	
 	Move(Hand_Right, x_axis, -50, 200)
@@ -35,9 +35,6 @@ local function SmallCast(castFunc)
 	Turn(Hand_Left, z_axis, math.rad(50), math.rad(160))
 
 	Sleep(300)
-	if castFunc then
-		castFunc()
-	end
 	Sleep(100)
 
 	Move(Hand_Right, x_axis, 0, 100)
@@ -53,7 +50,7 @@ local function SmallCast(castFunc)
 	Turn(Hand_Left, z_axis, math.rad(0), math.rad(120))
 end
 
-local function MediumCast(castFunc, tx, tz)
+local function MediumCast(tx, tz)
 	shared.StopMoving()
 	if tx then
 		local ux, _, uz = Spring.GetUnitPosition(unitID)
@@ -75,9 +72,6 @@ local function MediumCast(castFunc, tx, tz)
 	Move(Torso, z_axis, 25, 100)
 	Sleep(300)
 	Move(Torso, z_axis, 30, 30)
-	if castFunc then
-		castFunc()
-	end
 	Sleep(60)
 	Move(Torso, z_axis, 0, 20)
 	Sleep(60)
@@ -96,7 +90,7 @@ local function MediumCast(castFunc, tx, tz)
 	Turn(Hand_Left, z_axis, math.rad(0), math.rad(120))
 end
 
-local function LongCast(castFunc, tx, tz)
+local function LongCast(tx, tz)
 	shared.StopMoving()
 	if tx then
 		local ux, _, uz = Spring.GetUnitPosition(unitID)
@@ -117,9 +111,6 @@ local function LongCast(castFunc, tx, tz)
 
 	Move(Torso, z_axis, 40, 120)
 	Sleep(450)
-	if castFunc then
-		castFunc()
-	end
 	Sleep(100)
 	Move(Torso, z_axis, 0, 80)
 
@@ -138,8 +129,8 @@ end
 
 local castAnimationSize = {SmallCast, MediumCast, LongCast} 
 
-function script.CastAnimation(castFunc, level, tx, tz)
-	StartThread(castAnimationSize[level], castFunc, tx, tz)
+function script.CastAnimation(level, tx, tz)
+	StartThread(castAnimationSize[level], tx, tz)
 end
 
 function script.QueryWeapon()
@@ -164,22 +155,26 @@ function script.StopMoving()
 	shared.StopMoving()
 end
 
-function script.BlockShot(num, targetID)
-	shared.FaceTarget(targetID)
-	return false
+-- The WASM rules module publishes the player's attack target as unit rules
+-- params whenever it points the mage at the ground; without one the mage is
+-- not attacking and must not fire.
+local function FireTarget()
+	if (Spring.GetUnitRulesParam(unitID, "firing") or 0) == 0 then
+		return nil
+	end
+	return Spring.GetUnitRulesParam(unitID, "fireTx"), Spring.GetUnitRulesParam(unitID, "fireTz")
 end
 
-function script.BlockShot()
-	if not GG.fireTx then
-		return true
-	end
-	return false
+function script.BlockShot(num, targetID)
+	shared.FaceTarget(targetID)
+	return FireTarget() == nil
 end
 
 function script.FireWeapon()
-	if GG.fireTx then
+	local tx, tz = FireTarget()
+	if tx then
 		local ux, _, uz = Spring.GetUnitPosition(unitID)
-		local dx, dz = GG.fireTx - ux, GG.fireTz - uz
+		local dx, dz = tx - ux, tz - uz
 		shared.FaceDirection(dx, dz)
 	end
 	Spring.ClearUnitGoal(unitID)

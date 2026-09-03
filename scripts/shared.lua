@@ -16,6 +16,24 @@ local bobPiece
 local firstBobRun = true
 local dead = false
 
+-- Spring.Utilities.Vector.Angle from the Lua build of the game; the WASM port
+-- has no Lua utility library, so keep the one function the scripts need here.
+local function Angle(x, z)
+	if x == 0 and z == 0 then
+		return 0
+	end
+	local mult = 1/math.sqrt(x*x + z*z)
+	x, z = x*mult, z*mult
+	if z > 0 then
+		return math.acos(x)
+	elseif z < 0 then
+		return 2*math.pi - math.acos(x)
+	elseif x < 0 then
+		return math.pi
+	end
+	return 0
+end
+
 local function Bob()
 	Signal(SIG_MOVE)
 	SetSignalMask(SIG_MOVE)
@@ -85,7 +103,7 @@ function sharedFunc.FaceDirection(dx, dz)
 	if dead then
 		return
 	end
-	local angle = Spring.Utilities.Vector.Angle(dx, dz) - math.pi/2
+	local angle = Angle(dx, dz) - math.pi/2
 	Spring.SetUnitRotation(unitID, 0, angle, 0)
 end
 

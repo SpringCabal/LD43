@@ -38,11 +38,8 @@ function script.BlockShot(num, targetID)
 	local cz = uz - dz + math.random()*50 - 25
 	local cy = Spring.GetGroundHeight(cx, cz)
 	
-	if deathSound and math.random() < 0.35 then
-		local x, y, z = Spring.GetUnitPosition(unitID)
-		if x then
-			GG.PlaySound("sounds/runawayyell.wav", 10, ux, uy, uz)
-		end
+	if ux and math.random() < 0.35 then
+		GG.PlaySound("sounds/runawayyell.wav", 10, ux, uy, uz)
 	end
 	
 	Spring.GiveOrderToUnit(unitID, CMD.MOVE, {cx, cy, cz}, {})

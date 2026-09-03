@@ -92,12 +92,11 @@ local StreetLight = Unit:New {
 	footprintX          = 2,
 	footprintZ          = 2,
 	category            = "HOUSE",
+	-- footprint is 2x2, so the yardmap must be exactly 4 characters
 	yardmap =
 [[
-oooo
-oooo
-oooo
-oooo
+oo
+oo
 ]],
 	mass                = 50,
 	minCollisionSpeed   = 1,

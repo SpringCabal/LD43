@@ -1,5 +1,6 @@
 local iconTypes = {
     default = {
+        bitmap = "icons/circle.png",
         size = 1,
         radiusadjust = true,
     },

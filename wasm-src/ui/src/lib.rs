@@ -1,0 +1,30 @@
+extern crate alloc;
+
+mod audio;
+mod callbacks;
+mod callins;
+mod camera;
+mod diagnostics;
+mod enlarger;
+mod fire;
+mod healthbars;
+mod highlight;
+mod hud;
+mod input;
+mod lighting;
+mod lights;
+mod mapedge;
+mod state;
+
+spring::export_callin_scratch!(4096);
+spring::export_update!(callins::update);
+spring::export_recv_from_synced!(callins::recv_from_synced);
+spring::export_mouse_move!(callins::mouse_move);
+spring::export_mouse_press!(callins::mouse_press);
+spring::export_key_press!(callins::key_press);
+spring::export_draw_unit!(callins::draw_unit);
+spring::export_draw_world!(callins::draw_world);
+spring::export_draw_world_pre_unit!(callins::draw_world_pre_unit);
+spring::export_draw_world_refraction!(callins::draw_world_refraction);
+spring::export_callback_dispatch!(callbacks::dispatch);
+spring::export_environment_mask!(spring::ui::ENVIRONMENT_MASK);
