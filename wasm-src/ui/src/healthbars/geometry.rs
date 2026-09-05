@@ -1,17 +1,3 @@
-use spring::callback::SyncCallback;
-
-pub const CALLBACK_BAR_LIST: u32 = 1;
-
-pub fn dispatch_callback(callback_id: u32, _user_data: u32) {
-    if callback_id == CALLBACK_BAR_LIST {
-        emit_bar();
-    }
-}
-
-pub fn bar_list_callback() -> SyncCallback {
-    SyncCallback::new(CALLBACK_BAR_LIST, 0)
-}
-
 pub const BAR_HEIGHT: f32 = 2.3;
 pub const BAR_WIDTH: f32 = 11.5;
 pub const BAR_ALPHA: f32 = 0.85;
@@ -26,7 +12,7 @@ const OUTLINE_TOP: [f32; 4] = [0.10, 0.10, 0.10, BAR_OUTLINE_ALPHA];
 const INNER_BOTTOM: [f32; 4] = [0.06, 0.06, 0.06, BAR_INNER_ALPHA];
 const INNER_TOP: [f32; 4] = [0.33, 0.33, 0.33, BAR_INNER_ALPHA * 0.5];
 
-fn emit_bar() {
+pub fn emit_bar() {
     let cs = CHOPPED_CORNER_SIZE;
     let outline = OUTLINE_SIZE;
     let span = BAR_WIDTH * 2.0 - cs * 2.0;

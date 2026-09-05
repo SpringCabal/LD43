@@ -1,12 +1,7 @@
 use alloc::string::String;
-
-use spring::callback::SyncCallback;
+use spring::gl;
 
 use crate::state;
-
-pub const CALLBACK_DRAW_UNITS: u32 = 4;
-pub const CALLBACK_BLUR_HORIZONTAL: u32 = 5;
-pub const CALLBACK_BLUR_VERTICAL: u32 = 6;
 
 pub fn draw_pre_unit() {
     let Some(resources) = resources() else {
@@ -21,20 +16,11 @@ pub fn draw_pre_unit() {
     let _ = spring::gfx::bind_texture(&resources.depth, 0, true);
     apply_resolution(&resources, width, height);
     let _ = spring::gfx::use_shader(resources.depth_shader);
-    let _ = spring::gfx::render_to_texture(
-        &resources.offscreen,
-        SyncCallback::new(CALLBACK_DRAW_UNITS, 0),
-    );
+    let _ = spring::gfx::render_to_texture(&resources.offscreen, draw_units_offscreen);
     let _ = spring::gfx::bind_texture(&resources.offscreen, 0, true);
-    let _ = spring::gfx::render_to_texture(
-        &resources.blur,
-        SyncCallback::new(CALLBACK_BLUR_VERTICAL, 0),
-    );
+    let _ = spring::gfx::render_to_texture(&resources.blur, || blur(Blur::Vertical));
     let _ = spring::gfx::bind_texture(&resources.blur, 0, true);
-    let _ = spring::gfx::render_to_texture(
-        &resources.offscreen,
-        SyncCallback::new(CALLBACK_BLUR_HORIZONTAL, 0),
-    );
+    let _ = spring::gfx::render_to_texture(&resources.offscreen, || blur(Blur::Horizontal));
     enter_2d();
     let _ = spring::gfx::bind_texture(&resources.offscreen, 0, true);
     full_screen_quad(width, height);
@@ -45,88 +31,17 @@ pub fn draw_refraction() {
     draw_outline(true);
 }
 
-pub fn dispatch_callback(callback_id: u32) {
-    match callback_id {
-        CALLBACK_DRAW_UNITS => draw_units_offscreen(),
-        CALLBACK_BLUR_HORIZONTAL => blur(CALLBACK_BLUR_HORIZONTAL),
-        CALLBACK_BLUR_VERTICAL => blur(CALLBACK_BLUR_VERTICAL),
-        _ => {}
-    }
-}
-
 const THICKNESS: f32 = 1.0;
 const LINE_WIDTH: f32 = 4.0;
 const POLYGON_OFFSET_FACTOR: f32 = 8.0;
 const POLYGON_OFFSET_UNITS: f32 = 4.0;
-const GL_FRONT_AND_BACK: u32 = 0x0408;
-const GL_LINE: u32 = 0x1B01;
-const GL_FILL: u32 = 0x1B02;
-const GL_COLOR_BUFFER_BIT: u32 = 0x0000_4000;
-const GL_DEPTH_COMPONENT24: u32 = 0x81A6;
-const GL_NEAREST: u32 = 0x2600;
-const GL_LINEAR: u32 = 0x2601;
-const GL_CLAMP: u32 = 0x2900;
-const GL_PROJECTION: u32 = 0x1701;
-const GL_MODELVIEW: u32 = 0x1700;
 const HIT_UNIT: i32 = 1;
 
-const DEPTH_FRAGMENT: &str = r#"
-      uniform sampler2D tex0;
-      uniform int useEqualityTest;
-      uniform vec2 screenXY;
+const DEPTH_FRAGMENT: &str = include_str!("shaders/highlight_depth.frag");
 
-      void main(void)
-      {
-        vec2 texCoord = vec2( gl_FragCoord.x/screenXY.x , gl_FragCoord.y/screenXY.y );
-        float depth  = texture2D(tex0, texCoord ).z;
+const BLUR_HORIZONTAL_FRAGMENT: &str = include_str!("shaders/highlight_blur_h.frag");
 
-        if (depth < gl_FragCoord.z) {
-//          discard;
-        }
-        gl_FragColor = vec4(0.5, 0.5, 0.2, 0.4);
-      }
-"#;
-
-const BLUR_HORIZONTAL_FRAGMENT: &str = r#"
-      uniform sampler2D tex0;
-      uniform int screenX;
-
-      const vec2 kernel = vec2(0.6,0.7);
-
-      void main(void) {
-        vec2 texCoord  = vec2(gl_TextureMatrix[0] * gl_TexCoord[0]);
-        gl_FragColor = vec4(0.0);
-
-        float pixelsize = 1.0/float(screenX);
-        gl_FragColor += kernel[0] * texture2D(tex0, vec2(texCoord.s + 2.0*pixelsize,texCoord.t) );
-        gl_FragColor += kernel[1] * texture2D(tex0, vec2(texCoord.s + pixelsize,texCoord.t) );
-
-        gl_FragColor += texture2D(tex0, texCoord );
-
-        gl_FragColor += kernel[1] * texture2D(tex0, vec2(texCoord.s + -1.0*pixelsize,texCoord.t) );
-        gl_FragColor += kernel[0] * texture2D(tex0, vec2(texCoord.s + -2.0*pixelsize,texCoord.t) );
-      }
-"#;
-
-const BLUR_VERTICAL_FRAGMENT: &str = r#"      uniform sampler2D tex0;
-      uniform int screenY;
-
-      const vec2 kernel = vec2(0.6,0.7);
-
-      void main(void) {
-        vec2 texCoord  = vec2(gl_TextureMatrix[0] * gl_TexCoord[0]);
-        gl_FragColor = vec4(0.0);
-
-        float pixelsize = 1.0/float(screenY);
-        gl_FragColor += kernel[0] * texture2D(tex0, vec2(texCoord.s,texCoord.t + 2.0*pixelsize) );
-        gl_FragColor += kernel[1] * texture2D(tex0, vec2(texCoord.s,texCoord.t + pixelsize) );
-
-        gl_FragColor += texture2D(tex0, texCoord );
-
-        gl_FragColor += kernel[1] * texture2D(tex0, vec2(texCoord.s,texCoord.t + -1.0*pixelsize) );
-        gl_FragColor += kernel[0] * texture2D(tex0, vec2(texCoord.s,texCoord.t + -2.0*pixelsize) );
-      }
-"#;
+const BLUR_VERTICAL_FRAGMENT: &str = include_str!("shaders/highlight_blur_v.frag");
 
 #[derive(Clone)]
 pub struct Resources {
@@ -169,9 +84,9 @@ fn create(width: i32, height: i32) -> Option<Resources> {
         height,
         0,
         spring::TextureCreateParams {
-            format: GL_DEPTH_COMPONENT24,
-            min_filter: GL_NEAREST,
-            mag_filter: GL_NEAREST,
+            format: gl::DEPTH_COMPONENT24,
+            min_filter: gl::NEAREST,
+            mag_filter: gl::NEAREST,
             ..Default::default()
         },
     )
@@ -181,10 +96,10 @@ fn create(width: i32, height: i32) -> Option<Resources> {
         height,
         0,
         spring::TextureCreateParams {
-            min_filter: GL_LINEAR,
-            mag_filter: GL_LINEAR,
-            wrap_s: GL_CLAMP,
-            wrap_t: GL_CLAMP,
+            min_filter: gl::LINEAR,
+            mag_filter: gl::LINEAR,
+            wrap_s: gl::CLAMP,
+            wrap_t: gl::CLAMP,
             fbo: true,
             fbo_depth: true,
             ..Default::default()
@@ -196,10 +111,10 @@ fn create(width: i32, height: i32) -> Option<Resources> {
         height,
         0,
         spring::TextureCreateParams {
-            min_filter: GL_LINEAR,
-            mag_filter: GL_LINEAR,
-            wrap_s: GL_CLAMP,
-            wrap_t: GL_CLAMP,
+            min_filter: gl::LINEAR,
+            mag_filter: gl::LINEAR,
+            wrap_s: gl::CLAMP,
+            wrap_t: gl::CLAMP,
             fbo: true,
             ..Default::default()
         },
@@ -218,16 +133,10 @@ fn create(width: i32, height: i32) -> Option<Resources> {
 }
 
 fn fragment_shader(source: &str) -> Option<u32> {
-    let shader = spring::gfx::create_shader(
-        "",
-        "",
-        "",
-        "",
-        "",
-        source,
-        "",
-        spring::gfx::GfxCreateShaderOptions::default(),
-    )
+    let shader = spring::gfx::create_shader(spring::gfx::ShaderCreateParams {
+        fragment: source,
+        ..Default::default()
+    })
     .ok()?;
     (shader.shader_id != 0).then_some(shader.shader_id)
 }
@@ -264,7 +173,7 @@ fn set_uniform_int(shader_id: u32, name: &str, value: i32) {
 }
 
 fn draw_units_offscreen() {
-    let _ = spring::gfx::clear(GL_COLOR_BUFFER_BIT, &[0.0, 0.0, 0.0, 0.0], 4);
+    let _ = spring::gfx::clear(gl::COLOR_BUFFER_BIT, &[0.0, 0.0, 0.0, 0.0], 4);
     let _ = spring::gfx::push_matrix(0);
     let _ = spring::gfx::reset_matrices(0);
     let _ = spring::gfx::color(0.0, 0.0, 0.0, THICKNESS);
@@ -276,6 +185,9 @@ fn draw_units_offscreen() {
                 do_raw_draw: false,
                 no_lua_call: false,
                 full_model: true,
+                // Lua's gl.Unit omits its LOD argument, which auto-selects the
+                // object's Lua-material LOD; Default mirrors that.
+                ..Default::default()
             },
         );
     }
@@ -283,16 +195,21 @@ fn draw_units_offscreen() {
     let _ = spring::gfx::pop_matrix(0);
 }
 
-fn blur(callback_id: u32) {
+#[derive(Clone, Copy)]
+enum Blur {
+    Horizontal,
+    Vertical,
+}
+
+fn blur(direction: Blur) {
     let Some(resources) = state::with_state(|ui| ui.outline.clone()).flatten() else {
         return;
     };
-    let shader = if callback_id == CALLBACK_BLUR_HORIZONTAL {
-        resources.blur_horizontal
-    } else {
-        resources.blur_vertical
+    let shader = match direction {
+        Blur::Horizontal => resources.blur_horizontal,
+        Blur::Vertical => resources.blur_vertical,
     };
-    let _ = spring::gfx::clear(GL_COLOR_BUFFER_BIT, &[0.0, 0.0, 0.0, 0.0], 4);
+    let _ = spring::gfx::clear(gl::COLOR_BUFFER_BIT, &[0.0, 0.0, 0.0, 0.0], 4);
     let _ = spring::gfx::use_shader(shader);
     full_screen_quad(resources.width, resources.height);
 }
@@ -314,19 +231,19 @@ fn full_screen_quad(width: i32, height: i32) {
 
 fn enter_2d() {
     let _ = spring::gfx::use_shader(0);
-    let _ = spring::gfx::matrix_mode(GL_PROJECTION);
+    let _ = spring::gfx::matrix_mode(gl::PROJECTION);
     let _ = spring::gfx::push_matrix(0);
     let _ = spring::gfx::load_identity(0);
-    let _ = spring::gfx::matrix_mode(GL_MODELVIEW);
+    let _ = spring::gfx::matrix_mode(gl::MODELVIEW);
     let _ = spring::gfx::push_matrix(0);
     let _ = spring::gfx::load_identity(0);
     let _ = spring::gfx::blending(true);
 }
 
 fn leave_2d() {
-    let _ = spring::gfx::matrix_mode(GL_PROJECTION);
+    let _ = spring::gfx::matrix_mode(gl::PROJECTION);
     let _ = spring::gfx::pop_matrix(0);
-    let _ = spring::gfx::matrix_mode(GL_MODELVIEW);
+    let _ = spring::gfx::matrix_mode(gl::MODELVIEW);
     let _ = spring::gfx::pop_matrix(0);
     let _ = spring::gfx::use_shader(0);
     let _ = spring::gfx::blending(false);
@@ -341,7 +258,7 @@ fn draw_outline(underwater: bool) {
     if underwater {
         let _ = spring::gfx::polygon_offset(POLYGON_OFFSET_FACTOR, POLYGON_OFFSET_UNITS);
     }
-    let _ = spring::gfx::polygon_mode(GL_FRONT_AND_BACK, GL_LINE);
+    let _ = spring::gfx::polygon_mode(gl::FRONT_AND_BACK, gl::LINE);
     let _ = spring::gfx::culling(true);
     let _ = spring::gfx::depth_mask(false);
     let _ = spring::gfx::color(0.0, 0.0, 0.0, 1.0);
@@ -354,13 +271,16 @@ fn draw_outline(underwater: bool) {
             do_raw_draw: false,
             no_lua_call: false,
             full_model: true,
+            // Lua's gl.Unit omits its LOD argument, which auto-selects the
+            // object's Lua-material LOD; Default mirrors that.
+            ..Default::default()
         },
     );
     let _ = spring::gfx::pop_matrix(0);
     let _ = spring::gfx::line_width(1.0);
     let _ = spring::gfx::color(1.0, 1.0, 1.0, 1.0);
     let _ = spring::gfx::culling(false);
-    let _ = spring::gfx::polygon_mode(GL_FRONT_AND_BACK, GL_FILL);
+    let _ = spring::gfx::polygon_mode(gl::FRONT_AND_BACK, gl::FILL);
     if underwater {
         let _ = spring::gfx::polygon_offset(0.0, 0.0);
     }

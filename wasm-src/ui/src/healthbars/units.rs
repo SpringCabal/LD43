@@ -48,7 +48,7 @@ fn resources() -> Option<(u32, u32)> {
         let _ = state::with_state(|ui| ui.bar_setup_failed = true);
         return None;
     };
-    let Ok(list_id) = spring::gfx::create_list(geometry::bar_list_callback()) else {
+    let Ok(list_id) = spring::gfx::create_list(geometry::emit_bar) else {
         let _ = state::with_state(|ui| ui.bar_setup_failed = true);
         return None;
     };

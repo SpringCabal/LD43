@@ -131,3 +131,6 @@ impl UiState {
         }
     }
 }
+
+#[derive(Default)]
+pub struct Global;

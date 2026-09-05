@@ -11,3 +11,4 @@ too_many_arguments = "allow"
 
 [workspace.dependencies]
 spring = { path = "/home/gajop/projects/spring-projects/spring-bar/rust/crates/spring", features = ["alloc"] }
+spring-addons = { path = "/home/gajop/projects/spring-projects/spring-bar/rust/crates/spring-addons" }

@@ -16,10 +16,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "spring-addons"
+version = "0.1.0"
+dependencies = [
+ "spring",
+]
+
+[[package]]
 name = "ttld-rules-wasm"
 version = "0.1.0"
 dependencies = [
  "spring",
+ "spring-addons",
 ]
 
 [[package]]
@@ -27,4 +35,5 @@ name = "ttld-ui-wasm"
 version = "0.1.0"
 dependencies = [
  "spring",
+ "spring-addons",
 ]

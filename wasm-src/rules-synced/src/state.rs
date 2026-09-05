@@ -9,6 +9,7 @@ use crate::town::VillagerArea;
 
 pub struct World {
     pub initialized: bool,
+    pub frame_consumed: bool,
     pub frame: i32,
     pub villagers: Vec<Villager>,
     pub villager_cursor: usize,
@@ -44,6 +45,7 @@ impl World {
     fn new() -> Self {
         Self {
             initialized: false,
+            frame_consumed: false,
             frame: 0,
             villagers: Vec::new(),
             villager_cursor: 0,
@@ -97,3 +99,6 @@ impl World {
         batch
     }
 }
+
+#[derive(Default)]
+pub struct Global;

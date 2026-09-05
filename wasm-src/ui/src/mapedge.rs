@@ -1,9 +1,6 @@
-use spring::callback::SyncCallback;
+use spring::gl;
 
 use crate::state;
-
-pub const CALLBACK_LIST: u32 = 2;
-pub const CALLBACK_VERTICES: u32 = 3;
 
 pub fn draw() {
     let Some((shader_id, list_id)) = resources() else {
@@ -61,57 +58,11 @@ pub fn draw() {
     let _ = spring::gfx::fog(false);
 }
 
-pub fn dispatch_callback(callback_id: u32) {
-    match callback_id {
-        CALLBACK_LIST => emit_list(),
-        CALLBACK_VERTICES => emit_vertices(),
-        _ => {}
-    }
-}
-
 const GRID_SIZE: f32 = 32.0;
 const TEXTURE_BRIGHTNESS: f32 = 0.5;
 const GROUND_TEXTURE: &str = "$grass";
-const GL_TRIANGLE_STRIP: u32 = 5;
-const GL_LEQUAL: u32 = 0x0203;
 
-const VERTEX_SOURCE: &str = r#"
-		// Application to vertex shader
-		uniform float mirrorX;
-		uniform float mirrorZ;
-		uniform float lengthX;
-	  uniform float lengthZ;
-		uniform float left;
-		uniform float up;
-		uniform float brightness;
-
-		varying vec4 vertex;
-		varying vec4 color;
-
-		void main()
-		{
-		gl_TexCoord[0]= gl_TextureMatrix[0]*gl_MultiTexCoord0;
-		gl_Vertex.x = abs(mirrorX-gl_Vertex.x);
-		gl_Vertex.z = abs(mirrorZ-gl_Vertex.z);
-
-		float alpha = 1.0;
-
-		float ff = 20000.0;
-		if((mirrorZ && mirrorX))
-	ff=ff/(pow(abs(gl_Vertex.z-up*mirrorZ)/150.0, 2.0)+pow(abs(gl_Vertex.x-left*mirrorX)/150.0, 2.0)+2.0);
-		else if(mirrorX)
-	ff=ff/(pow(abs(gl_Vertex.x-left*mirrorX)/150.0, 2.0)+2.0);
-		else if(mirrorZ)
-	ff=ff/(pow(abs(gl_Vertex.z-up*mirrorZ)/150.0, 2.0)+2.0);
-
-		gl_Position  = gl_ModelViewProjectionMatrix*gl_Vertex;
-
-		gl_FrontColor = vec4(brightness * gl_Color.rgb, alpha);
-
-		color = gl_FrontColor;
-		vertex = gl_Vertex;
-		}
-"#;
+const VERTEX_SOURCE: &str = include_str!("shaders/mapedge.vert");
 
 #[derive(Clone, Copy)]
 enum Uniform {
@@ -179,23 +130,17 @@ fn resources() -> Option<(u32, u32)> {
     if state::with_state(|ui| ui.edge_setup_failed).unwrap_or(true) {
         return None;
     }
-    let shader = spring::gfx::create_shader(
-        "",
-        VERTEX_SOURCE,
-        "",
-        "",
-        "",
-        "",
-        "",
-        spring::gfx::GfxCreateShaderOptions::default(),
-    )
+    let shader = spring::gfx::create_shader(spring::gfx::ShaderCreateParams {
+        vertex: VERTEX_SOURCE,
+        ..Default::default()
+    })
     .ok();
     let shader_id = shader.map(|shader| shader.shader_id).unwrap_or(0);
     if shader_id == 0 {
         let _ = state::with_state(|ui| ui.edge_setup_failed = true);
         return None;
     }
-    let Ok(list_id) = spring::gfx::create_list(SyncCallback::new(CALLBACK_LIST, 0)) else {
+    let Ok(list_id) = spring::gfx::create_list(emit_list) else {
         let _ = state::with_state(|ui| ui.edge_setup_failed = true);
         return None;
     };
@@ -210,10 +155,10 @@ fn emit_list() {
     let _ = spring::gfx::depth_test(spring::gfx::GfxDepthTestOptions {
         enable: true,
         set_func: true,
-        func: GL_LEQUAL,
+        func: gl::LEQUAL,
     });
     let _ = spring::gfx::bind_texture(GROUND_TEXTURE, 0, true);
-    let _ = spring::gfx::begin_end(GL_TRIANGLE_STRIP, SyncCallback::new(CALLBACK_VERTICES, 0));
+    let _ = spring::gfx::begin_end(gl::TRIANGLE_STRIP, emit_vertices);
     let _ = spring::gfx::color(1.0, 1.0, 1.0, 1.0);
 }
 

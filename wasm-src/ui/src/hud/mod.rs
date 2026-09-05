@@ -6,6 +6,5 @@ mod target;
 
 pub use document::{apply_bindings, hide_default_layout, initialize, render};
 pub use endgame::close_intro;
-pub use model::dispatch_callback;
 pub use status::update;
 pub use target::track_target;

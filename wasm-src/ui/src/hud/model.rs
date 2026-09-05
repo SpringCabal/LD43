@@ -1,21 +1,15 @@
 use crate::state::HudBindings;
 
-pub const CALLBACK_INTRO_PLAY: u32 = 7;
-pub const CALLBACK_INTRO_EXIT: u32 = 8;
-pub const CALLBACK_ENDGAME_RESTART: u32 = 9;
-pub const CALLBACK_ENDGAME_EXIT: u32 = 10;
-pub const CALLBACK_DESTROY: u32 = 11;
-
 pub fn create(context: u64) -> Option<HudBindings> {
     let model = spring::context_create_data_model(context, "ttld").ok()?;
     if !model.success || model.data_model_handle == 0 {
         return None;
     }
     let model = model.data_model_handle;
-    bind_event(model, "introPlay", CALLBACK_INTRO_PLAY);
-    bind_event(model, "introExit", CALLBACK_INTRO_EXIT);
-    bind_event(model, "endgameRestart", CALLBACK_ENDGAME_RESTART);
-    bind_event(model, "endgameExit", CALLBACK_ENDGAME_EXIT);
+    bind_event(model, "introPlay", |_| super::close_intro());
+    bind_event(model, "introExit", |_| quit());
+    bind_event(model, "endgameRestart", |_| restart());
+    bind_event(model, "endgameExit", |_| quit());
     Some(HudBindings {
         health: bind_int(model, "health", 0)?,
         health_percent: bind_percent(model, "healthPercent", 100.0)?,
@@ -60,9 +54,24 @@ pub fn set_string(handle: u64, value: &str) {
     }
 }
 
-fn bind_event(model: u64, name: &str, callback_id: u32) {
-    let callback = spring::callback::RetainedCallback::new(callback_id, 0, CALLBACK_DESTROY);
-    let _ = spring::data_model_bind_event(model, name, callback, &[]);
+fn bind_event(model: u64, name: &str, handler: impl FnMut(&crate::state::Global) + 'static) {
+    let callback = crate::register_callback(handler);
+    let bound = spring::data_model_bind_event(model, name, callback, &[])
+        .is_ok_and(|registration| registration.success);
+    if !bound {
+        crate::unregister_callback(callback);
+    }
+}
+
+fn quit() {
+    let _ = spring::send_commands("quit", "");
+    let _ = spring::send_commands("quitforce", "");
+}
+
+fn restart() {
+    let _ = spring::send_commands("cheat 1", "");
+    let _ = spring::send_commands("luarules reload", "");
+    let _ = spring::send_commands("cheat 0", "");
 }
 
 fn bind_int(model: u64, name: &str, initial: i32) -> Option<u64> {
@@ -83,20 +92,4 @@ fn bind_bool(model: u64, name: &str, initial: bool) -> Option<u64> {
 fn bind_string(model: u64, name: &str, initial: &str) -> Option<u64> {
     let binding = spring::data_model_bind_string(model, name, initial).ok()?;
     binding.success.then_some(binding.variable_handle)
-}
-
-pub fn dispatch_callback(callback_id: u32) {
-    match callback_id {
-        CALLBACK_INTRO_PLAY => super::close_intro(),
-        CALLBACK_INTRO_EXIT | CALLBACK_ENDGAME_EXIT => {
-            let _ = spring::send_commands("quit", "");
-            let _ = spring::send_commands("quitforce", "");
-        }
-        CALLBACK_ENDGAME_RESTART => {
-            let _ = spring::send_commands("cheat 1", "");
-            let _ = spring::send_commands("luarules reload", "");
-            let _ = spring::send_commands("cheat 0", "");
-        }
-        _ => {}
-    }
 }
