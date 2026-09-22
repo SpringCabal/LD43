@@ -9,6 +9,7 @@ pub fn update(seconds: f32) {
         return;
     }
     let Some(position) = staff_position(unit_id) else {
+        let _ = state::with_state(|ui| ui.staff_deferred_light = None);
         return;
     };
     let boost = update_boost();
@@ -19,14 +20,8 @@ pub fn update(seconds: f32) {
         [RED * multiplier, GREEN * multiplier, BLUE * multiplier],
         RADIUS,
     );
-    let handle = state::with_state(|ui| ui.staff_light).unwrap_or(0);
-    if handle == 0 {
-        if let Ok(handle) = spring::lights::add_model_light(&light) {
-            let _ = state::with_state(|ui| ui.staff_light = handle);
-        }
-        return;
-    }
-    let _ = spring::lights::update_model_light(handle, &light);
+    let deferred_light = state::DeferredPointLight::from_params(&light);
+    let _ = state::with_state(|ui| ui.staff_deferred_light = Some(deferred_light));
 }
 
 const STATIC_FLICKER_RATIO: f32 = 0.5;
@@ -44,22 +39,15 @@ const BOOST_DECAY: f32 = 0.18;
 const STAFF_PIECE: &str = "Hand_Right";
 
 fn release() {
-    let handle = state::with_state(|ui| ui.staff_light).unwrap_or(0);
-    if handle != 0 {
-        let dark = params::point([0.0, 0.0, 0.0], [0.0, 0.0, 0.0], 0.0);
-        let _ = spring::lights::update_model_light(handle, &dark);
-    }
+    let _ = state::with_state(|ui| ui.staff_deferred_light = None);
 }
 
 fn staff_position(unit_id: i32) -> Option<spring::types::Float3> {
-    let unit = spring::units_info::get_unit_position(
-        unit_id,
-        spring::units_info::GetUnitPositionOptions {
-            mid_pos: false,
-            aim_pos: false,
-        },
-    )
-    .ok()?;
+    // Match ui_unit_light.lua: GetUnitViewPosition is the model's rendered
+    // origin, and GetUnitPiecePosition supplies the absolute piece offset.
+    // Do not fall back to the unit centre: that creates a light which Lua
+    // would not draw and makes the staff pool visibly drift from the model.
+    let unit = spring::unit_rendering::get_unit_view_position(unit_id, false).ok()?;
     let piece = spring::typed::unit_piece_position_by_name(unit_id, STAFF_PIECE)?;
     Some(spring::types::Float3 {
         x: unit.x + piece.x,

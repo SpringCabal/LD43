@@ -25,6 +25,11 @@ impl Gadget<Global> for InputGadget {
         _mode: i32,
         data: &[u8],
     ) {
+        #[cfg(feature = "e2e")]
+        if data == b"e2e|leader-render" {
+            crate::render_test::spawn_leader_fixture();
+            return;
+        }
         let Some(command) = player::parse(data) else {
             return;
         };

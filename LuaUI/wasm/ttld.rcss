@@ -112,6 +112,10 @@ body * {
   height: auto;
 }
 
+#target-panel.enemy #target-fill {
+  background-color: #bf0000;
+}
+
 #target-caption {
   position: absolute;
   left: 0dp;
@@ -130,6 +134,10 @@ body * {
   background-color: #ff000080;
   width: 100%;
   height: 48%;
+}
+
+#target-panel.enemy #target-name {
+  background-color: #bf0000c0;
 }
 
 #bindings {

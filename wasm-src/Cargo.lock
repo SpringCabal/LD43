@@ -23,6 +23,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "ttld-rules-unsynced-wasm"
+version = "0.1.0"
+dependencies = [
+ "spring",
+]
+
+[[package]]
 name = "ttld-rules-wasm"
 version = "0.1.0"
 dependencies = [

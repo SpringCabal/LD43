@@ -1,3 +1,4 @@
+use alloc::string::String;
 use alloc::vec::Vec;
 
 use spring::types::Float3;
@@ -106,6 +107,7 @@ pub fn resolve_pending(frame: i32) {
         resolve(effect, frame);
     }
     resolve_impulses(frame);
+    resolve_fireball_impacts(frame);
 }
 
 const BLOOD_MAGIC_RANGE: f32 = 600.0;
@@ -123,14 +125,21 @@ const DRAIN_SEARCH_LIMIT: i32 = 50;
 const ADRENALINE_RADIUS: f32 = 450.0;
 const MIGRAINE_RADIUS: f32 = 450.0;
 const POULTICE_RADIUS: f32 = 720.0;
+const FIREBALL_RADIUS: f32 = 250.0;
+const FIREBALL_DAMAGE: f32 = 1600.0;
 const FIREBALL_GRAVITY: f32 = 0.18;
-const UNIT_GRAVITY: f32 = -120.0 / 30.0 / 30.0;
+// Game.gravity is exposed to Lua as a positive downward acceleration. The
+// engine's unit impulse uses +Y as up, so the launch velocity needs the
+// positive value here; the ground move type applies downward gravity after
+// the impulse. A negative value points Poultice into the ground.
+const DEFAULT_UNIT_GRAVITY: f32 = 115.0 / 30.0 / 30.0;
 const CEG_SINGLE_BLOOD: &str = "feature_poof_single";
 const CEG_FLAMES: &str = "feature_poof_spawner";
 const CEG_HEALTH: &str = "feature_slurp_spawner";
 const CEG_MIGRAINE: &str = "migraine_pulse_spawner";
 const CEG_ADRENALINE: &str = "adrenaline_sparkles";
 const CEG_POULTICE: &str = "gtfo_pulse";
+const CEG_FIREBALL_IMPACT: &str = "fireball_impact";
 const SOUND_DRAIN: &str = "sounds/blooddrain.wav";
 // LuaRulesParams::RULESPARAMLOS_PUBLIC
 const LOS_PUBLIC: i32 = 32;
@@ -153,11 +162,22 @@ struct DelayedImpulse {
     frame: i32,
 }
 
+#[derive(Clone, Copy)]
+struct FireballImpact {
+    unit_id: i32,
+    x: f32,
+    z: f32,
+    frame: i32,
+}
+
 thread_local! {
     static PENDING: core::cell::RefCell<Vec<PendingEffect>> = const {
         core::cell::RefCell::new(Vec::new())
     };
     static IMPULSES: core::cell::RefCell<Vec<DelayedImpulse>> = const {
+        core::cell::RefCell::new(Vec::new())
+    };
+    static FIREBALL_IMPACTS: core::cell::RefCell<Vec<FireballImpact>> = const {
         core::cell::RefCell::new(Vec::new())
     };
 }
@@ -168,6 +188,10 @@ fn with_pending<R>(function: impl FnOnce(&mut Vec<PendingEffect>) -> R) -> Optio
 
 fn with_impulses<R>(function: impl FnOnce(&mut Vec<DelayedImpulse>) -> R) -> Option<R> {
     IMPULSES.with(|impulses| impulses.try_borrow_mut().ok().map(|mut i| function(&mut i)))
+}
+
+fn with_fireball_impacts<R>(function: impl FnOnce(&mut Vec<FireballImpact>) -> R) -> Option<R> {
+    FIREBALL_IMPACTS.with(|impacts| impacts.try_borrow_mut().ok().map(|mut i| function(&mut i)))
 }
 
 fn publish_cast(frame: i32, cast_frames: i32) {
@@ -196,7 +220,7 @@ fn resolve(effect: PendingEffect, frame: i32) {
     }
     match effect.spell {
         Spell::Transfusion => resolve_transfusion(effect.unit_id, effect.shortfall),
-        Spell::Heartburn => resolve_heartburn(effect.unit_id, effect.tx, effect.tz),
+        Spell::Heartburn => resolve_heartburn(effect.unit_id, effect.tx, effect.tz, frame),
         Spell::Adrenaline => resolve_adrenaline(effect.unit_id, frame),
         Spell::Migraine => resolve_migraine(effect.tx, effect.tz, frame),
         Spell::Poultice => resolve_poultice(effect.unit_id, frame),
@@ -213,7 +237,7 @@ fn resolve_transfusion(unit_id: i32, shortfall: Option<f32>) {
     spawn_effect(unit_id, CEG_HEALTH);
 }
 
-fn resolve_heartburn(unit_id: i32, tx: f32, tz: f32) {
+fn resolve_heartburn(unit_id: i32, tx: f32, tz: f32, frame: i32) {
     let Some(origin) = units::position(unit_id) else {
         return;
     };
@@ -243,13 +267,31 @@ fn resolve_heartburn(unit_id: i32, tx: f32, tz: f32) {
             speed,
             ttl: fly_time,
             owner: unit_id,
+            team: PLAYER_TEAM,
+            // This is a spell projectile, rather than a live weapon shot. A
+            // zero weapon number avoids inheriting state from weapon slot 0.
+            weapon_number: -1,
             gravity: -FIREBALL_GRAVITY,
+            ceg_tag: "fireball_ball",
             ..Default::default()
         },
     );
     if let Ok(projectile) = projectile {
         let _ = spring::projectile_control::set_projectile_gravity(projectile, -FIREBALL_GRAVITY);
+        // The visual projectile is deliberately damage-free.  Its TTL is not
+        // a reliable impact callback in every WASM renderer, so the synced
+        // impact below applies the spell damage at the requested destination
+        // exactly once.
+        let _ = spring::projectile_control::set_projectile_damages(projectile, 0, "default", 0.0);
     }
+    let _ = with_fireball_impacts(|impacts| {
+        impacts.push(FireballImpact {
+            unit_id,
+            x: tx,
+            z: tz,
+            frame: frame + fly_time as i32,
+        })
+    });
 }
 
 fn resolve_adrenaline(unit_id: i32, frame: i32) {
@@ -308,20 +350,26 @@ fn resolve_poultice(unit_id: i32, frame: i32) {
     let Some(origin) = units::position(unit_id) else {
         return;
     };
+    let unit_gravity = spring::game::get_game_map_info(0)
+        .map(|map| map.gravity / 30.0 / 30.0)
+        .unwrap_or(DEFAULT_UNIT_GRAVITY);
     play_sound("sounds/throw_spell.wav", unit_id);
     for target in units_in_cylinder(origin.x, origin.z, POULTICE_RADIUS, ENEMY_TEAM) {
         let Some(position) = units::position(target) else {
             continue;
         };
-        let dx = origin.x - position.x;
-        let dy = origin.y - position.y;
-        let dz = origin.z - position.z;
+        // Poultice is a knockback: launch each enemy away from the mage.
+        // Using origin - position here makes the impulse point inward and
+        // turns the spell into a pull instead.
+        let dx = position.x - origin.x;
+        let dy = position.y - origin.y;
+        let dz = position.z - origin.z;
         let distance = (dx * dx + dz * dz).sqrt();
         let fly_time = 45.0 + ((distance + random::centered(20.0)) / 60.0).floor();
         let velocity = spring::units_info::get_unit_velocity(target).unwrap_or_default();
         let impulse = Float3 {
             x: dx / fly_time - velocity.x,
-            y: fly_time * UNIT_GRAVITY / 2.0 + dy / fly_time - velocity.y,
+            y: fly_time * unit_gravity / 2.0 + dy / fly_time - velocity.y,
             z: dz / fly_time - velocity.z,
         };
         let _ = with_impulses(|impulses| {
@@ -356,6 +404,46 @@ fn resolve_impulses(frame: i32) {
             combat::stun(entry.unit_id, entry.stun as i32, frame);
         } else {
             let _ = spring::add_unit_impulse(entry.unit_id, entry.impulse, 0.0);
+        }
+    }
+}
+
+fn resolve_fireball_impacts(frame: i32) {
+    let due = with_fireball_impacts(|impacts| {
+        let due: Vec<FireballImpact> = impacts
+            .iter()
+            .copied()
+            .filter(|impact| impact.frame <= frame)
+            .collect();
+        impacts.retain(|impact| impact.frame > frame);
+        due
+    })
+    .unwrap_or_default();
+
+    let Some(weapon_def_id) = spring::weapon_defs::get_weapon_def_id("fireball").ok() else {
+        return;
+    };
+    for impact in due {
+        if !valid(impact.unit_id) {
+            continue;
+        }
+        let y = units::ground_height(impact.x, impact.z) + 20.0;
+        let position = Float3 {
+            x: impact.x,
+            y,
+            z: impact.z,
+        };
+        play_sound_at("sounds/fireballhit.wav", position);
+        spawn_effect_at(position, CEG_FIREBALL_IMPACT);
+        for target in units_in_cylinder(impact.x, impact.z, FIREBALL_RADIUS, ENEMY_TEAM) {
+            let _ = spring::add_unit_damage(
+                target,
+                FIREBALL_DAMAGE,
+                0.0,
+                weapon_def_id,
+                impact.unit_id,
+                Float3::default(),
+            );
         }
     }
 }
@@ -496,7 +584,21 @@ fn spawn_effect(unit_id: i32, ceg_name: &str) {
 }
 
 fn spawn_effect_at(position: Float3, ceg_name: &str) {
-    let _ = spring::spawn_ceg(ceg_name, position, Float3::default(), 20.0, 20.0, 0.0);
+    // The typed helper historically encoded every named CEG with id 0.  The
+    // native host treats non-negative IDs as authoritative, so use the owned
+    // generated call with -1 to force name lookup.
+    let ceg = spring::generated::owned::effects_control::DefRef {
+        name: String::from(ceg_name),
+        id: -1,
+    };
+    let _ = spring::generated::owned::effects_control::spawn_ceg(
+        &ceg,
+        position,
+        Float3::default(),
+        20.0,
+        20.0,
+        0.0,
+    );
 }
 
 fn play_sound(name: &str, unit_id: i32) {

@@ -1,33 +1,51 @@
-use crate::state;
+use alloc::vec::Vec;
+use core::cell::{Cell, RefCell};
+
+thread_local! {
+    static SWEEP_TICKS: Cell<u32> = const { Cell::new(0) };
+    static SEEN_UNITS: RefCell<Vec<i32>> = const { RefCell::new(Vec::new()) };
+}
+
+pub fn reset() {
+    SWEEP_TICKS.with(|ticks| ticks.set(0));
+    SEEN_UNITS.with_borrow_mut(Vec::clear);
+}
 
 pub fn arm(unit_id: i32) {
     if scale(unit_id).is_none() {
         return;
     }
+    // The UI side has no UnitCreated callback. New waves (including the
+    // leader) therefore need to be picked up by the next sweep as well.
     let _ = spring::unsynced_ctrl::set_unit_lua_draw(unit_id, true);
 }
 
-pub fn draw_unit(unit_id: i32, _draw_mode: i32) -> bool {
-    let Some((horizontal, vertical)) = scale(unit_id) else {
-        return false;
-    };
-    let _ = spring::gfx::scale(horizontal, vertical, horizontal);
-    false
-}
-
 pub fn sweep() {
-    let armed = state::with_state(|ui| ui.enlarger_armed).unwrap_or(true);
-    if armed {
+    let should_scan = SWEEP_TICKS.with(|ticks| {
+        let tick = ticks.get();
+        ticks.set(tick.wrapping_add(1));
+        // Unit creation is infrequent in this game; a delayed discovery is
+        // preferable to putting a native unit-list query in the hot path.
+        tick.is_multiple_of(300)
+    });
+    if !should_scan {
         return;
     }
     let units = spring::get_all_units().unwrap_or_default();
     if units.is_empty() {
         return;
     }
-    for unit_id in units {
-        arm(unit_id);
-    }
-    let _ = state::with_state(|ui| ui.enlarger_armed = true);
+    SEEN_UNITS.with_borrow_mut(|seen| {
+        // Unit IDs can be recycled, so forget units which no longer exist.
+        seen.retain(|seen_id| units.contains(seen_id));
+        for unit_id in units.iter().copied() {
+            if seen.contains(&unit_id) {
+                continue;
+            }
+            arm(unit_id);
+            seen.push(unit_id);
+        }
+    });
 }
 
 /// Draw scales come straight from the unit def's custom params, the same place

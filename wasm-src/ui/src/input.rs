@@ -28,6 +28,13 @@ pub fn mouse_move(x: i32, y: i32) -> bool {
     false
 }
 
+pub fn mouse_wheel(_up: bool, _value: f32) -> bool {
+    // This game is intentionally locked to the close third-person camera.
+    // Returning handled prevents Spring's default camera controller from
+    // changing its distance or panning in response to the wheel.
+    true
+}
+
 pub fn hold_mouse() {
     if state::with_state(|ui| ui.intro_open || ui.endgame_open).unwrap_or(false) {
         return;
@@ -47,13 +54,23 @@ pub fn hold_mouse() {
     }
 }
 
-pub fn key_press(key: i32, _ctrl: bool) -> bool {
+pub fn key_press(key: i32, ctrl: bool) -> bool {
+    if ctrl && matches!(key, KEY_Q | KEY_Q_UPPER) {
+        hud::quit();
+        return true;
+    }
     if state::with_state(|ui| ui.intro_open).unwrap_or(false) {
         if key == KEY_RETURN {
             hud::close_intro();
             return true;
         }
         return false;
+    }
+    if state::with_state(|ui| ui.endgame_open).unwrap_or(false) {
+        if matches!(key, KEY_RETURN | KEY_R | KEY_R_UPPER) {
+            hud::restart();
+        }
+        return true;
     }
     if key == KEY_S {
         let _ = spring::send_lua_rules_msg("stop");
@@ -75,6 +92,10 @@ const KEY_RETURN: i32 = 13;
 const KEY_S: i32 = 115;
 const KEY_1: i32 = 49;
 const KEY_5: i32 = 53;
+const KEY_Q: i32 = 113;
+const KEY_Q_UPPER: i32 = 81;
+const KEY_R: i32 = 114;
+const KEY_R_UPPER: i32 = 82;
 
 fn send_world_command(command: &str, x: i32, y: i32) {
     let Some(position) = ground_at(x, y) else {

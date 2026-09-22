@@ -2,10 +2,12 @@ use crate::state;
 
 use super::bars::{self, BarStack};
 use super::geometry;
+use super::geometry::{BAR_HEIGHT, BAR_WIDTH};
 use super::shader;
 
 pub fn draw(seconds: f32) {
     let Some((shader_id, list_id)) = resources() else {
+        draw_simple_overlay(seconds);
         return;
     };
     let camera = match spring::camera::get_camera_position(0) {
@@ -28,6 +30,12 @@ pub fn draw(seconds: f32) {
         draw_unit(unit_id, camera, list_id, blink, frame);
     }
     end();
+
+    // Keep a small fixed-function fallback as well.  Some WASM engine builds
+    // accept the legacy bar shader but silently skip its display-list vertices;
+    // the unit overlay is gameplay feedback, so it must remain visible when
+    // that optional shader path is unavailable.
+    draw_simple_overlay(seconds);
 }
 
 const MAX_UNIT_DISTANCE: f32 = 11_000_000.0;
@@ -62,6 +70,7 @@ fn resources() -> Option<(u32, u32)> {
 fn begin(shader_id: u32) {
     let _ = spring::gfx::depth_test(spring::gfx::GfxDepthTestOptions::default());
     let _ = spring::gfx::depth_mask(true);
+    let _ = spring::gfx::blending(true);
     let _ = spring::gfx::use_shader(shader_id);
     let _ = spring::gfx::fog_coord(0.0);
 }
@@ -69,7 +78,75 @@ fn begin(shader_id: u32) {
 fn end() {
     let _ = spring::gfx::use_shader(0);
     let _ = spring::gfx::depth_mask(false);
+    let _ = spring::gfx::blending(false);
     let _ = spring::gfx::color(1.0, 1.0, 1.0, 1.0);
+}
+
+fn begin_simple() {
+    let _ = spring::gfx::depth_test(spring::gfx::GfxDepthTestOptions::default());
+    let _ = spring::gfx::depth_mask(false);
+    let _ = spring::gfx::blending(true);
+}
+
+fn end_simple() {
+    let _ = spring::gfx::depth_mask(true);
+    let _ = spring::gfx::blending(false);
+    let _ = spring::gfx::color(1.0, 1.0, 1.0, 1.0);
+}
+
+fn draw_simple_overlay(seconds: f32) {
+    let Ok(camera) = spring::camera::get_camera_position(0) else {
+        return;
+    };
+    let units = spring::unit_rendering::get_visible_units(-1, 0.0, false).unwrap_or_default();
+    if units.is_empty() {
+        return;
+    }
+    let blink = (seconds % 1.0) < 0.5;
+    let frame = state::with_state(|ui| ui.game_frame).unwrap_or(0);
+    begin_simple();
+    for unit_id in units {
+        draw_unit_simple(unit_id, camera, blink, frame);
+    }
+    end_simple();
+}
+
+fn draw_unit_simple(unit_id: i32, camera: spring::types::Float3, blink: bool, frame: i32) {
+    let Ok(position) = spring::units_info::get_unit_position(
+        unit_id,
+        spring::units_info::GetUnitPositionOptions {
+            mid_pos: false,
+            aim_pos: false,
+        },
+    ) else {
+        return;
+    };
+    let dx = position.x - camera.x;
+    let dy = position.y - camera.y;
+    let dz = position.z - camera.z;
+    if dx * dx + dy * dy + dz * dz > MAX_UNIT_DISTANCE {
+        return;
+    }
+    let stack = collect(unit_id, blink, frame);
+    if stack.is_empty() {
+        return;
+    }
+    let radius = spring::units_info::get_unit_radius(unit_id).unwrap_or(0.0);
+    let _ = spring::gfx::push_matrix(0);
+    let _ = spring::gfx::translate(position.x, position.y + HEIGHT_SCALE * radius, position.z);
+    let _ = spring::gfx::billboard(0);
+    for (offset, bar) in stack.iter() {
+        let left = -BAR_WIDTH;
+        let right = BAR_WIDTH;
+        let top = offset + BAR_HEIGHT;
+        let bottom = offset;
+        let _ = spring::gfx::color(0.02, 0.02, 0.02, 0.85);
+        let _ = spring::gfx::rect(left - 1.0, bottom - 1.0, right + 1.0, top + 1.0);
+        let _ = spring::gfx::color(bar.color[0], bar.color[1], bar.color[2], bar.color[3]);
+        let fill_right = left + (right - left) * bar.progress;
+        let _ = spring::gfx::rect(left, bottom, fill_right, top);
+    }
+    let _ = spring::gfx::pop_matrix(0);
 }
 
 fn draw_unit(unit_id: i32, camera: spring::types::Float3, list_id: u32, blink: bool, frame: i32) {

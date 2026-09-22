@@ -1,1 +1,2 @@
 module(ttld-rules, LuaRules/wasm/ttld-rules.wasm, rules-synced, 0, 1.0.0)
+module(ttld-rules-unsynced, LuaRules/wasm/ttld-rules-unsynced.wasm, rules-unsynced, 1, 1.0.0)

@@ -2,16 +2,17 @@ extern crate alloc;
 
 mod audio;
 mod camera;
+mod deferred_lighting;
 mod diagnostics;
 mod enlarger;
 mod fire;
-mod healthbars;
 mod highlight;
 mod hud;
 mod input;
 mod lighting;
 mod lights;
 mod mapedge;
+mod minimap;
 mod state;
 mod widgets;
 

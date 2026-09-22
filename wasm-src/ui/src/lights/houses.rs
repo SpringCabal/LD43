@@ -19,6 +19,7 @@ pub fn place() {
     }
     let mut placed = 0;
     let mut seed = SEED;
+    let mut deferred_lights = Vec::new();
     for unit_id in houses {
         let Ok(position) = spring::units_info::get_unit_position(
             unit_id,
@@ -44,13 +45,15 @@ pub fn place() {
                     ],
                     RADIUS,
                 );
-                if spring::lights::add_map_light(&light).is_ok() {
-                    placed += 1;
-                }
+                deferred_lights.push(state::DeferredPointLight::from_params(&light));
+                placed += 1;
             }
         }
     }
-    let _ = state::with_state(|ui| ui.house_lights_placed = true);
+    let _ = state::with_state(|ui| {
+        ui.house_lights_placed = true;
+        ui.house_deferred_lights = deferred_lights;
+    });
     diagnostics::info(&format!("{placed} house lights placed"));
 }
 

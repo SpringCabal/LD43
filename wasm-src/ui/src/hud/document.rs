@@ -53,7 +53,13 @@ pub fn hide_default_layout() {
         "tooltip 0",
         "clock 0",
         "info 0",
-        "minimap minimize 1",
+        // Keep the minimap available for the WASM widget's native-backed
+        // source pass; the widget slaves the regular minimap while drawing.
+        "minimap minimize 0",
+        "minimap simplecolors 1",
+        "minimap unitexp 0.3",
+        "minimap unitsize 1.2",
+        "minimap fullproxy 0",
         "showhealthbars 0",
         "showrezbars 0",
         "disticon 99999",
@@ -72,7 +78,7 @@ pub fn apply_bindings() {
         return;
     }
     let _ = spring::send_commands("unbindall", "");
-    for binding in ["Any+pause  pause", "ctrl+q quitforce", "f12 screenshot"] {
+    for binding in ["Any+pause  pause", "f12 screenshot"] {
         let _ = spring::send_commands(&format!("bind {binding}"), "");
     }
     let _ = spring::send_commands("unbindkeyset enter chat", "");

@@ -11,4 +11,5 @@ build: fmt clippy
 
 copy: build
     cp target/wasm32-unknown-unknown/release/ttld_rules_wasm.wasm ../LuaRules/wasm/ttld-rules.wasm
+    cp target/wasm32-unknown-unknown/release/ttld_rules_unsynced_wasm.wasm ../LuaRules/wasm/ttld-rules-unsynced.wasm
     cp target/wasm32-unknown-unknown/release/ttld_ui_wasm.wasm ../LuaUI/wasm/ttld-ui.wasm

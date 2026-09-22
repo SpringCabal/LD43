@@ -25,6 +25,13 @@ local RangedSpell = Weapon:New {
 
 local Fireball = RangedSpell:New {
 	name = "Fireball",
+	-- Keep the projectile in the Cannon path so its visual can use the
+	-- game's round fireball texture. DGun is a hard-coded streak/trail and
+	-- reads the engine dgun texture, which is the missile-like result seen in
+	-- the WASM build.
+	weaponType = "Cannon",
+	texture1 = "fireball_rot",
+	size = 22,
 
 	impactOnly = false,
 	areaOfEffect = 500,

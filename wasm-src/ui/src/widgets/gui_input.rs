@@ -39,6 +39,15 @@ impl Widget<Global> for GuiInputWidget {
         input::mouse_move(x, y).into()
     }
 
+    fn mouse_wheel(
+        &self,
+        _ctx: &spring_addons::AddonContext<'_, Global>,
+        up: bool,
+        value: f32,
+    ) -> EventResult {
+        input::mouse_wheel(up, value).into()
+    }
+
     fn mouse_press(
         &self,
         _ctx: &spring_addons::AddonContext<'_, Global>,

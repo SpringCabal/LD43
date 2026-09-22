@@ -1,0 +1,182 @@
+//! Deterministic Lua/CUS animation conformance probe.
+//!
+//! This is test-only code. It invokes the same named unit-script functions
+//! that the Lua reference fixture invokes, then samples the engine's piece
+//! matrices. The probe deliberately observes the engine boundary rather than
+//! sharing animation implementation code with the game.
+
+use alloc::format;
+use alloc::string::String;
+use core::cell::Cell;
+
+use spring_addons::rules::Gadget;
+
+use crate::state::Global;
+
+const TARGET_DEF: &str = "bloodmage";
+const TRIGGER_FRAMES: &[i32] = &[30, 90, 145];
+const LAST_FRAME: i32 = 195;
+const SAMPLE_FRAMES: &[i32] = &[
+    20, 29, 31, 33, 35, 39, 42, 45, 50, 55, 60, 70, 80, 91, 93, 95, 98, 100, 103, 106, 110, 115,
+    120, 130, 146, 148, 150, 155, 160, 163, 168, 173, 180, 190, 195,
+];
+const POSE_PIECES: &[&str] = &["Torso", "Hand_Right", "Hand_Left"];
+
+#[derive(Default)]
+pub struct PoseProbeGadget {
+    target: Cell<i32>,
+    finished: Cell<bool>,
+    skeleton_emitted: Cell<bool>,
+}
+
+impl PoseProbeGadget {
+    pub fn new() -> Self {
+        Self {
+            target: Cell::new(-1),
+            finished: Cell::new(false),
+            skeleton_emitted: Cell::new(false),
+        }
+    }
+
+    fn find_target(&self) -> Option<i32> {
+        let target_def = spring::get_unit_def_id_by_name(TARGET_DEF).ok()?;
+        let units = spring::get_all_units().ok()?;
+        units.into_iter().find(|unit| {
+            spring::get_unit_def_id(*unit)
+                .map(|def| def.0 == target_def)
+                .unwrap_or(false)
+        })
+    }
+
+    fn emit_skeleton(&self, unit: i32) {
+        if self.skeleton_emitted.replace(true) {
+            return;
+        }
+        let Ok(map) = spring::get_unit_piece_map(unit) else {
+            let _ = spring::echo("[UnitScriptProbe] ERROR no-piece-map", "");
+            return;
+        };
+        for entry in map {
+            let _ = spring::echo(
+                &format!(
+                    "[UnitScriptProbe] map piece={} num={}",
+                    entry.name, entry.piece_num
+                ),
+                "",
+            );
+            if let Ok(info) =
+                spring::owned::units_pieces::get_unit_piece_info(unit, entry.piece_num)
+                && info.exists
+            {
+                let offset = info.info.offset;
+                let _ = spring::echo(
+                    &format!(
+                        "[UnitScriptProbe] info piece={} offset={:.9},{:.9},{:.9}",
+                        entry.name, offset.x, offset.y, offset.z
+                    ),
+                    "",
+                );
+            }
+        }
+    }
+
+    fn emit_matrix(&self, frame: i32, unit: i32, name: &str, piece: i32) {
+        let Ok(matrix) = spring::owned::units_pieces::get_unit_piece_matrix(unit, piece) else {
+            let _ = spring::echo(
+                &format!("[UnitScriptProbe] ERROR frame={frame} matrix-piece={name}"),
+                "",
+            );
+            return;
+        };
+        if matrix.m.len() != 16 {
+            let _ = spring::echo(
+                &format!("[UnitScriptProbe] ERROR frame={frame} matrix-piece={name}"),
+                "",
+            );
+            return;
+        }
+        let mut values = String::new();
+        for (index, value) in matrix.m.iter().enumerate() {
+            if index != 0 {
+                values.push(',');
+            }
+            values.push_str(&format!("{value:.6}"));
+        }
+        let _ = spring::echo(
+            &format!("[UnitScriptProbe] frame={frame} piece={name} m={values}"),
+            "",
+        );
+    }
+
+    fn sample(&self, frame: i32, unit: i32) {
+        let Ok(map) = spring::get_unit_piece_map(unit) else {
+            let _ = spring::echo(
+                &format!("[UnitScriptProbe] ERROR frame={frame} no-piece-map"),
+                "",
+            );
+            return;
+        };
+        let mut count = 0;
+        for name in POSE_PIECES {
+            let Some(entry) = map.iter().find(|entry| entry.name == *name) else {
+                let _ = spring::echo(
+                    &format!("[UnitScriptProbe] ERROR frame={frame} missing-piece={name}"),
+                    "",
+                );
+                continue;
+            };
+            self.emit_matrix(frame, unit, name, entry.piece_num);
+            count += 1;
+        }
+        let _ = spring::echo(
+            &format!("[UnitScriptProbe] SAMPLE_DONE frame={frame} pieces={count}"),
+            "",
+        );
+    }
+
+    fn report_trigger(&self, frame: i32) {
+        let _ = spring::echo(
+            &format!("[UnitScriptProbe] trigger frame={frame} cast=true"),
+            "",
+        );
+    }
+}
+
+impl Gadget<Global> for PoseProbeGadget {
+    fn name(&self) -> &'static str {
+        "TTLD Pose Probe"
+    }
+
+    fn game_frame(&self, _ctx: &spring_addons::AddonContext<'_, Global>, frame: i32) {
+        if self.finished.get() {
+            return;
+        }
+        let unit = if self.target.get() >= 0 {
+            Some(self.target.get())
+        } else {
+            let target = self.find_target();
+            if let Some(target) = target {
+                self.target.set(target);
+            }
+            target
+        };
+        let Some(unit) = unit else {
+            return;
+        };
+
+        self.emit_skeleton(unit);
+        if TRIGGER_FRAMES.contains(&frame) {
+            self.report_trigger(frame);
+        }
+        if SAMPLE_FRAMES.contains(&frame) {
+            self.sample(frame, unit);
+        }
+        if frame >= LAST_FRAME {
+            let _ = spring::echo(
+                &format!("[UnitScriptProbe] DONE unit={unit} last_frame={LAST_FRAME}"),
+                "",
+            );
+            self.finished.set(true);
+        }
+    }
+}

@@ -6,12 +6,38 @@ use alloc::vec::Vec;
 use crate::fire::Field;
 use crate::highlight::Resources;
 
+#[derive(Clone, Copy, Debug)]
+pub struct DeferredPointLight {
+    pub position: [f32; 3],
+    pub color: [f32; 3],
+    pub radius: f32,
+}
+
+impl DeferredPointLight {
+    pub fn from_params(params: &spring::lights::LightParams) -> Self {
+        Self {
+            position: [
+                params.position.first().copied().unwrap_or(0.0),
+                params.position.get(1).copied().unwrap_or(0.0),
+                params.position.get(2).copied().unwrap_or(0.0),
+            ],
+            color: [
+                params.diffuse_color.first().copied().unwrap_or(0.0),
+                params.diffuse_color.get(1).copied().unwrap_or(0.0),
+                params.diffuse_color.get(2).copied().unwrap_or(0.0),
+            ],
+            radius: params.radius,
+        }
+    }
+}
+
 #[derive(Clone, Copy, Default)]
 pub struct HudBindings {
     pub health: u64,
     pub health_percent: u64,
     pub health_caption: u64,
     pub target_visible: u64,
+    pub target_enemy: u64,
     pub target_name: u64,
     pub target_percent: u64,
     pub target_caption: u64,
@@ -52,17 +78,15 @@ pub struct UiState {
     pub target_unit: i32,
     pub target_ratio: i32,
     pub house_lights_placed: bool,
-    pub staff_light: u32,
     pub staff_boost: f32,
-    pub mouse_light: u32,
-    pub projectile_lights: Vec<u32>,
+    pub house_deferred_lights: Vec<DeferredPointLight>,
+    pub staff_deferred_light: Option<DeferredPointLight>,
+    pub mouse_deferred_light: Option<DeferredPointLight>,
+    pub projectile_deferred_lights: Vec<DeferredPointLight>,
     pub seconds: f32,
     pub game_frame: i32,
     pub cast_start_frame: i32,
     pub cast_animation_time: f32,
-    pub bar_shader: u32,
-    pub bar_list: u32,
-    pub bar_setup_failed: bool,
     pub fire: Field,
     pub fire_frame: i32,
     pub edge_shader: u32,
@@ -70,7 +94,6 @@ pub struct UiState {
     pub edge_setup_failed: bool,
     pub outline: Option<Resources>,
     pub outline_setup_failed: bool,
-    pub enlarger_armed: bool,
 }
 
 thread_local! {
@@ -109,17 +132,15 @@ impl UiState {
             target_unit: -1,
             target_ratio: -2,
             house_lights_placed: false,
-            staff_light: 0,
             staff_boost: 1.0,
-            mouse_light: 0,
-            projectile_lights: Vec::new(),
+            house_deferred_lights: Vec::new(),
+            staff_deferred_light: None,
+            mouse_deferred_light: None,
+            projectile_deferred_lights: Vec::new(),
             seconds: 0.0,
             game_frame: 0,
             cast_start_frame: 0,
             cast_animation_time: 0.0,
-            bar_shader: 0,
-            bar_list: 0,
-            bar_setup_failed: false,
             fire: Field::new(),
             fire_frame: -1,
             edge_shader: 0,
@@ -127,7 +148,6 @@ impl UiState {
             edge_setup_failed: false,
             outline: None,
             outline_setup_failed: false,
-            enlarger_armed: false,
         }
     }
 }

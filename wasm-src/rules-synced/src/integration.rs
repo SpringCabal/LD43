@@ -25,6 +25,13 @@ struct Tracker {
     ork_distance: f32,
     stunned_unit: i32,
     stunned_base: f32,
+    heartburn_target: i32,
+    heartburn_health: f32,
+    poultice_target: i32,
+    poultice_x: f32,
+    poultice_z: f32,
+    poultice_origin_x: f32,
+    poultice_origin_z: f32,
 }
 
 thread_local! {
@@ -93,6 +100,7 @@ pub fn update(frame: i32) {
         40 => with_checks(ork_spawn_checks),
         60 => with_checks(player_attack_checks),
         120 => spell_checks(),
+        150 => with_checks(heartburn_checks),
         200 => with_checks(stun_a_target),
         230 => with_checks(stun_landed_checks),
         300 => with_checks(ork_advance_checks),
@@ -142,6 +150,34 @@ fn setup_checks(tracker: &mut Tracker, world: &mut World) {
         &format!(
             "unit def custom params readable (house hscale={:?} vscale={:?})",
             scales.0, scales.1
+        ),
+    );
+    let leader_scales = units::def_id("orkboss")
+        .map(|leader| {
+            (
+                spring::get_unit_def_custom_param(leader, "hscale"),
+                spring::get_unit_def_custom_param(leader, "vscale"),
+            )
+        })
+        .unwrap_or((Err(spring::ApiError::new(0)), Err(spring::ApiError::new(0))));
+    let leader_scale_ok = leader_scales
+        .0
+        .as_ref()
+        .ok()
+        .and_then(|value| value.parse::<f32>().ok())
+        == Some(2.5)
+        && leader_scales
+            .1
+            .as_ref()
+            .ok()
+            .and_then(|value| value.parse::<f32>().ok())
+            == Some(2.5);
+    check(
+        tracker,
+        leader_scale_ok,
+        &format!(
+            "ork leader keeps its enlarged draw scale (hscale={:?} vscale={:?})",
+            leader_scales.0, leader_scales.1
         ),
     );
     check(
@@ -211,7 +247,8 @@ fn player_attack_checks(tracker: &mut Tracker, world: &mut World) {
         frame_of(world),
     );
     world.player.update(frame_of(world));
-    // Mirrors what scripts/blood_mage.lua reads to decide whether to fire.
+    // Mirrors the blood-mage firing contract used by the original unit
+    // script, now consumed directly by the Rust CUS implementation.
     let firing = rules_param(unit_id, "firing").unwrap_or(0.0);
     let fire_tx = rules_param(unit_id, "fireTx").unwrap_or(0.0);
     check(
@@ -264,6 +301,95 @@ fn spell_checks() {
             &format!("blood magic consumed villagers ({drained} drained)"),
         );
     });
+
+    let target = units::create("orksmall", position.x + 100.0, position.z, ENEMY_TEAM, 0);
+    let target_health = target
+        .and_then(|unit_id| spring::units_info::get_unit_health(unit_id).ok())
+        .map(|health| health.health)
+        .unwrap_or(0.0);
+    let outcome = target.zip(crate::player::cast(
+        unit_id,
+        crate::player::Spell::Heartburn,
+        position.x + 100.0,
+        position.z,
+        frame,
+    ));
+    TRACKER.with_borrow_mut(|tracker| {
+        if let Some((target, _)) = outcome {
+            tracker.heartburn_target = target;
+            tracker.heartburn_health = target_health;
+        }
+    });
+
+    // Keep this target outside Heartburn's 250-unit damage radius. This is a
+    // deterministic integration check for spell 5's delayed AddUnitImpulse,
+    // rather than relying on a transient particle effect in a screenshot.
+    let poultice_target = units::create("orksmall", position.x + 600.0, position.z, ENEMY_TEAM, 0);
+    if let Some(target) = poultice_target
+        && crate::player::cast(
+            unit_id,
+            crate::player::Spell::Poultice,
+            position.x,
+            position.z,
+            frame,
+        )
+        .is_some()
+        && let Some(before) = units::position(target)
+    {
+        TRACKER.with_borrow_mut(|tracker| {
+            tracker.poultice_target = target;
+            tracker.poultice_x = before.x;
+            tracker.poultice_z = before.z;
+            tracker.poultice_origin_x = position.x;
+            tracker.poultice_origin_z = position.z;
+        });
+    }
+}
+
+fn heartburn_checks(tracker: &mut Tracker, _world: &mut World) {
+    let target = tracker.heartburn_target;
+    let health = spring::units_info::get_unit_health(target)
+        .map(|health| health.health)
+        .unwrap_or(0.0);
+    check(
+        tracker,
+        target >= 0
+            && (health < tracker.heartburn_health
+                || !spring::valid_unit_id(target).unwrap_or(false)),
+        "heartburn applies fireball damage at its destination",
+    );
+
+    let target = tracker.poultice_target;
+    let (moved, away_dot) = spring::units_info::get_unit_position(
+        target,
+        spring::units_info::GetUnitPositionOptions {
+            mid_pos: false,
+            aim_pos: false,
+        },
+    )
+    .map(|position| {
+        let dx = position.x - tracker.poultice_x;
+        let dz = position.z - tracker.poultice_z;
+        let away_x = tracker.poultice_x - tracker.poultice_origin_x;
+        let away_z = tracker.poultice_z - tracker.poultice_origin_z;
+        ((dx * dx + dz * dz).sqrt(), dx * away_x + dz * away_z)
+    })
+    .unwrap_or((0.0, 0.0));
+    check(
+        tracker,
+        target >= 0 && moved > 1.0 && away_dot > 1.0,
+        &format!(
+            "poultice throws an enemy unit away from the blood mage (moved {moved:.1}, away_dot {away_dot:.1})"
+        ),
+    );
+    let airborne = spring::get_unit_physical_state(target)
+        .map(|physical_state| (physical_state & (1 << 7)) != 0)
+        .unwrap_or(false);
+    check(
+        tracker,
+        target >= 0 && airborne,
+        "poultice target is airborne after the impulse",
+    );
 }
 
 /// Stunning scales the weapon's reload; make sure the weapon state really

@@ -18,7 +18,11 @@ pub fn update() {
         };
         lights.push(light);
     }
-    apply(lights);
+    let deferred_lights = lights
+        .iter()
+        .map(state::DeferredPointLight::from_params)
+        .collect();
+    let _ = state::with_state(|ui| ui.projectile_deferred_lights = deferred_lights);
 }
 
 const DEFAULT_RADIUS: f32 = 100.0;
@@ -36,14 +40,26 @@ const ASSUMED_SIZE: f32 = 1.0;
 fn light_for(projectile_id: i32) -> Option<spring::lights::LightParams> {
     let weapon_def_id = spring::projectiles::get_projectile_def_id(projectile_id).ok()?;
     let weapon = spring::weapon_defs::get_weapon_def_by_id(weapon_def_id).ok()?;
-    let radius = radius_for(&weapon.info.type_, weapon.info.range);
+    let custom_radius =
+        spring::weapon_defs::get_weapon_def_custom_param(weapon_def_id, "light_radius")
+            .ok()
+            .and_then(|value| value.parse::<f32>().ok());
+    let radius = custom_radius.unwrap_or_else(|| radius_for(&weapon.info.type_, weapon.info.range));
     if radius <= 0.0 {
         return None;
     }
     let position = spring::projectiles::get_projectile_position(projectile_id).ok()?;
+    let color = if custom_radius.is_some() {
+        // The blood mage's fireball carries its own warm light in the desktop
+        // widget.  Keep that information in the weapon definition so the WASM
+        // path does not reduce it to the generic grey cannon light.
+        [1.0, 0.25, 0.03]
+    } else {
+        [COLOR_OFFSET, COLOR_OFFSET, COLOR_OFFSET]
+    };
     Some(params::point(
         [position.x, position.y, position.z],
-        [COLOR_OFFSET, COLOR_OFFSET, COLOR_OFFSET],
+        color,
         radius,
     ))
 }
@@ -59,30 +75,4 @@ fn radius_for(weapon_type: &str, range: f32) -> f32 {
         "BeamLaser" => range.min(BEAM_RADIUS_CAP),
         _ => DEFAULT_RADIUS,
     }
-}
-
-fn apply(lights: Vec<spring::lights::LightParams>) {
-    let handles =
-        state::with_state(|ui| core::mem::take(&mut ui.projectile_lights)).unwrap_or_default();
-    let mut updated: Vec<u32> = Vec::with_capacity(lights.len());
-    let mut existing = handles.into_iter();
-    for light in &lights {
-        match existing.next() {
-            Some(handle) => {
-                let _ = spring::lights::update_map_light(handle, light);
-                updated.push(handle);
-            }
-            None => {
-                if let Ok(handle) = spring::lights::add_map_light(light) {
-                    updated.push(handle);
-                }
-            }
-        }
-    }
-    let dark = params::point([0.0, 0.0, 0.0], [0.0, 0.0, 0.0], 0.0);
-    for handle in existing {
-        let _ = spring::lights::update_map_light(handle, &dark);
-        updated.push(handle);
-    }
-    let _ = state::with_state(|ui| ui.projectile_lights = updated);
 }

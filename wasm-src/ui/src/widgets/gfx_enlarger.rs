@@ -1,4 +1,3 @@
-use spring_addons::event::EventResult;
 use spring_addons::ui::Widget;
 
 use crate::enlarger;
@@ -18,16 +17,11 @@ impl Widget<Global> for GfxEnlargerWidget {
         "GfxEnlarger"
     }
 
-    fn update(&self, _ctx: &spring_addons::AddonContext<'_, Global>, _dt: f32) {
-        enlarger::sweep();
+    fn init(&self, _ctx: &spring_addons::AddonContext<'_, Global>) {
+        enlarger::reset();
     }
 
-    fn draw_unit(
-        &self,
-        _ctx: &spring_addons::AddonContext<'_, Global>,
-        unit_id: i32,
-        draw_mode: i32,
-    ) -> EventResult {
-        enlarger::draw_unit(unit_id, draw_mode).into()
+    fn update(&self, _ctx: &spring_addons::AddonContext<'_, Global>, _dt: f32) {
+        enlarger::sweep();
     }
 }

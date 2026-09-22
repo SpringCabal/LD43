@@ -15,6 +15,7 @@ pub fn create(context: u64) -> Option<HudBindings> {
         health_percent: bind_percent(model, "healthPercent", 100.0)?,
         health_caption: bind_string(model, "healthCaption", "100%")?,
         target_visible: bind_bool(model, "targetVisible", false)?,
+        target_enemy: bind_bool(model, "targetEnemy", false)?,
         target_name: bind_string(model, "targetName", "")?,
         target_percent: bind_percent(model, "targetPercent", 100.0)?,
         target_caption: bind_string(model, "targetCaption", "")?,
@@ -63,15 +64,15 @@ fn bind_event(model: u64, name: &str, handler: impl FnMut(&crate::state::Global)
     }
 }
 
-fn quit() {
-    let _ = spring::send_commands("quit", "");
-    let _ = spring::send_commands("quitforce", "");
+pub fn quit() {
+    let _ = spring::send_commands("reloadforce", "");
 }
 
-fn restart() {
+pub fn restart() {
     let _ = spring::send_commands("cheat 1", "");
     let _ = spring::send_commands("luarules reload", "");
     let _ = spring::send_commands("cheat 0", "");
+    super::endgame::close_endgame();
 }
 
 fn bind_int(model: u64, name: &str, initial: i32) -> Option<u64> {

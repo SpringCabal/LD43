@@ -17,6 +17,29 @@ pub fn close_intro() {
     let _ = spring::send_commands("pause 0", "");
 }
 
+pub fn close_endgame() {
+    let _ = state::with_state(|ui| {
+        ui.endgame_open = false;
+        ui.game_end.clear();
+        ui.player_alive = true;
+        ui.player_unit = -1;
+        ui.tracked_unit = -1;
+        ui.target_unit = -1;
+        ui.target_ratio = -2;
+        ui.villagers_killed = 0;
+        ui.allies_drained = 0;
+        ui.orks_killed = 0;
+        if let Some(hud) = ui.hud {
+            model::set_bool(hud.endgame_visible, false);
+            model::set_bool(hud.target_visible, false);
+            model::set_bool(hud.target_enemy, false);
+            model::set_int(hud.villagers_killed, 0);
+            model::set_int(hud.allies_drained, 0);
+            model::set_int(hud.orks_killed, 0);
+        }
+    });
+}
+
 pub fn open_endgame(victory: bool) {
     let (villagers, drained, orks) =
         state::with_state(|ui| (ui.villagers_killed, ui.allies_drained, ui.orks_killed))

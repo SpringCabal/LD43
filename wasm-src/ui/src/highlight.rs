@@ -10,8 +10,10 @@ pub fn draw_pre_unit() {
     };
     let (width, height) = view_size();
     if width <= 1 || height <= 1 {
+        draw_outline(false);
         return;
     }
+    let _ = spring::gfx::push_attrib(gl::ALL_ATTRIB_BITS);
     let _ = spring::gfx::copy_to_texture(&resources.depth, 0, 0, 0, 0, width, height, 0, 0);
     let _ = spring::gfx::bind_texture(&resources.depth, 0, true);
     apply_resolution(&resources, width, height);
@@ -24,7 +26,9 @@ pub fn draw_pre_unit() {
     enter_2d();
     let _ = spring::gfx::bind_texture(&resources.offscreen, 0, true);
     full_screen_quad(width, height);
+    let _ = spring::gfx::bind_texture(&resources.offscreen, 0, false);
     leave_2d();
+    let _ = spring::gfx::pop_attrib(0);
 }
 
 pub fn draw_refraction() {
@@ -182,7 +186,10 @@ fn draw_units_offscreen() {
             unit_id,
             spring::gfx::GfxUnitDrawOptions {
                 apply_transform: true,
-                do_raw_draw: false,
+                // gfx.Unit's `doRawDraw` argument is the second argument of
+                // Lua's gl.Unit.  The original highlight widget calls
+                // gl.Unit(unitID, true), so use the raw engine model path.
+                do_raw_draw: true,
                 no_lua_call: false,
                 full_model: true,
                 // Lua's gl.Unit omits its LOD argument, which auto-selects the
@@ -223,9 +230,9 @@ fn full_screen_quad(width: i32, height: i32) {
         1.0 + half_x,
         -1.0 - half_y,
         0.0,
+        1.0,
+        1.0,
         0.0,
-        1.0,
-        1.0,
     );
 }
 
@@ -237,6 +244,10 @@ fn enter_2d() {
     let _ = spring::gfx::matrix_mode(gl::MODELVIEW);
     let _ = spring::gfx::push_matrix(0);
     let _ = spring::gfx::load_identity(0);
+    // Deferred lighting leaves the engine's multiplicative light blend
+    // function installed.  Lua's gl.Blending("alpha") resets it before the
+    // outline quad is composited.
+    let _ = spring::gfx::blend_func(gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA);
     let _ = spring::gfx::blending(true);
 }
 
@@ -253,13 +264,23 @@ fn draw_outline(underwater: bool) {
     let Some(unit_id) = unit_under_cursor() else {
         return;
     };
-    let _ = spring::gfx::depth_test(spring::gfx::GfxDepthTestOptions::default());
+
+    // This is the same state as the original Lua fallback: draw the model's
+    // back-face wireframe in front of the regular model.  Set every relevant
+    // state explicitly because this callback runs after other world widgets.
+    let _ = spring::gfx::push_attrib(gl::ALL_ATTRIB_BITS);
+    let _ = spring::gfx::depth_test(spring::gfx::GfxDepthTestOptions {
+        enable: true,
+        set_func: true,
+        func: gl::LESS,
+    });
     let _ = spring::gfx::line_width(LINE_WIDTH * THICKNESS);
     if underwater {
         let _ = spring::gfx::polygon_offset(POLYGON_OFFSET_FACTOR, POLYGON_OFFSET_UNITS);
     }
     let _ = spring::gfx::polygon_mode(gl::FRONT_AND_BACK, gl::LINE);
     let _ = spring::gfx::culling(true);
+    let _ = spring::gfx::cull_face(spring::gfx::GfxCullFace::GfxCullFaceFront);
     let _ = spring::gfx::depth_mask(false);
     let _ = spring::gfx::color(0.0, 0.0, 0.0, 1.0);
     let _ = spring::gfx::push_matrix(0);
@@ -268,7 +289,8 @@ fn draw_outline(underwater: bool) {
         unit_id,
         spring::gfx::GfxUnitDrawOptions {
             apply_transform: true,
-            do_raw_draw: false,
+            // Match gl.Unit(unitID, true) in gfx_highlight.lua.
+            do_raw_draw: true,
             no_lua_call: false,
             full_model: true,
             // Lua's gl.Unit omits its LOD argument, which auto-selects the
@@ -277,13 +299,7 @@ fn draw_outline(underwater: bool) {
         },
     );
     let _ = spring::gfx::pop_matrix(0);
-    let _ = spring::gfx::line_width(1.0);
-    let _ = spring::gfx::color(1.0, 1.0, 1.0, 1.0);
-    let _ = spring::gfx::culling(false);
-    let _ = spring::gfx::polygon_mode(gl::FRONT_AND_BACK, gl::FILL);
-    if underwater {
-        let _ = spring::gfx::polygon_offset(0.0, 0.0);
-    }
+    let _ = spring::gfx::pop_attrib(0);
 }
 
 fn view_size() -> (i32, i32) {
@@ -295,7 +311,7 @@ fn unit_under_cursor() -> Option<i32> {
     if mouse.offscreen {
         return None;
     }
-    let trace = spring::camera::trace_screen_ray(
+    if let Ok(trace) = spring::camera::trace_screen_ray(
         mouse.x,
         mouse.y,
         spring::camera::TraceScreenRayOptions {
@@ -305,7 +321,10 @@ fn unit_under_cursor() -> Option<i32> {
             ignore_water: false,
             height_offset: 0.0,
         },
-    )
-    .ok()?;
-    (trace.hit_type == HIT_UNIT).then_some(trace.hit_id)
+    ) && trace.hit_type == HIT_UNIT
+    {
+        return Some(trace.hit_id);
+    }
+
+    None
 }

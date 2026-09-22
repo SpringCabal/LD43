@@ -21,6 +21,7 @@ pub fn track_target() {
     let max = health.max_health.max(1.0);
     let ratio = (100.0 * current / max) as i32;
     let name = human_name(unit_id);
+    let enemy = is_enemy(unit_id);
     let caption = if current <= 0.0 {
         alloc::string::String::from("DEAD")
     } else {
@@ -34,6 +35,7 @@ pub fn track_target() {
             ui.target_unit = unit_id;
             model::set_string(hud.target_name, &name);
         }
+        model::set_bool(hud.target_enemy, enemy);
         if ui.target_ratio != ratio {
             ui.target_ratio = ratio;
             model::set_percent(hud.target_percent, ratio as f32);
@@ -54,6 +56,7 @@ fn clear() {
         ui.target_ratio = -2;
         if let Some(hud) = ui.hud {
             model::set_bool(hud.target_visible, false);
+            model::set_bool(hud.target_enemy, false);
         }
     });
 }
@@ -76,7 +79,20 @@ fn unit_under_cursor(x: i32, y: i32) -> Option<i32> {
         },
     )
     .ok()?;
-    (trace.hit_type == HIT_UNIT).then_some(trace.hit_id)
+    if trace.hit_type == HIT_UNIT {
+        return Some(trace.hit_id);
+    }
+
+    None
+}
+
+fn is_enemy(unit_id: i32) -> bool {
+    let Some(team) = spring::units_info::get_unit_team(unit_id).ok() else {
+        return false;
+    };
+    spring::player::get_local_team_id(0)
+        .map(|local| team != local)
+        .unwrap_or(false)
 }
 
 fn human_name(unit_id: i32) -> alloc::string::String {

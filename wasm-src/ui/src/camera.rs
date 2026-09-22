@@ -41,23 +41,49 @@ pub fn apply() {
 }
 
 pub fn track() {
-    let unit_id = state::with_state(|ui| {
-        let unit_id = ui.player_unit;
-        if unit_id < 0 || ui.tracked_unit == unit_id {
-            return None;
-        }
-        ui.tracked_unit = unit_id;
-        Some(unit_id)
-    })
-    .flatten();
-    let Some(unit_id) = unit_id else {
+    let unit_id = state::with_state(|ui| ui.player_unit).unwrap_or(-1);
+    if unit_id < 0 {
+        return;
+    }
+
+    let Ok(target) = spring::units_info::get_unit_position(
+        unit_id,
+        spring::units_info::GetUnitPositionOptions {
+            // The engine tracker follows drawMidPos, rather than the unit's
+            // footprint origin.  Using the same point keeps native and Lua
+            // camera targets aligned for scaled units.
+            mid_pos: true,
+            aim_pos: false,
+        },
+    ) else {
         return;
     };
-    let _ = spring::selection::select_unit_array(&[unit_id], false);
-    let _ = spring::send_commands("trackoff", "");
-    let _ = spring::send_commands("track", "");
-    let _ = spring::send_commands("trackmode 1", "");
-    let _ = spring::selection::select_unit_array(&[], false);
+
+    // `track` is stateful: camera/minimap interaction can disable it, while
+    // the old one-shot setup still believed it was active. Re-arm the native
+    // tracker whenever the controlled unit changes. The target update below
+    // is deliberately done every frame because it is the same existing camera
+    // API as Spring.SetCameraTarget and remains effective after tracker input
+    // has been disabled by the engine.
+    let needs_tracker_setup = state::with_state(|ui| ui.tracked_unit != unit_id).unwrap_or(true);
+    if needs_tracker_setup {
+        let _ = spring::selection::select_unit_array(&[unit_id], false);
+        let _ = spring::send_commands("trackoff", "");
+        let _ = spring::send_commands("track", "");
+        let _ = spring::send_commands("trackmode 1", "");
+        let _ = spring::selection::select_unit_array(&[], false);
+        let _ = state::with_state(|ui| ui.tracked_unit = unit_id);
+    }
+
+    let _ = spring::camera::set_camera_target(
+        target,
+        spring::camera::SetCameraTargetOptions {
+            transition_time: Some(0.0),
+            dir_x: None,
+            dir_y: None,
+            dir_z: None,
+        },
+    );
 }
 
 const START_X: f32 = 5580.0;

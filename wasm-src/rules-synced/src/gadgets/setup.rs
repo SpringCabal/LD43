@@ -2,6 +2,8 @@ use spring_addons::register_gadgets;
 use spring_addons::rules::{Gadget, GadgetHandler};
 
 use super::*;
+#[cfg(feature = "pose-probe")]
+use crate::pose_probe::PoseProbeGadget;
 use crate::state::{self, Global};
 
 #[derive(Default)]
@@ -46,6 +48,9 @@ pub fn setup(handler: &mut GadgetHandler<Global>) {
 
     #[cfg(feature = "headless-integration")]
     register_gadgets!(handler, [IntegrationGadget::new()]);
+
+    #[cfg(feature = "pose-probe")]
+    register_gadgets!(handler, [PoseProbeGadget::new()]);
 
     register_gadgets!(handler, [LifecycleGadget::new(), InputGadget::new()]);
 }

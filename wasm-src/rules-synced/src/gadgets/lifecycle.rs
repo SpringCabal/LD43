@@ -2,19 +2,36 @@ use spring_addons::rules::{Gadget, UnitDestroyedEvent};
 
 use crate::lifecycle;
 use crate::state::Global;
+use crate::unit_scripts;
 
 #[derive(Default)]
-pub struct LifecycleGadget;
+pub struct LifecycleGadget {
+    swept: core::cell::Cell<bool>,
+}
 
 impl LifecycleGadget {
     pub fn new() -> Self {
-        Self
+        Self::default()
     }
 }
 
 impl Gadget<Global> for LifecycleGadget {
     fn name(&self) -> &'static str {
         "Lifecycle"
+    }
+
+    fn game_frame(&self, _ctx: &spring_addons::AddonContext<'_, Global>, _frame: i32) {
+        if self.swept.replace(true) {
+            return;
+        }
+        let Ok(units) = spring::get_all_units() else {
+            return;
+        };
+        for unit in units {
+            if let Ok(def) = spring::get_unit_def_id(unit) {
+                unit_scripts::queue_unit_created(unit, def.0);
+            }
+        }
     }
 
     fn unit_created(

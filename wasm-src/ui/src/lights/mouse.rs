@@ -11,14 +11,8 @@ pub fn update() {
         [RED, GREEN, BLUE],
         RADIUS,
     );
-    let handle = state::with_state(|ui| ui.mouse_light).unwrap_or(0);
-    if handle == 0 {
-        if let Ok(handle) = spring::lights::add_map_light(&light) {
-            let _ = state::with_state(|ui| ui.mouse_light = handle);
-        }
-        return;
-    }
-    let _ = spring::lights::update_map_light(handle, &light);
+    let deferred_light = state::DeferredPointLight::from_params(&light);
+    let _ = state::with_state(|ui| ui.mouse_deferred_light = Some(deferred_light));
 }
 
 const HEIGHT: f32 = 100.0;

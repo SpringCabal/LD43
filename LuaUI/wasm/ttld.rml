@@ -12,7 +12,7 @@
       </div>
     </div>
 
-    <div id="target-panel" data-if="targetVisible">
+    <div id="target-panel" data-if="targetVisible" data-class-enemy="targetEnemy">
       <div id="target-bar">
         <div id="target-fill" data-style-width="targetPercent"></div>
         <div id="target-caption">{{targetCaption}}</div>
@@ -45,7 +45,7 @@
           <div class="control"><span class="key">4 :</span> Migraine</div>
           <div class="control-desc">Unbearable headaches for your foes.</div>
           <div class="control"><span class="key">5 :</span> Poultice</div>
-          <div class="control-desc">Draws orks towards you.</div>
+          <div class="control-desc">Throws orks away from you.</div>
           <div class="control"><span class="key">Left click:</span> Move</div>
           <div class="control"><span class="key">Right click :</span> Attack</div>
           <div class="control"><span class="key">Ctrl+Q :</span> Quit</div>

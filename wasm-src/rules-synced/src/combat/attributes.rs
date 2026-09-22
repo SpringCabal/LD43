@@ -8,6 +8,7 @@ pub enum Effect {
     Stun,
     HalfSpeed,
     Flee,
+    DeathParalysis,
 }
 
 #[derive(Clone, Copy)]
@@ -128,7 +129,10 @@ fn apply_reload(unit_id: i32, factor: f32) {
     } else {
         base / factor
     };
-    let _ = spring::set_unit_weapon_state(unit_id, 1, "reloadTime", reload);
+    // Core UnitControl uses zero-based weapon slots. The read-only weapon
+    // state query intentionally keeps Spring's Lua-compatible one-based
+    // numbering, so the player's first weapon is slot 0 here.
+    let _ = spring::set_unit_weapon_state(unit_id, 0, "reloadTime", reload);
 }
 
 /// The unit's unmodified reload, remembered the first time the unit is touched.

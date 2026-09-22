@@ -11,6 +11,7 @@ pub fn draw() {
     if !spring::gfx::bind_texture(particles::TEXTURE, 0, true).unwrap_or(false) {
         return;
     }
+    let _ = spring::gfx::blend_func(spring::gl::SRC_ALPHA, spring::gl::ONE_MINUS_SRC_ALPHA);
     let _ = spring::gfx::blending(true);
     let _ = spring::gfx::depth_mask(false);
     let _ = state::with_state(|ui| {
@@ -31,5 +32,6 @@ pub fn draw() {
     });
     let _ = spring::gfx::color(1.0, 1.0, 1.0, 1.0);
     let _ = spring::gfx::depth_mask(true);
+    let _ = spring::gfx::blending(false);
     let _ = spring::gfx::bind_texture(particles::TEXTURE, 0, false);
 }
