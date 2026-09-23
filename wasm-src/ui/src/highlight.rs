@@ -1,38 +1,74 @@
 use alloc::string::String;
+use core::cell::{Cell, RefCell};
+
 use spring::gl;
 
-use crate::{cursor, gl_uniforms, state};
+use crate::gl_uniforms;
+use crate::state::Global;
 
-pub fn draw_pre_unit() {
-    let Some(resources) = resources() else {
-        draw_outline(false);
-        return;
-    };
-    let (width, height) = view_size();
-    if width <= 1 || height <= 1 {
-        draw_outline(false);
-        return;
-    }
-    let _ = spring::gfx::push_attrib(gl::ALL_ATTRIB_BITS);
-    let _ = spring::gfx::copy_to_texture(&resources.depth, 0, 0, 0, 0, width, height, 0, 0);
-    let _ = spring::gfx::bind_texture(&resources.depth, 0, true);
-    apply_resolution(&resources, width, height);
-    let _ = spring::gfx::use_shader(resources.depth_shader);
-    let _ = spring::gfx::render_to_texture(&resources.offscreen, draw_units_offscreen);
-    let _ = spring::gfx::bind_texture(&resources.offscreen, 0, true);
-    let _ = spring::gfx::render_to_texture(&resources.blur, || blur(Blur::Vertical));
-    let _ = spring::gfx::bind_texture(&resources.blur, 0, true);
-    let _ = spring::gfx::render_to_texture(&resources.offscreen, || blur(Blur::Horizontal));
-    enter_2d();
-    let _ = spring::gfx::bind_texture(&resources.offscreen, 0, true);
-    full_screen_quad(width, height);
-    let _ = spring::gfx::bind_texture(&resources.offscreen, 0, false);
-    leave_2d();
-    let _ = spring::gfx::pop_attrib(0);
+/// Outlines the unit under the cursor, like the Lua build's gfx_highlight.lua.
+#[derive(Default)]
+pub struct Highlight {
+    resources: RefCell<Option<Resources>>,
+    setup_failed: Cell<bool>,
 }
 
-pub fn draw_refraction() {
-    draw_outline(true);
+impl Highlight {
+    pub fn draw_pre_unit(&self, global: &Global) {
+        let unit = global.cursor.get().unit;
+        let (width, height) = global.view.get();
+        if width <= 1 || height <= 1 || !self.ensure_resources(width, height) {
+            draw_outline(unit, false);
+            return;
+        }
+        let resources = self.resources.borrow();
+        let Some(resources) = resources.as_ref() else {
+            return;
+        };
+        let _ = spring::gfx::push_attrib(gl::ALL_ATTRIB_BITS);
+        let _ = spring::gfx::copy_to_texture(&resources.depth, 0, 0, 0, 0, width, height, 0, 0);
+        let _ = spring::gfx::bind_texture(&resources.depth, 0, true);
+        apply_resolution(resources, width, height);
+        let _ = spring::gfx::use_shader(resources.depth_shader);
+        let _ = spring::gfx::render_to_texture(&resources.offscreen, || draw_unit_offscreen(unit));
+        let _ = spring::gfx::bind_texture(&resources.offscreen, 0, true);
+        let _ = spring::gfx::render_to_texture(&resources.blur, || blur(resources, Blur::Vertical));
+        let _ = spring::gfx::bind_texture(&resources.blur, 0, true);
+        let _ = spring::gfx::render_to_texture(&resources.offscreen, || {
+            blur(resources, Blur::Horizontal)
+        });
+        enter_2d();
+        let _ = spring::gfx::bind_texture(&resources.offscreen, 0, true);
+        full_screen_quad(width, height);
+        let _ = spring::gfx::bind_texture(&resources.offscreen, 0, false);
+        leave_2d();
+        let _ = spring::gfx::pop_attrib(0);
+    }
+
+    pub fn draw_refraction(&self, global: &Global) {
+        draw_outline(global.cursor.get().unit, true);
+    }
+
+    /// Creates the textures and shaders for this view size, replacing any
+    /// made for another size; false if they cannot be made.
+    fn ensure_resources(&self, width: i32, height: i32) -> bool {
+        let mut slot = self.resources.borrow_mut();
+        if slot
+            .as_ref()
+            .is_some_and(|resources| resources.width == width && resources.height == height)
+        {
+            return true;
+        }
+        if self.setup_failed.get() {
+            return false;
+        }
+        if let Some(old) = slot.take() {
+            destroy(&old);
+        }
+        *slot = create(width, height);
+        self.setup_failed.set(slot.is_none());
+        slot.is_some()
+    }
 }
 
 const THICKNESS: f32 = 1.0;
@@ -46,39 +82,28 @@ const BLUR_HORIZONTAL_FRAGMENT: &str = include_str!("shaders/highlight_blur_h.fr
 
 const BLUR_VERTICAL_FRAGMENT: &str = include_str!("shaders/highlight_blur_v.frag");
 
-#[derive(Clone)]
-pub struct Resources {
-    pub depth: String,
-    pub offscreen: String,
-    pub blur: String,
-    pub depth_shader: u32,
-    pub blur_horizontal: u32,
-    pub blur_vertical: u32,
-    pub width: i32,
-    pub height: i32,
+struct Resources {
+    depth: String,
+    offscreen: String,
+    blur: String,
+    depth_shader: u32,
+    blur_horizontal: u32,
+    blur_vertical: u32,
+    width: i32,
+    height: i32,
 }
 
-fn resources() -> Option<Resources> {
-    let (width, height) = view_size();
-    if width <= 1 || height <= 1 {
-        return None;
+fn destroy(resources: &Resources) {
+    for shader in [
+        resources.depth_shader,
+        resources.blur_horizontal,
+        resources.blur_vertical,
+    ] {
+        let _ = spring::gfx::delete_shader(shader);
     }
-    let existing = state::with_state(|ui| ui.outline.clone()).flatten();
-    if let Some(existing) = existing
-        && existing.width == width
-        && existing.height == height
-    {
-        return Some(existing);
-    }
-    if state::with_state(|ui| ui.outline_setup_failed).unwrap_or(true) {
-        return None;
-    }
-    let created = create(width, height);
-    if created.is_none() {
-        let _ = state::with_state(|ui| ui.outline_setup_failed = true);
-    }
-    let _ = state::with_state(|ui| ui.outline = created.clone());
-    created
+    let _ = spring::gfx::delete_texture(&resources.depth);
+    let _ = spring::gfx::delete_texture_fbo(&resources.offscreen);
+    let _ = spring::gfx::delete_texture_fbo(&resources.blur);
 }
 
 fn create(width: i32, height: i32) -> Option<Resources> {
@@ -173,12 +198,12 @@ fn set_uniform_int(shader_id: u32, name: &str, value: i32) {
     let _ = spring::gfx::use_shader(0);
 }
 
-fn draw_units_offscreen() {
+fn draw_unit_offscreen(unit: Option<i32>) {
     let _ = spring::gfx::clear(gl::COLOR_BUFFER_BIT, &[0.0, 0.0, 0.0, 0.0], 4);
     let _ = spring::gfx::push_matrix(0);
     let _ = spring::gfx::reset_matrices(0);
     let _ = spring::gfx::color(0.0, 0.0, 0.0, THICKNESS);
-    if let Some(unit_id) = unit_under_cursor() {
+    if let Some(unit_id) = unit {
         let _ = spring::gfx::unit(
             unit_id,
             spring::gfx::GfxUnitDrawOptions {
@@ -205,10 +230,7 @@ enum Blur {
     Vertical,
 }
 
-fn blur(direction: Blur) {
-    let Some(resources) = state::with_state(|ui| ui.outline.clone()).flatten() else {
-        return;
-    };
+fn blur(resources: &Resources, direction: Blur) {
     let shader = match direction {
         Blur::Horizontal => resources.blur_horizontal,
         Blur::Vertical => resources.blur_vertical,
@@ -257,8 +279,8 @@ fn leave_2d() {
     let _ = spring::gfx::blending(false);
 }
 
-fn draw_outline(underwater: bool) {
-    let Some(unit_id) = unit_under_cursor() else {
+fn draw_outline(unit: Option<i32>, underwater: bool) {
+    let Some(unit_id) = unit else {
         return;
     };
 
@@ -297,12 +319,4 @@ fn draw_outline(underwater: bool) {
     );
     let _ = spring::gfx::pop_matrix(0);
     let _ = spring::gfx::pop_attrib(0);
-}
-
-fn view_size() -> (i32, i32) {
-    state::with_state(|ui| (ui.view_width, ui.view_height)).unwrap_or((0, 0))
-}
-
-fn unit_under_cursor() -> Option<i32> {
-    cursor::screen().and_then(|(x, y)| cursor::unit_at(x, y))
 }

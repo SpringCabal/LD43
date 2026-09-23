@@ -1,9 +1,9 @@
 use alloc::vec;
+use core::cell::Cell;
 
-use crate::state;
-
-pub fn apply() {
-    if state::with_state(|ui| ui.lighting_applied).unwrap_or(true) {
+/// Sets the sun lighting of the Lua build's gfx_day_night.lua, once.
+pub fn apply(applied: &Cell<bool>) {
+    if applied.get() {
         return;
     }
     let params = spring::unsynced_ctrl::SunLightingParams {
@@ -18,7 +18,7 @@ pub fn apply() {
         model_shadow_density: Some(MODEL_SHADOW_DENSITY),
     };
     if spring::unsynced_ctrl::set_sun_lighting(params).is_ok() {
-        let _ = state::with_state(|ui| ui.lighting_applied = true);
+        applied.set(true);
         let _ = spring::send_commands("shadows 1", "");
     }
 }

@@ -1,27 +1,49 @@
-use crate::state;
+use crate::game;
+use crate::state::GameStatus;
 
-use super::params;
+use super::PointLight;
 
-pub fn update(seconds: f32) {
-    let unit_id = state::with_state(|ui| ui.player_unit).unwrap_or(-1);
-    if unit_id < 0 {
-        release();
-        return;
+/// The glow at the tip of the blood mage's staff, brighter while casting.
+pub fn light(status: &GameStatus, boost: &mut Boost, seconds: f32) -> Option<PointLight> {
+    if status.player_unit < 0 {
+        return None;
     }
-    let Some(position) = staff_position(unit_id) else {
-        let _ = state::with_state(|ui| ui.staff_deferred_light = None);
-        return;
-    };
-    let boost = update_boost();
+    let position = staff_position(status.player_unit)?;
+    let boost = boost.update(status);
     let flicker = (seconds * FLICKER_RATE).sin() / core::f32::consts::PI * STATIC_FLICKER_RATIO;
     let multiplier = COLOR_MULTIPLIER * boost * (1.0 + flicker);
-    let light = params::point(
-        [position.x, position.y + HEIGHT, position.z],
-        [RED * multiplier, GREEN * multiplier, BLUE * multiplier],
-        RADIUS,
-    );
-    let deferred_light = state::DeferredPointLight::from_params(&light);
-    let _ = state::with_state(|ui| ui.staff_deferred_light = Some(deferred_light));
+    Some(PointLight {
+        position: [position.x, position.y + HEIGHT, position.z],
+        color: [RED * multiplier, GREEN * multiplier, BLUE * multiplier],
+        radius: RADIUS,
+    })
+}
+
+/// The staff light multiplier: it rises during a cast and decays back to 1.
+pub struct Boost(f32);
+
+impl Default for Boost {
+    fn default() -> Self {
+        Self(1.0)
+    }
+}
+
+impl Boost {
+    fn update(&mut self, status: &GameStatus) -> f32 {
+        if status.cast_animation_time > 0.0 {
+            let elapsed = (game::status_frame() - status.cast_start_frame) as f32;
+            let animation = status.cast_animation_time;
+            if elapsed <= animation * 0.4 {
+                self.0 = (self.0 + BOOST_RISE_FAST).min(BOOST_MAXIMUM);
+            } else if elapsed <= animation * 0.55 {
+                self.0 += BOOST_RISE_SLOW;
+            }
+        }
+        if self.0 > 1.0 {
+            self.0 = (self.0 - BOOST_DECAY).max(1.0);
+        }
+        self.0
+    }
 }
 
 const STATIC_FLICKER_RATIO: f32 = 0.5;
@@ -38,10 +60,6 @@ const BOOST_RISE_SLOW: f32 = 0.18;
 const BOOST_DECAY: f32 = 0.18;
 const STAFF_PIECE: &str = "Hand_Right";
 
-fn release() {
-    let _ = state::with_state(|ui| ui.staff_deferred_light = None);
-}
-
 fn staff_position(unit_id: i32) -> Option<spring::types::Float3> {
     // Match ui_unit_light.lua: GetUnitViewPosition is the model's rendered
     // origin, and GetUnitPiecePosition supplies the absolute piece offset.
@@ -54,23 +72,4 @@ fn staff_position(unit_id: i32) -> Option<spring::types::Float3> {
         y: unit.y + piece.y,
         z: unit.z + piece.z,
     })
-}
-
-fn update_boost() -> f32 {
-    state::with_state(|ui| {
-        if ui.cast_animation_time > 0.0 {
-            let elapsed = (ui.game_frame - ui.cast_start_frame) as f32;
-            let animation = ui.cast_animation_time;
-            if elapsed <= animation * 0.4 {
-                ui.staff_boost = (ui.staff_boost + BOOST_RISE_FAST).min(BOOST_MAXIMUM);
-            } else if elapsed <= animation * 0.55 {
-                ui.staff_boost += BOOST_RISE_SLOW;
-            }
-        }
-        if ui.staff_boost > 1.0 {
-            ui.staff_boost = (ui.staff_boost - BOOST_DECAY).max(1.0);
-        }
-        ui.staff_boost
-    })
-    .unwrap_or(1.0)
 }

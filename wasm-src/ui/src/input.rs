@@ -1,14 +1,11 @@
 use alloc::format;
+use core::cell::Cell;
 
-use crate::state;
-use crate::{cursor, hud};
+use crate::state::Global;
+use crate::{cursor, game, hud};
 
-pub fn mouse_press(x: i32, y: i32, button: i32) -> bool {
-    let _ = state::with_state(|ui| {
-        ui.mouse_x = x;
-        ui.mouse_y = y;
-    });
-    if state::with_state(|ui| ui.intro_open || ui.endgame_open).unwrap_or(false) {
+pub fn mouse_press(global: &Global, x: i32, y: i32, button: i32) -> bool {
+    if global.hud.access().modal() {
         return true;
     }
     let command = match button {
@@ -20,11 +17,7 @@ pub fn mouse_press(x: i32, y: i32, button: i32) -> bool {
     true
 }
 
-pub fn mouse_move(x: i32, y: i32) -> bool {
-    let _ = state::with_state(|ui| {
-        ui.mouse_x = x;
-        ui.mouse_y = y;
-    });
+pub fn mouse_move(_x: i32, _y: i32) -> bool {
     false
 }
 
@@ -35,40 +28,60 @@ pub fn mouse_wheel(_up: bool, _value: f32) -> bool {
     true
 }
 
-pub fn hold_mouse() {
-    if state::with_state(|ui| ui.intro_open || ui.endgame_open).unwrap_or(false) {
+/// While a button is held, keeps steering the blood mage toward the cursor,
+/// once per game frame (`last_frame` is the frame last steered on).
+pub fn hold_mouse(global: &Global, last_frame: &Cell<i32>) {
+    if global.hud.access().modal() {
         return;
     }
     let Ok(mouse) = spring::input::get_mouse_state(0) else {
         return;
     };
-    if mouse.offscreen {
-        return;
-    }
-    let x = mouse.x.round() as i32;
-    let y = mouse.y.round() as i32;
-    if mouse.left {
-        send_world_command(MOVE, x, y);
+    let command = if mouse.left {
+        MOVE
     } else if mouse.right {
-        send_world_command(ATTACK, x, y);
+        ATTACK
+    } else {
+        return;
+    };
+    let Some(ground) = global.cursor.get().ground else {
+        return;
+    };
+    let frame = game::frame();
+    if last_frame.replace(frame) != frame {
+        send_ground_command(command, ground);
     }
 }
 
-pub fn key_press(key: i32, ctrl: bool) -> bool {
+/// Samples what the cursor points at, for every widget this update.
+pub fn sample_cursor(global: &Global) {
+    let screen = cursor::screen();
+    global.cursor.set(crate::state::Cursor {
+        screen,
+        ground: screen.and_then(|(x, y)| cursor::ground_at(x, y)),
+        unit: screen.and_then(|(x, y)| cursor::unit_at(x, y)),
+    });
+}
+
+pub fn key_press(global: &Global, key: i32, ctrl: bool) -> bool {
     if ctrl && matches!(key, KEY_Q | KEY_Q_UPPER) {
         hud::exit_to_menu();
         return true;
     }
-    if state::with_state(|ui| ui.intro_open).unwrap_or(false) {
+    let (intro_open, endgame_open) = {
+        let hud = global.hud.access();
+        (hud.intro_open, hud.endgame_open)
+    };
+    if intro_open {
         if key == KEY_RETURN {
-            hud::close_intro();
+            hud::close_intro(global);
             return true;
         }
         return false;
     }
-    if state::with_state(|ui| ui.endgame_open).unwrap_or(false) {
+    if endgame_open {
         if matches!(key, KEY_RETURN | KEY_R | KEY_R_UPPER) {
-            hud::restart();
+            hud::restart(global);
         }
         return true;
     }
@@ -98,9 +111,12 @@ const KEY_R: i32 = 114;
 const KEY_R_UPPER: i32 = 82;
 
 fn send_world_command(command: &str, x: i32, y: i32) {
-    let Some(position) = ground_at(x, y) else {
-        return;
-    };
+    if let Some(position) = ground_at(x, y) {
+        send_ground_command(command, position);
+    }
+}
+
+fn send_ground_command(command: &str, position: spring::types::Float3) {
     let _ = spring::send_lua_rules_msg(&format!("{command}|{}|{}", position.x, position.z));
 }
 

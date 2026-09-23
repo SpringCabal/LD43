@@ -1,14 +1,17 @@
 use spring_addons::ui::Widget;
 
-use crate::hud;
+use crate::hud::{self, Document};
 use crate::state::Global;
 
+/// The RmlUi HUD: health, the hovered unit, the intro and end screens.
 #[derive(Default)]
-pub struct GuiHudWidget;
+pub struct GuiHudWidget {
+    document: Document,
+}
 
 impl GuiHudWidget {
     pub fn new() -> Self {
-        Self
+        Self::default()
     }
 }
 
@@ -17,32 +20,20 @@ impl Widget<Global> for GuiHudWidget {
         "GuiHud"
     }
 
-    fn update(&self, _ctx: &spring_addons::AddonContext<'_, Global>, _dt: f32) {
-        hud::initialize();
-        hud::hide_default_layout();
-        hud::apply_bindings();
-        hud::evaluate_endgame();
-    }
-}
-
-#[derive(Default)]
-pub struct GuiHudViewWidget;
-
-impl GuiHudViewWidget {
-    pub fn new() -> Self {
-        Self
-    }
-}
-
-impl Widget<Global> for GuiHudViewWidget {
-    fn name(&self) -> &'static str {
-        "GuiHudView"
-    }
-
-    fn update(&self, _ctx: &spring_addons::AddonContext<'_, Global>, _dt: f32) {
+    fn update(&self, ctx: &spring_addons::AddonContext<'_, Global>, _dt: f32) {
+        let global = ctx.global();
+        self.document.initialize(global);
+        self.document.hide_default_layout();
+        self.document.apply_bindings();
         if let Ok(geometry) = spring::display::get_view_geometry(0) {
-            hud::render(geometry.view_size_x, geometry.view_size_y);
+            global
+                .view
+                .set((geometry.view_size_x, geometry.view_size_y));
+            self.document
+                .render(geometry.view_size_x, geometry.view_size_y);
         }
-        hud::track_target();
+        self.document.show_status(global);
+        hud::evaluate_endgame(global);
+        hud::track_target(global);
     }
 }

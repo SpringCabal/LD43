@@ -1,15 +1,16 @@
 use spring_addons::ui::Widget;
 
-use crate::mapedge;
+use crate::mapedge::MapEdge;
 use crate::state::Global;
 
-/// The extended map edge, ported from `map_edge_extension.lua`.
 #[derive(Default)]
-pub struct GfxMapEdgeWidget;
+pub struct GfxMapEdgeWidget {
+    edge: MapEdge,
+}
 
 impl GfxMapEdgeWidget {
     pub fn new() -> Self {
-        Self
+        Self::default()
     }
 }
 
@@ -19,10 +20,10 @@ impl Widget<Global> for GfxMapEdgeWidget {
     }
 
     fn draw_world_pre_unit(&self, _ctx: &spring_addons::AddonContext<'_, Global>) {
-        mapedge::draw();
+        self.edge.draw();
     }
 
     fn draw_world_refraction(&self, _ctx: &spring_addons::AddonContext<'_, Global>) {
-        mapedge::draw();
+        self.edge.draw();
     }
 }

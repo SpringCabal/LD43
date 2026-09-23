@@ -1,30 +1,22 @@
 use alloc::collections::BTreeMap;
 use alloc::vec::Vec;
-use core::cell::RefCell;
 
-use crate::state;
+use super::PointLight;
 
-use super::params;
-
-pub fn update() {
+/// Replaces `lights` with one light per glowing projectile in flight.
+pub fn update(lights: &mut Vec<PointLight>, defs: &mut BTreeMap<i32, Option<DefLight>>) {
     let projectiles =
         spring::projectiles::get_all_projectiles(spring::projectiles::GetAllProjectilesOptions {
             exclude_weapon_projectiles: false,
             exclude_piece_projectiles: true,
         })
         .unwrap_or_default();
-    let mut lights: Vec<spring::lights::LightParams> = Vec::new();
-    for projectile in projectiles {
-        let Some(light) = light_for(projectile) else {
-            continue;
-        };
-        lights.push(light);
-    }
-    let deferred_lights = lights
-        .iter()
-        .map(state::DeferredPointLight::from_params)
-        .collect();
-    let _ = state::with_state(|ui| ui.projectile_deferred_lights = deferred_lights);
+    lights.clear();
+    lights.extend(
+        projectiles
+            .into_iter()
+            .filter_map(|projectile| light_for(projectile, defs)),
+    );
 }
 
 const DEFAULT_RADIUS: f32 = 100.0;
@@ -42,34 +34,23 @@ const ASSUMED_SIZE: f32 = 1.0;
 /// The radius and colour of the light a weapon def's projectiles carry, or
 /// `None` for projectiles without a light.
 #[derive(Clone, Copy)]
-struct DefLight {
+pub struct DefLight {
     radius: f32,
     color: [f32; 3],
 }
 
-thread_local! {
-    static DEF_LIGHTS: RefCell<BTreeMap<i32, Option<DefLight>>> = const {
-        RefCell::new(BTreeMap::new())
-    };
-}
-
-fn light_for(projectile_id: i32) -> Option<spring::lights::LightParams> {
+fn light_for(projectile_id: i32, defs: &mut BTreeMap<i32, Option<DefLight>>) -> Option<PointLight> {
     let weapon_def_id = spring::projectiles::get_projectile_def_id(projectile_id).ok()?;
-    let light = DEF_LIGHTS.with(|lights| lights.borrow().get(&weapon_def_id).copied());
-    let light = match light {
-        Some(light) => light,
-        None => {
-            let light = def_light(weapon_def_id);
-            DEF_LIGHTS.with(|lights| lights.borrow_mut().insert(weapon_def_id, light));
-            light
-        }
-    }?;
+    let light = *defs
+        .entry(weapon_def_id)
+        .or_insert_with(|| def_light(weapon_def_id));
+    let light = light?;
     let position = spring::projectiles::get_projectile_position(projectile_id).ok()?;
-    Some(params::point(
-        [position.x, position.y, position.z],
-        light.color,
-        light.radius,
-    ))
+    Some(PointLight {
+        position: [position.x, position.y, position.z],
+        color: light.color,
+        radius: light.radius,
+    })
 }
 
 fn def_light(weapon_def_id: i32) -> Option<DefLight> {

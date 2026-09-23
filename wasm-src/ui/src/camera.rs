@@ -1,7 +1,8 @@
-use crate::state;
+use core::cell::Cell;
 
-pub fn apply() {
-    if state::with_state(|ui| ui.camera_initialized).unwrap_or(true) {
+/// Puts the camera in its starting position, once.
+pub fn apply(initialized: &Cell<bool>) {
+    if initialized.get() {
         return;
     }
     let camera = spring::CameraState {
@@ -35,14 +36,13 @@ pub fn apply() {
         angle: ROTATION_X,
         mode: CAMERA_MODE,
     };
-    if spring::set_camera_state(camera, 0.0, 1.0, 1.0).is_ok() {
-        let _ = state::with_state(|ui| ui.camera_initialized = true);
-    }
+    initialized.set(spring::set_camera_state(camera, 0.0, 1.0, 1.0).is_ok());
 }
 
-pub fn track() {
-    let unit_id = state::with_state(|ui| ui.player_unit).unwrap_or(-1);
+/// Follows the blood mage; `tracked` is the unit the engine tracker follows.
+pub fn track(unit_id: i32, tracked: &Cell<i32>) {
     if unit_id < 0 {
+        tracked.set(-1);
         return;
     }
 
@@ -63,14 +63,13 @@ pub fn track() {
     // re-arm the native tracker whenever the controlled unit changes. The
     // target is set every frame as well (Spring.SetCameraTarget), which keeps
     // working after the engine has disabled the tracker.
-    let needs_tracker_setup = state::with_state(|ui| ui.tracked_unit != unit_id).unwrap_or(true);
-    if needs_tracker_setup {
+    if tracked.get() != unit_id {
         let _ = spring::selection::select_unit_array(&[unit_id], false);
         let _ = spring::send_commands("trackoff", "");
         let _ = spring::send_commands("track", "");
         let _ = spring::send_commands("trackmode 1", "");
         let _ = spring::selection::select_unit_array(&[], false);
-        let _ = state::with_state(|ui| ui.tracked_unit = unit_id);
+        tracked.set(unit_id);
     }
 
     let _ = spring::camera::set_camera_target(

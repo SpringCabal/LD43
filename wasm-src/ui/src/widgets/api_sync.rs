@@ -1,8 +1,10 @@
 use spring_addons::ui::Widget;
 
-use crate::hud;
 use crate::state::Global;
 
+const STATUS_PREFIX: &str = "TTLD_STATUS|";
+
+/// Receives the rules' status messages.
 #[derive(Default)]
 pub struct ApiSyncWidget;
 
@@ -17,17 +19,12 @@ impl Widget<Global> for ApiSyncWidget {
         "ApiSync"
     }
 
-    fn update(&self, _ctx: &spring_addons::AddonContext<'_, Global>, _dt: f32) {
-        let frame = crate::game::status_frame();
-        let _ = crate::state::with_state(|ui| ui.game_frame = frame);
-    }
-
-    fn recv_from_synced(&self, _ctx: &spring_addons::AddonContext<'_, Global>, message: &[u8]) {
+    fn recv_from_synced(&self, ctx: &spring_addons::AddonContext<'_, Global>, message: &[u8]) {
         let Ok(text) = core::str::from_utf8(message) else {
             return;
         };
-        if text.starts_with("TTLD_STATUS|") {
-            hud::update(text);
+        if text.starts_with(STATUS_PREFIX) {
+            ctx.global().status.access_mut().apply_message(text);
         }
     }
 }

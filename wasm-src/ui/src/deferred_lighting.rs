@@ -1,10 +1,11 @@
-use alloc::{format, vec::Vec};
-use core::cell::RefCell;
+use alloc::format;
+use alloc::string::String;
+use core::cell::{Cell, RefCell};
 
 use spring::{gfx, gl};
 
-use crate::state::{self, DeferredPointLight};
-use crate::{diagnostics, gl_uniforms};
+use crate::lights::{Lights, PointLight};
+use crate::{diagnostics, game, gl_uniforms};
 
 const VERTEX: &str = r#"
 void main(void)
@@ -51,198 +52,199 @@ struct CombineResources {
     max_brightness: i32,
 }
 
-#[derive(Clone)]
 struct Resources {
     light: LightResources,
     bright: BrightResources,
     blur_h: BlurResources,
     blur_v: BlurResources,
     combine: CombineResources,
-    screen_hdr: alloc::string::String,
-    bright_texture: alloc::string::String,
-    blur_texture: alloc::string::String,
+    screen_hdr: String,
+    bright_texture: String,
+    blur_texture: String,
     width: i32,
     height: i32,
 }
 
-thread_local! {
-    static RESOURCES: RefCell<Option<Resources>> = const { RefCell::new(None) };
-    static REPORTED: core::cell::Cell<bool> = const { core::cell::Cell::new(false) };
+/// The Lua build's deferred rendering pass: point lights composited over the
+/// rendered frame in an HDR target, then bloom.
+#[derive(Default)]
+pub struct DeferredPass {
+    resources: RefCell<Option<Resources>>,
+    reported: Cell<bool>,
 }
 
-pub fn draw(width: i32, height: i32) {
-    if width <= 1 || height <= 1 {
-        return;
-    }
-
-    let Some(resources) = resources(width, height) else {
-        return;
-    };
-    let lights = lights();
-
-    if !REPORTED.get() {
-        let (game_frame, player, staff, mouse, projectiles) = state::with_state(|ui| {
-            (
-                ui.game_frame,
-                ui.player_unit,
-                ui.staff_deferred_light.is_some(),
-                ui.mouse_deferred_light.is_some(),
-                ui.projectile_deferred_lights.len(),
-            )
-        })
-        .unwrap_or((0, -1, false, false, 0));
-        if game_frame > 0 {
-            diagnostics::info(&format!(
-                "deferred light pass active: {} lights at game frame {}, player={}, staff={}, mouse={}, projectiles={}",
-                lights.len(),
-                game_frame,
-                player,
-                staff,
-                mouse,
-                projectiles
-            ));
-            REPORTED.set(true);
+impl DeferredPass {
+    pub fn draw(&self, lights: &Lights, player_unit: i32, width: i32, height: i32) {
+        if width <= 1 || height <= 1 {
+            return;
         }
-    }
-
-    // Lua's deferred widget first copies the rendered frame to an HDR target,
-    // composites the lights there, then tone-maps it back to the screen. The
-    // HDR target is important: drawing the point lights directly into the
-    // 8-bit backbuffer loses the bright red/yellow pools that distinguish the
-    // original game.
-    if gfx::copy_to_texture(&resources.screen_hdr, 0, 0, 0, 0, width, height, 0, 0).is_err() {
-        return;
-    }
-
-    if !lights.is_empty() {
-        let Ok(camera) = spring::camera::get_camera_position(0) else {
+        if !self.ensure_resources(width, height) {
+            return;
+        }
+        let resources = self.resources.borrow();
+        let Some(resources) = resources.as_ref() else {
             return;
         };
-        let Some(view_projection_inverse) = view_projection_inverse() else {
+        self.report(lights, player_unit);
+
+        // Lua's deferred widget first copies the rendered frame to an HDR
+        // target, composites the lights there, then tone-maps it back to the
+        // screen. The HDR target is important: drawing the point lights
+        // directly into the 8-bit backbuffer loses the bright red/yellow pools
+        // that distinguish the original game.
+        if gfx::copy_to_texture(&resources.screen_hdr, 0, 0, 0, 0, width, height, 0, 0).is_err() {
             return;
-        };
-        let screen_ratio = height as f32 / width as f32;
-        let _ = gfx::render_to_texture(&resources.screen_hdr, || {
-            draw_light_pass(
-                &resources.light,
-                &lights,
-                &camera,
-                width,
-                height,
-                screen_ratio,
-                &view_projection_inverse,
-            );
-        });
+        }
+
+        if lights.iter().next().is_some() {
+            let Ok(camera) = spring::camera::get_camera_position(0) else {
+                return;
+            };
+            let Some(view_projection_inverse) = view_projection_inverse() else {
+                return;
+            };
+            let screen_ratio = height as f32 / width as f32;
+            let _ = gfx::render_to_texture(&resources.screen_hdr, || {
+                draw_light_pass(
+                    &resources.light,
+                    lights,
+                    &camera,
+                    width,
+                    height,
+                    screen_ratio,
+                    &view_projection_inverse,
+                );
+            });
+        }
+
+        draw_bloom(resources);
     }
 
-    draw_bloom(&resources);
-}
-
-pub fn shutdown() {
-    RESOURCES.with(|slot| {
-        if let Some(resources) = slot.borrow_mut().take() {
+    pub fn shutdown(&self) {
+        if let Some(resources) = self.resources.borrow_mut().take() {
             destroy_resources(&resources);
         }
-    });
-    REPORTED.set(false);
-}
+        self.reported.set(false);
+    }
 
-fn resources(width: i32, height: i32) -> Option<Resources> {
-    RESOURCES.with(|slot| {
-        if let Some(resources) = slot.borrow().as_ref()
-            && resources.width == width
-            && resources.height == height
-        {
-            return Some(resources.clone());
+    fn report(&self, lights: &Lights, player_unit: i32) {
+        let frame = game::status_frame();
+        if self.reported.get() || frame <= 0 {
+            return;
         }
+        let (staff, mouse, projectiles) = lights.summary();
+        diagnostics::info(&format!(
+            "deferred light pass active: {} lights at game frame {}, player={}, staff={}, mouse={}, projectiles={}",
+            lights.len(),
+            frame,
+            player_unit,
+            staff,
+            mouse,
+            projectiles
+        ));
+        self.reported.set(true);
+    }
 
-        if let Some(old) = slot.borrow_mut().take() {
+    /// Creates the shaders and targets for this view size; false if they
+    /// cannot be.
+    fn ensure_resources(&self, width: i32, height: i32) -> bool {
+        let mut slot = self.resources.borrow_mut();
+        if slot
+            .as_ref()
+            .is_some_and(|resources| resources.width == width && resources.height == height)
+        {
+            return true;
+        }
+        if let Some(old) = slot.take() {
             destroy_resources(&old);
         }
+        *slot = create_resources(width, height);
+        slot.is_some()
+    }
+}
 
-        let clip_control = gfx::has_extension("GL_ARB_clip_control").unwrap_or(false);
-        let definitions = if clip_control {
-            "#version 120\n#define BEAM_LIGHT 0\n#define CLIP_CONTROL 1\n"
-        } else {
-            "#version 120\n#define BEAM_LIGHT 0\n#define CLIP_CONTROL 0\n"
-        };
-        let light_shader = gfx::create_shader(gfx::ShaderCreateParams {
-            definitions,
-            vertex: VERTEX,
-            fragment: FRAGMENT,
-            ..Default::default()
-        })
-        .ok()?
-        .shader_id;
-        let light = LightResources {
-            shader: light_shader,
-            light_position: gl_uniforms::location(light_shader, "lightpos")?,
-            light_color: gl_uniforms::location(light_shader, "lightcolor")?,
-            eye_position: gl_uniforms::location(light_shader, "eyePos")?,
-            view_projection_inverse: gl_uniforms::location(light_shader, "viewProjectionInv")?,
-        };
-
-        let _ = gfx::use_shader(light_shader);
-        let _ = gl_uniforms::set_int(light_shader, "modelnormals", 0);
-        let _ = gl_uniforms::set_int(light_shader, "modeldepths", 1);
-        let _ = gl_uniforms::set_int(light_shader, "mapnormals", 2);
-        let _ = gl_uniforms::set_int(light_shader, "mapdepths", 3);
-        let _ = gl_uniforms::set_int(light_shader, "modelExtra", 4);
-        let _ = gfx::use_shader(0);
-
-        let screen_hdr = create_texture(width, height, gl::RGBA32F_ARB, true)?;
-        let bright_texture = create_texture(width / 2, height / 2, gl::RGBA8, true)?;
-        let blur_texture = create_texture(width / 2, height / 2, gl::RGBA8, true)?;
-
-        let bright_shader = effect_shader(BLOOM_BRIGHT_FRAGMENT)?;
-        let bright = BrightResources {
-            shader: bright_shader,
-            illumination_threshold: gl_uniforms::location(bright_shader, "illuminationThreshold")?,
-        };
-        let blur_h_shader = effect_shader(BLOOM_BLUR_H_FRAGMENT)?;
-        let blur_h = BlurResources {
-            shader: blur_h_shader,
-            inverse_resolution: gl_uniforms::location(blur_h_shader, "inverseRX")?,
-            kernel_radius: gl_uniforms::location(blur_h_shader, "fragKernelRadius")?,
-        };
-        let blur_v_shader = effect_shader(BLOOM_BLUR_V_FRAGMENT)?;
-        let blur_v = BlurResources {
-            shader: blur_v_shader,
-            inverse_resolution: gl_uniforms::location(blur_v_shader, "inverseRY")?,
-            kernel_radius: gl_uniforms::location(blur_v_shader, "fragKernelRadius")?,
-        };
-        let combine_shader = effect_shader(BLOOM_COMBINE_FRAGMENT)?;
-        let combine = CombineResources {
-            shader: combine_shader,
-            max_brightness: gl_uniforms::location(combine_shader, "fragMaxBrightness")?,
-        };
-
-        let _ = gfx::use_shader(bright_shader);
-        let _ = gl_uniforms::set_int(bright_shader, "texture0", 0);
-        let _ = gfx::use_shader(blur_h_shader);
-        let _ = gl_uniforms::set_int(blur_h_shader, "texture0", 0);
-        let _ = gfx::use_shader(blur_v_shader);
-        let _ = gl_uniforms::set_int(blur_v_shader, "texture0", 0);
-        let _ = gfx::use_shader(combine_shader);
-        let _ = gl_uniforms::set_int(combine_shader, "texture0", 0);
-        let _ = gl_uniforms::set_int(combine_shader, "texture1", 1);
-        let _ = gfx::use_shader(0);
-
-        let resources = Resources {
-            light,
-            bright,
-            blur_h,
-            blur_v,
-            combine,
-            screen_hdr,
-            bright_texture,
-            blur_texture,
-            width,
-            height,
-        };
-        *slot.borrow_mut() = Some(resources);
-        slot.borrow().clone()
+fn create_resources(width: i32, height: i32) -> Option<Resources> {
+    let clip_control = gfx::has_extension("GL_ARB_clip_control").unwrap_or(false);
+    let definitions = if clip_control {
+        "#version 120\n#define BEAM_LIGHT 0\n#define CLIP_CONTROL 1\n"
+    } else {
+        "#version 120\n#define BEAM_LIGHT 0\n#define CLIP_CONTROL 0\n"
+    };
+    let light_shader = gfx::create_shader(gfx::ShaderCreateParams {
+        definitions,
+        vertex: VERTEX,
+        fragment: FRAGMENT,
+        ..Default::default()
     })
+    .ok()?
+    .shader_id;
+    let light = LightResources {
+        shader: light_shader,
+        light_position: gl_uniforms::location(light_shader, "lightpos")?,
+        light_color: gl_uniforms::location(light_shader, "lightcolor")?,
+        eye_position: gl_uniforms::location(light_shader, "eyePos")?,
+        view_projection_inverse: gl_uniforms::location(light_shader, "viewProjectionInv")?,
+    };
+
+    let _ = gfx::use_shader(light_shader);
+    let _ = gl_uniforms::set_int(light_shader, "modelnormals", 0);
+    let _ = gl_uniforms::set_int(light_shader, "modeldepths", 1);
+    let _ = gl_uniforms::set_int(light_shader, "mapnormals", 2);
+    let _ = gl_uniforms::set_int(light_shader, "mapdepths", 3);
+    let _ = gl_uniforms::set_int(light_shader, "modelExtra", 4);
+    let _ = gfx::use_shader(0);
+
+    let screen_hdr = create_texture(width, height, gl::RGBA32F_ARB, true)?;
+    let bright_texture = create_texture(width / 2, height / 2, gl::RGBA8, true)?;
+    let blur_texture = create_texture(width / 2, height / 2, gl::RGBA8, true)?;
+
+    let bright_shader = effect_shader(BLOOM_BRIGHT_FRAGMENT)?;
+    let bright = BrightResources {
+        shader: bright_shader,
+        illumination_threshold: gl_uniforms::location(bright_shader, "illuminationThreshold")?,
+    };
+    let blur_h_shader = effect_shader(BLOOM_BLUR_H_FRAGMENT)?;
+    let blur_h = BlurResources {
+        shader: blur_h_shader,
+        inverse_resolution: gl_uniforms::location(blur_h_shader, "inverseRX")?,
+        kernel_radius: gl_uniforms::location(blur_h_shader, "fragKernelRadius")?,
+    };
+    let blur_v_shader = effect_shader(BLOOM_BLUR_V_FRAGMENT)?;
+    let blur_v = BlurResources {
+        shader: blur_v_shader,
+        inverse_resolution: gl_uniforms::location(blur_v_shader, "inverseRY")?,
+        kernel_radius: gl_uniforms::location(blur_v_shader, "fragKernelRadius")?,
+    };
+    let combine_shader = effect_shader(BLOOM_COMBINE_FRAGMENT)?;
+    let combine = CombineResources {
+        shader: combine_shader,
+        max_brightness: gl_uniforms::location(combine_shader, "fragMaxBrightness")?,
+    };
+
+    let _ = gfx::use_shader(bright_shader);
+    let _ = gl_uniforms::set_int(bright_shader, "texture0", 0);
+    let _ = gfx::use_shader(blur_h_shader);
+    let _ = gl_uniforms::set_int(blur_h_shader, "texture0", 0);
+    let _ = gfx::use_shader(blur_v_shader);
+    let _ = gl_uniforms::set_int(blur_v_shader, "texture0", 0);
+    let _ = gfx::use_shader(combine_shader);
+    let _ = gl_uniforms::set_int(combine_shader, "texture0", 0);
+    let _ = gl_uniforms::set_int(combine_shader, "texture1", 1);
+    let _ = gfx::use_shader(0);
+
+    let resources = Resources {
+        light,
+        bright,
+        blur_h,
+        blur_v,
+        combine,
+        screen_hdr,
+        bright_texture,
+        blur_texture,
+        width,
+        height,
+    };
+    Some(resources)
 }
 
 fn create_texture(
@@ -296,21 +298,6 @@ fn destroy_resources(resources: &Resources) {
     let _ = gfx::delete_texture_fbo(&resources.blur_texture);
 }
 
-fn lights() -> Vec<DeferredPointLight> {
-    state::with_state(|ui| {
-        let mut lights = ui.house_deferred_lights.clone();
-        if let Some(light) = ui.staff_deferred_light {
-            lights.push(light);
-        }
-        if let Some(light) = ui.mouse_deferred_light {
-            lights.push(light);
-        }
-        lights.extend_from_slice(&ui.projectile_deferred_lights);
-        lights
-    })
-    .unwrap_or_default()
-}
-
 fn bind_gbuffers() -> bool {
     let names = [
         "$model_gbuffer_normtex",
@@ -342,7 +329,7 @@ fn unbind_gbuffers() {
 
 fn draw_light_pass(
     resources: &LightResources,
-    lights: &[DeferredPointLight],
+    lights: &Lights,
     camera: &spring::types::Float3,
     width: i32,
     height: i32,
@@ -363,7 +350,7 @@ fn draw_light_pass(
         false,
     );
 
-    for light in lights {
+    for light in lights.iter() {
         draw_point_light(resources, light, camera, width, height, screen_ratio);
     }
 
@@ -374,7 +361,7 @@ fn draw_light_pass(
 
 fn draw_point_light(
     resources: &LightResources,
-    light: &DeferredPointLight,
+    light: &PointLight,
     camera: &spring::types::Float3,
     width: i32,
     height: i32,

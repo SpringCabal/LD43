@@ -14,13 +14,14 @@ const MINIMAP_ALPHA: f32 = 1.0;
 const VIEWPORT_WORLD_X: f32 = 8000.0 - 3300.0;
 const VIEWPORT_WORLD_Z: f32 = 8100.0 - 3400.0;
 
-thread_local! {
-    static CONFIGURED: Cell<bool> = const { Cell::new(false) };
-    static SLAVED: Cell<bool> = const { Cell::new(false) };
-    static RESOURCES: RefCell<Option<Resources>> = const { RefCell::new(None) };
+/// The player-centred minimap.
+#[derive(Default)]
+pub struct Minimap {
+    configured: Cell<bool>,
+    slaved: Cell<bool>,
+    resources: RefCell<Option<Resources>>,
 }
 
-#[derive(Clone)]
 struct Resources {
     source: String,
     fbo: u32,
@@ -48,91 +49,87 @@ struct Viewport {
 /// The map itself remains engine-owned: the source pass calls the native
 /// minimap renderer in the same FBO/configuration used by the Lua widget. The
 /// second pass is the Lua widget's crop, scale and edge-fade shader.
-pub fn draw(width: i32, height: i32) {
-    if width <= 0 || height <= 0 {
-        return;
-    }
-
-    configure(width, height);
-
-    if !SLAVED.get() {
-        if gfx::slave_mini_map(true).is_err() {
+impl Minimap {
+    pub fn draw(&self, player_unit: i32, width: i32, height: i32) {
+        if width <= 0 || height <= 0 {
             return;
         }
-        SLAVED.set(true);
+
+        if !self.configured.replace(true) {
+            configure(height);
+        }
+
+        if !self.slaved.get() {
+            if gfx::slave_mini_map(true).is_err() {
+                return;
+            }
+            self.slaved.set(true);
+        }
+
+        // Match ui_minimap_viewport.lua: the native source draw and the screen
+        // quad both run inside one GL attribute/matrix scope.  In particular,
+        // ActiveFBO deliberately preserves the current matrices.
+        push_lua_state();
+        self.ensure_resources(width, height);
+        if let Some(resources) = self.resources.borrow().as_ref() {
+            draw_composed(resources, player_unit);
+        } else {
+            // Match the Lua widget's shader-unavailable fallback. Lua omits the
+            // optional argument, whose API default is true (the default minimap
+            // transform).
+            let _ = gfx::draw_mini_map(true);
+        }
+        pop_lua_state();
     }
 
-    // Match ui_minimap_viewport.lua: the native source draw and the screen
-    // quad both run inside one GL attribute/matrix scope.  In particular,
-    // ActiveFBO deliberately preserves the current matrices.
-    push_lua_state();
-    if let Some(resources) = resources(width, height) {
-        draw_composed(&resources);
-    } else {
-        // Match the Lua widget's shader-unavailable fallback. Lua omits the
-        // optional argument, whose API default is true (the default minimap
-        // transform).
-        let _ = gfx::draw_mini_map(true);
-    }
-    pop_lua_state();
-}
-
-pub fn shutdown() {
-    if SLAVED.get() {
-        let _ = gfx::slave_mini_map(false);
-        SLAVED.set(false);
-    }
-    RESOURCES.with(|cell| {
-        if let Some(resources) = cell.borrow_mut().take() {
+    pub fn shutdown(&self) {
+        if self.slaved.replace(false) {
+            let _ = gfx::slave_mini_map(false);
+        }
+        if let Some(resources) = self.resources.borrow_mut().take() {
             destroy(resources);
         }
-    });
-    CONFIGURED.set(false);
-}
-
-fn configure(_width: i32, height: i32) {
-    if !CONFIGURED.get() {
-        // These are the settings used by the original Lua widget. Applying
-        // them once avoids enqueueing the same engine commands every frame.
-        if let (Ok(geometry), Ok(view)) = (
-            spring::display::get_mini_map_geometry(0),
-            spring::display::get_view_geometry(0),
-        ) {
-            // GetMiniMapGeometry exposes the engine's bottom-left GL
-            // coordinates; the console command expects top-left config
-            // coordinates, just like the Lua widget's config string.
-            let top_y = view.view_size_y - geometry.pos_y - geometry.size_y;
-            let command = format!(
-                "minimap geo {} {} {} {}",
-                geometry.pos_x, top_y, geometry.size_x, geometry.size_y
-            );
-            let _ = spring::send_commands(&command, "");
-        }
-        let _ = spring::send_commands("minimap simplecolors 1", "");
-        let _ = spring::send_commands("minimap unitexp 0.3", "");
-        let _ = spring::send_commands("minimap unitsize 1.2", "");
-        let _ = spring::send_commands("minimap fullproxy 0", "");
-        let _ = gfx::config_mini_map(0, height / 2, SOURCE_SIZE, SOURCE_SIZE);
-        CONFIGURED.set(true);
+        self.configured.set(false);
     }
-}
 
-fn resources(width: i32, height: i32) -> Option<Resources> {
-    RESOURCES.with(|cell| {
-        let mut slot = cell.borrow_mut();
+    fn ensure_resources(&self, width: i32, height: i32) {
+        let mut slot = self.resources.borrow_mut();
         if slot
             .as_ref()
             .is_some_and(|resources| resources.width == width && resources.height == height)
         {
-            return slot.clone();
+            return;
         }
         if let Some(old) = slot.take() {
             destroy(old);
         }
-        let created = create_resources(width, height);
-        *slot = created.clone();
-        created
-    })
+        *slot = create_resources(width, height);
+    }
+}
+
+/// Applies the Lua widget's minimap settings.
+fn configure(height: i32) {
+    // Applied once rather than every frame, so the commands aren't queued
+    // over and over.
+    if let (Ok(geometry), Ok(view)) = (
+        spring::display::get_mini_map_geometry(0),
+        spring::display::get_view_geometry(0),
+    ) {
+        // GetMiniMapGeometry exposes the engine's bottom-left GL
+        // coordinates; the console command expects top-left config
+        // coordinates, just like the Lua widget's config string.
+        let top_y = view.view_size_y - geometry.pos_y - geometry.size_y;
+        let command = format!(
+            "minimap geo {} {} {} {}",
+            geometry.pos_x, top_y, geometry.size_x, geometry.size_y
+        );
+        let _ = spring::send_commands(&command, "");
+    }
+    let _ = spring::send_commands("minimap simplecolors 1", "");
+    let _ = spring::send_commands("minimap unitexp 0.3", "");
+    let _ = spring::send_commands("minimap unitsize 1.2", "");
+    let _ = spring::send_commands("minimap fullproxy 0", "");
+    let _ = gfx::config_mini_map(0, height / 2, SOURCE_SIZE, SOURCE_SIZE);
 }
 
 fn create_resources(width: i32, height: i32) -> Option<Resources> {
@@ -196,7 +193,7 @@ fn destroy(resources: Resources) {
     let _ = gfx::delete_texture_fbo(&resources.source);
 }
 
-fn draw_composed(resources: &Resources) {
+fn draw_composed(resources: &Resources, player_unit: i32) {
     // Lua's ActiveFBO call leaves the current matrices intact, so identities
     // must be false here. Its DrawMiniMap() call also uses the configured
     // geometry (false), not the transformed boolean path.
@@ -207,7 +204,7 @@ fn draw_composed(resources: &Resources) {
     let Some(map) = spring::game::get_game_map_info(0).ok() else {
         return;
     };
-    let viewport = player_viewport(map.map_size_x as f32, map.map_size_z as f32);
+    let viewport = player_viewport(player_unit, map.map_size_x as f32, map.map_size_z as f32);
     let Some(geometry) = spring::display::get_mini_map_geometry(0).ok() else {
         return;
     };
@@ -264,8 +261,7 @@ fn draw_composed(resources: &Resources) {
     let _ = gfx::blending(false);
 }
 
-fn player_viewport(map_size_x: f32, map_size_z: f32) -> Viewport {
-    let unit_id = crate::state::with_state(|ui| ui.player_unit).unwrap_or(-1);
+fn player_viewport(unit_id: i32, map_size_x: f32, map_size_z: f32) -> Viewport {
     let Ok(position) = spring::units_info::get_unit_position(
         unit_id,
         spring::units_info::GetUnitPositionOptions {

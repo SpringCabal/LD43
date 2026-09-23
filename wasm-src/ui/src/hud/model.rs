@@ -1,4 +1,4 @@
-use crate::state::HudBindings;
+use crate::state::{Global, HudBindings};
 
 pub fn create(context: u64) -> Option<HudBindings> {
     let model = spring::context_create_data_model(context, "ttld").ok()?;
@@ -6,9 +6,9 @@ pub fn create(context: u64) -> Option<HudBindings> {
         return None;
     }
     let model = model.data_model_handle;
-    bind_event(model, "introPlay", |_| super::close_intro());
+    bind_event(model, "introPlay", super::close_intro);
     bind_event(model, "introExit", |_| exit_to_menu());
-    bind_event(model, "endgameRestart", |_| restart());
+    bind_event(model, "endgameRestart", restart);
     bind_event(model, "endgameExit", |_| exit_to_menu());
     Some(HudBindings {
         health: bind_int(model, "health", 0)?,
@@ -55,7 +55,7 @@ pub fn set_string(handle: u64, value: &str) {
     }
 }
 
-fn bind_event(model: u64, name: &str, handler: impl FnMut(&crate::state::Global) + 'static) {
+fn bind_event(model: u64, name: &str, handler: impl FnMut(&Global) + 'static) {
     let callback = crate::register_callback(handler);
     let bound = spring::data_model_bind_event(model, name, callback, &[])
         .is_ok_and(|registration| registration.success);
@@ -69,11 +69,12 @@ pub fn exit_to_menu() {
     let _ = spring::send_commands("reloadforce", "");
 }
 
-pub fn restart() {
+/// Restarts the game by reloading the rules.
+pub fn restart(global: &Global) {
     let _ = spring::send_commands("cheat 1", "");
     let _ = spring::send_commands("luarules reload", "");
     let _ = spring::send_commands("cheat 0", "");
-    super::endgame::close_endgame();
+    super::endgame::close_endgame(global);
 }
 
 fn bind_int(model: u64, name: &str, initial: i32) -> Option<u64> {

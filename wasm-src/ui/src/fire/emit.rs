@@ -1,33 +1,27 @@
 use alloc::vec::Vec;
 
 use crate::random::{next, unit_float};
-use crate::state;
 
-use super::particles::{self, Particle};
+use super::particles::{self, Field, Particle};
 
-pub fn update(delta_seconds: f32) {
-    let frame = state::with_state(|ui| ui.game_frame).unwrap_or(0);
-    if frame != state::with_state(|ui| ui.fire_frame).unwrap_or(frame) {
-        let _ = state::with_state(|ui| ui.fire_frame = frame);
-        if frame % CHECK_INTERVAL == 0 {
-            emit(frame);
-        }
-    }
-    let _ = state::with_state(|ui| ui.fire.advance(delta_seconds));
-}
-
-const CHECK_INTERVAL: i32 = 6;
 const WIND_SCALE: f32 = 0.09;
 const DISC_RADIUS_SCALE: f32 = 0.6;
 const SIZE_SCALE: f32 = 0.35;
 const EMIT_CHANCE_RANGE: i32 = 400;
 
-fn emit(frame: i32) {
-    let burning = burning_units();
+/// Starts flames on some of the burning houses; `frame` seeds the choice.
+pub fn emit(field: &mut Field, houses: &[i32], frame: i32) {
+    let burning: Vec<i32> = houses
+        .iter()
+        .copied()
+        .filter(|unit_id| {
+            spring::get_unit_rules_param_f32(*unit_id, "on_fire").unwrap_or(0.0) >= 0.5
+        })
+        .collect();
     if burning.is_empty() {
         return;
     }
-    apply_wind();
+    apply_wind(field);
     let count = burning.len() as i32;
     let mut seed = frame as u64;
     for unit_id in burning {
@@ -49,29 +43,19 @@ fn emit(frame: i32) {
         };
         for _ in 0..particles::PARTICLES_PER_EMIT {
             seed = next(seed);
-            spawn(position, radius, seed);
+            spawn(field, position, radius, seed);
         }
     }
 }
 
-fn burning_units() -> Vec<i32> {
-    spring::get_all_units()
-        .unwrap_or_default()
-        .into_iter()
-        .filter(|unit_id| {
-            spring::get_unit_rules_param_f32(*unit_id, "on_fire").unwrap_or(0.0) >= 0.5
-        })
-        .collect()
-}
-
-fn apply_wind() {
+fn apply_wind(field: &mut Field) {
     let Ok(wind) = spring::game::get_wind(0) else {
         return;
     };
-    let _ = state::with_state(|ui| ui.fire.set_force(0.0, wind.current * WIND_SCALE + 3.0, 0.0));
+    field.set_force(0.0, wind.current * WIND_SCALE + 3.0, 0.0);
 }
 
-fn spawn(position: spring::types::Float3, radius: f32, seed: u64) {
+fn spawn(field: &mut Field, position: spring::types::Float3, radius: f32, seed: u64) {
     let alpha = unit_float(next(seed)) * core::f32::consts::TAU;
     let disc = unit_float(next(next(seed))) * DISC_RADIUS_SCALE * radius;
     let emit_angle = unit_float(next(next(next(seed))))
@@ -95,5 +79,5 @@ fn spawn(position: spring::types::Float3, radius: f32, seed: u64) {
         rotation_speed: particles::ROTATION_SPEED
             + unit_float(next(seed.wrapping_add(23))) * particles::ROTATION_SPEED_SPREAD,
     };
-    let _ = state::with_state(|ui| ui.fire.spawn(particle));
+    field.spawn(particle);
 }

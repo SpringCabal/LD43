@@ -22,8 +22,8 @@ pub struct Field {
     force_z: f32,
 }
 
-impl Field {
-    pub fn new() -> Self {
+impl Default for Field {
+    fn default() -> Self {
         Self {
             particles: Vec::new(),
             force_x: 0.0,
@@ -31,7 +31,9 @@ impl Field {
             force_z: 0.0,
         }
     }
+}
 
+impl Field {
     pub fn set_force(&mut self, x: f32, y: f32, z: f32) {
         self.force_x = x;
         self.force_y = y;

@@ -1,7 +1,6 @@
 use spring_addons::ui::Widget;
 
 use crate::hud;
-use crate::state;
 use crate::state::Global;
 
 #[derive(Default)]
@@ -23,11 +22,11 @@ impl Widget<Global> for DbgE2eWidget {
         "DbgE2e"
     }
 
-    fn update(&self, _ctx: &spring_addons::AddonContext<'_, Global>, _dt: f32) {
+    fn update(&self, ctx: &spring_addons::AddonContext<'_, Global>, _dt: f32) {
         let tick = self.ticks.get();
         self.ticks.set(tick + 1);
         match tick {
-            10 => hud::close_intro(),
+            10 => hud::close_intro(ctx.global()),
             11 => screenshot("leader_render_baseline"),
             12 => {
                 // Spawn a stationary boss/normal-ork pair for the pixel-level
@@ -108,13 +107,17 @@ impl Widget<Global> for DbgE2eWidget {
     }
 }
 
+fn player_unit() -> i32 {
+    crate::with_global(|global| global.status.access().player_unit)
+}
+
 fn screenshot(label: &str) {
     let _ = spring::echo(&alloc::format!("TTLD E2E screenshot {label}"), "");
     let _ = spring::send_commands("screenshot", "");
 }
 
 fn report_leader_fixture() {
-    let player_id = state::with_state(|ui| ui.player_unit).unwrap_or(-1);
+    let player_id = player_unit();
     let Some(player) = unit_position(player_id) else {
         return;
     };
@@ -164,7 +167,7 @@ fn unit_position(unit_id: i32) -> Option<spring::types::Float3> {
 }
 
 fn send_spell(index: i32, z_offset: f32) {
-    let unit_id = state::with_state(|ui| ui.player_unit).unwrap_or(-1);
+    let unit_id = player_unit();
     if let Ok(position) = spring::units_info::get_unit_position(
         unit_id,
         spring::units_info::GetUnitPositionOptions {
@@ -190,7 +193,7 @@ fn send_spell(index: i32, z_offset: f32) {
 }
 
 fn move_player(x_offset: f32, z_offset: f32) {
-    let unit_id = state::with_state(|ui| ui.player_unit).unwrap_or(-1);
+    let unit_id = player_unit();
     let Ok(position) = spring::units_info::get_unit_position(
         unit_id,
         spring::units_info::GetUnitPositionOptions {
@@ -209,7 +212,7 @@ fn move_player(x_offset: f32, z_offset: f32) {
 }
 
 fn report_tracking(label: &str) {
-    let unit_id = state::with_state(|ui| ui.player_unit).unwrap_or(-1);
+    let unit_id = player_unit();
     let Ok(unit) = spring::units_info::get_unit_position(
         unit_id,
         spring::units_info::GetUnitPositionOptions {
@@ -259,7 +262,7 @@ fn report_wheel_capture() {
 
 impl DbgE2eWidget {
     fn remember_poultice_target(&self) {
-        let unit_id = state::with_state(|ui| ui.player_unit).unwrap_or(-1);
+        let unit_id = player_unit();
         let Ok(origin) = spring::units_info::get_unit_position(
             unit_id,
             spring::units_info::GetUnitPositionOptions {
@@ -362,8 +365,7 @@ fn hover_fixture(label: &str, def_name: &str) {
         );
         return;
     };
-    let Some(player) = state::with_state(|ui| ui.player_unit).filter(|unit_id| *unit_id >= 0)
-    else {
+    let Some(player) = Some(player_unit()).filter(|unit_id| *unit_id >= 0) else {
         return;
     };
     let Some(player_position) = unit_position(player) else {
@@ -398,7 +400,7 @@ fn hover_fixture(label: &str, def_name: &str) {
     let Ok(screen) = spring::camera::world_to_screen_coords(position) else {
         return;
     };
-    let height = state::with_state(|ui| ui.view_height).unwrap_or(0);
+    let height = crate::with_global(|global| global.view.get().1);
     if height <= 1 {
         return;
     }

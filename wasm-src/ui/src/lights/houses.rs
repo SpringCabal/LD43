@@ -3,20 +3,15 @@ use alloc::vec::Vec;
 
 use crate::diagnostics;
 use crate::random::{next, unit_float};
-use crate::state;
 
-use super::params;
+use super::PointLight;
 
-pub fn place() {
-    if state::with_state(|ui| ui.house_lights_placed).unwrap_or(true) {
-        return;
-    }
-    let Some(house_def_id) = spring::get_unit_def_id_by_name(HOUSE).ok() else {
-        return;
-    };
+/// Lights some of the windows of every house, once there are houses.
+pub fn place() -> Option<Vec<PointLight>> {
+    let house_def_id = spring::get_unit_def_id_by_name(HOUSE).ok()?;
     let houses = houses_of(house_def_id);
     if houses.is_empty() {
-        return;
+        return None;
     }
     let mut placed = 0;
     let mut seed = SEED;
@@ -37,25 +32,21 @@ pub fn place() {
                 if unit_float(seed) <= LIGHT_CHANCE {
                     continue;
                 }
-                let light = params::point(
-                    [position.x + dx, position.y + HEIGHT, position.z + dz],
-                    [
+                deferred_lights.push(PointLight {
+                    position: [position.x + dx, position.y + HEIGHT, position.z + dz],
+                    color: [
                         RED * COLOR_MULTIPLIER,
                         GREEN * COLOR_MULTIPLIER,
                         BLUE * COLOR_MULTIPLIER,
                     ],
-                    RADIUS,
-                );
-                deferred_lights.push(state::DeferredPointLight::from_params(&light));
+                    radius: RADIUS,
+                });
                 placed += 1;
             }
         }
     }
-    let _ = state::with_state(|ui| {
-        ui.house_lights_placed = true;
-        ui.house_deferred_lights = deferred_lights;
-    });
     diagnostics::info(&format!("{placed} house lights placed"));
+    Some(deferred_lights)
 }
 
 const HOUSE: &str = "house";

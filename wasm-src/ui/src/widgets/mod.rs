@@ -20,7 +20,7 @@ pub use gfx_highlight::GfxHighlightWidget;
 pub use gfx_lighting::GfxLightingWidget;
 pub use gfx_mapedge::GfxMapEdgeWidget;
 pub use gui_camera::GuiCameraWidget;
-pub use gui_hud::{GuiHudViewWidget, GuiHudWidget};
+pub use gui_hud::GuiHudWidget;
 pub use gui_input::GuiInputWidget;
 pub use gui_minimap::GuiMinimapWidget;
 pub use setup::setup;

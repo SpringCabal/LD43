@@ -1,18 +1,14 @@
-use crate::{cursor, state};
+use spring::types::Float3;
 
-use super::params;
+use super::PointLight;
 
-pub fn update() {
-    let Some(position) = cursor::screen().and_then(|(x, y)| cursor::ground_at(x, y)) else {
-        return;
-    };
-    let light = params::point(
-        [position.x, position.y + HEIGHT, position.z],
-        [RED, GREEN, BLUE],
-        RADIUS,
-    );
-    let deferred_light = state::DeferredPointLight::from_params(&light);
-    let _ = state::with_state(|ui| ui.mouse_deferred_light = Some(deferred_light));
+/// The light that follows the cursor over the ground.
+pub fn light(ground: Float3) -> PointLight {
+    PointLight {
+        position: [ground.x, ground.y + HEIGHT, ground.z],
+        color: [RED, GREEN, BLUE],
+        radius: RADIUS,
+    }
 }
 
 const HEIGHT: f32 = 100.0;

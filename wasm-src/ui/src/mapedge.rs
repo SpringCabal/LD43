@@ -1,11 +1,51 @@
+use core::cell::Cell;
+
 use spring::gl;
 
-use crate::{gl_uniforms, state};
+use crate::gl_uniforms;
 
-pub fn draw() {
-    let Some((shader_id, list_id)) = resources() else {
-        return;
-    };
+/// The extended map edge, ported from `map_edge_extension.lua`: the map is
+/// mirrored around its borders.
+#[derive(Default)]
+pub struct MapEdge {
+    resources: Cell<Option<Resources>>,
+    setup_failed: Cell<bool>,
+}
+
+#[derive(Clone, Copy)]
+struct Resources {
+    shader: u32,
+    list: u32,
+    uniforms: Uniforms,
+}
+
+impl MapEdge {
+    pub fn draw(&self) {
+        if let Some(resources) = self.resources() {
+            draw(resources);
+        }
+    }
+
+    fn resources(&self) -> Option<Resources> {
+        if let Some(resources) = self.resources.get() {
+            return Some(resources);
+        }
+        if self.setup_failed.get() {
+            return None;
+        }
+        let resources = create();
+        self.resources.set(resources);
+        self.setup_failed.set(resources.is_none());
+        resources
+    }
+}
+
+fn draw(resources: Resources) {
+    let Resources {
+        shader: shader_id,
+        list: list_id,
+        uniforms,
+    } = resources;
     let (width, height) = map_size();
     let _ = spring::gfx::fog(true);
     let _ = spring::gfx::fog_coord(1.0);
@@ -13,7 +53,6 @@ pub fn draw() {
     let _ = spring::gfx::push_matrix(0);
     let _ = spring::gfx::depth_mask(true);
     let _ = spring::gfx::bind_texture(GROUND_TEXTURE, 0, true);
-    let uniforms = Uniforms::locate(shader_id);
     uniforms.set(Uniform::Brightness, TEXTURE_BRIGHTNESS);
     uniforms.set(Uniform::Grid, 0.0);
     uniforms.set(Uniform::MirrorX, width);
@@ -76,6 +115,7 @@ enum Uniform {
     Brightness,
 }
 
+#[derive(Clone, Copy)]
 struct Uniforms {
     mirror_x: i32,
     mirror_z: i32,
@@ -122,33 +162,20 @@ fn location(shader_id: u32, name: &str) -> i32 {
     gl_uniforms::location(shader_id, name).unwrap_or(-1)
 }
 
-fn resources() -> Option<(u32, u32)> {
-    let existing = state::with_state(|ui| (ui.edge_shader, ui.edge_list)).unwrap_or((0, 0));
-    if existing.0 != 0 && existing.1 != 0 {
-        return Some(existing);
-    }
-    if state::with_state(|ui| ui.edge_setup_failed).unwrap_or(true) {
-        return None;
-    }
+fn create() -> Option<Resources> {
     let shader = spring::gfx::create_shader(spring::gfx::ShaderCreateParams {
         vertex: VERTEX_SOURCE,
         ..Default::default()
     })
-    .ok();
-    let shader_id = shader.map(|shader| shader.shader_id).unwrap_or(0);
-    if shader_id == 0 {
-        let _ = state::with_state(|ui| ui.edge_setup_failed = true);
-        return None;
-    }
-    let Ok(list_id) = spring::gfx::create_list(emit_list) else {
-        let _ = state::with_state(|ui| ui.edge_setup_failed = true);
-        return None;
-    };
-    let _ = state::with_state(|ui| {
-        ui.edge_shader = shader_id;
-        ui.edge_list = list_id;
-    });
-    Some((shader_id, list_id))
+    .ok()
+    .map(|shader| shader.shader_id)
+    .filter(|shader| *shader != 0)?;
+    let list = spring::gfx::create_list(emit_list).ok()?;
+    Some(Resources {
+        shader,
+        list,
+        uniforms: Uniforms::locate(shader),
+    })
 }
 
 fn emit_list() {

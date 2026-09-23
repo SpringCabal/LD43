@@ -1,11 +1,9 @@
 mod document;
 mod endgame;
 mod model;
-mod status;
 mod target;
 
-pub use document::{apply_bindings, hide_default_layout, initialize, render};
+pub use document::Document;
 pub use endgame::{close_intro, evaluate as evaluate_endgame};
 pub use model::{exit_to_menu, restart};
-pub use status::update;
-pub use target::track_target;
+pub use target::track as track_target;

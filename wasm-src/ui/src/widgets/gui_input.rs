@@ -1,15 +1,20 @@
 use spring_addons::event::{EventResult, KeyEvent};
 use spring_addons::ui::Widget;
 
-use crate::state::{self, Global};
-use crate::{input, lights};
+use crate::input;
+use crate::state::Global;
 
+/// Mouse and keyboard control of the blood mage. Registered first: it samples
+/// the cursor for the other widgets at the start of every update.
 #[derive(Default)]
-pub struct GuiInputWidget;
+pub struct GuiInputWidget {
+    /// The game frame the held mouse button last steered on.
+    held_frame: core::cell::Cell<i32>,
+}
 
 impl GuiInputWidget {
     pub fn new() -> Self {
-        Self
+        Self::default()
     }
 }
 
@@ -18,13 +23,9 @@ impl Widget<Global> for GuiInputWidget {
         "GuiInput"
     }
 
-    fn update(&self, _ctx: &spring_addons::AddonContext<'_, Global>, _dt: f32) {
-        let seconds = state::with_state(|ui| ui.seconds).unwrap_or(0.0);
-        input::hold_mouse();
-        lights::place_house_lights();
-        lights::update_staff_light(seconds);
-        lights::update_mouse_light();
-        lights::update_projectile_lights();
+    fn update(&self, ctx: &spring_addons::AddonContext<'_, Global>, _dt: f32) {
+        input::sample_cursor(ctx.global());
+        input::hold_mouse(ctx.global(), &self.held_frame);
     }
 
     fn mouse_move(
@@ -50,19 +51,19 @@ impl Widget<Global> for GuiInputWidget {
 
     fn mouse_press(
         &self,
-        _ctx: &spring_addons::AddonContext<'_, Global>,
+        ctx: &spring_addons::AddonContext<'_, Global>,
         x: i32,
         y: i32,
         button: i32,
     ) -> EventResult {
-        input::mouse_press(x, y, button).into()
+        input::mouse_press(ctx.global(), x, y, button).into()
     }
 
     fn key_press(
         &self,
-        _ctx: &spring_addons::AddonContext<'_, Global>,
+        ctx: &spring_addons::AddonContext<'_, Global>,
         event: &KeyEvent<'_>,
     ) -> EventResult {
-        input::key_press(event.key_code, event.ctrl).into()
+        input::key_press(ctx.global(), event.key_code, event.ctrl).into()
     }
 }

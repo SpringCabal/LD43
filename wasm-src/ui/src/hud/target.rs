@@ -1,58 +1,60 @@
 use alloc::format;
+use alloc::string::String;
 
-use crate::{cursor, state};
+use crate::state::Global;
 
 use super::model;
 
-pub fn track_target() {
-    let Some(unit_id) = cursor::screen().and_then(|(x, y)| cursor::unit_at(x, y)) else {
-        clear();
+/// Shows the name and health of the unit under the cursor.
+pub fn track(global: &Global) {
+    let Some(unit_id) = global.cursor.get().unit else {
+        clear(global);
         return;
     };
     let Ok(health) = spring::units_info::get_unit_health(unit_id) else {
-        clear();
+        clear(global);
         return;
     };
     let current = health.health.max(0.0);
     let max = health.max_health.max(1.0);
     let ratio = (100.0 * current / max) as i32;
-    let name = human_name(unit_id);
     let enemy = is_enemy(unit_id);
-    let caption = if current <= 0.0 {
-        alloc::string::String::from("DEAD")
-    } else {
-        format!("{ratio}%")
-    };
-    let _ = state::with_state(|ui| {
-        let Some(hud) = ui.hud else {
+    let (bindings, shown) = {
+        let mut hud = global.hud.access_mut();
+        let Some(bindings) = hud.bindings else {
             return;
         };
-        if ui.target_unit != unit_id {
-            ui.target_unit = unit_id;
-            model::set_string(hud.target_name, &name);
-        }
-        model::set_bool(hud.target_enemy, enemy);
-        if ui.target_ratio != ratio {
-            ui.target_ratio = ratio;
-            model::set_percent(hud.target_percent, ratio as f32);
-            model::set_string(hud.target_caption, &caption);
-        }
-        model::set_bool(hud.target_visible, true);
-    });
+        (bindings, hud.target.replace((unit_id, ratio)))
+    };
+    let (shown_unit, shown_ratio) = shown.unwrap_or((-1, -2));
+    if shown_unit != unit_id {
+        model::set_string(bindings.target_name, &human_name(unit_id));
+    }
+    model::set_bool(bindings.target_enemy, enemy);
+    if shown_ratio != ratio {
+        model::set_percent(bindings.target_percent, ratio as f32);
+        let caption = if current <= 0.0 {
+            String::from("DEAD")
+        } else {
+            format!("{ratio}%")
+        };
+        model::set_string(bindings.target_caption, &caption);
+    }
+    model::set_bool(bindings.target_visible, true);
 }
 
-fn clear() {
-    let _ = state::with_state(|ui| {
-        if ui.target_unit == -1 {
+fn clear(global: &Global) {
+    let bindings = {
+        let mut hud = global.hud.access_mut();
+        if hud.target.take().is_none() {
             return;
         }
-        ui.target_unit = -1;
-        ui.target_ratio = -2;
-        if let Some(hud) = ui.hud {
-            model::set_bool(hud.target_visible, false);
-            model::set_bool(hud.target_enemy, false);
-        }
-    });
+        hud.bindings
+    };
+    if let Some(bindings) = bindings {
+        model::set_bool(bindings.target_visible, false);
+        model::set_bool(bindings.target_enemy, false);
+    }
 }
 
 fn is_enemy(unit_id: i32) -> bool {
@@ -64,12 +66,12 @@ fn is_enemy(unit_id: i32) -> bool {
         .unwrap_or(false)
 }
 
-fn human_name(unit_id: i32) -> alloc::string::String {
+fn human_name(unit_id: i32) -> String {
     let Ok(unit_def_id) = spring::units_info::get_unit_def_id(unit_id) else {
-        return alloc::string::String::new();
+        return String::new();
     };
     spring::unit_defs::get_unit_def_human_name_bytes(unit_def_id)
         .ok()
-        .and_then(|bytes| alloc::string::String::from_utf8(bytes).ok())
+        .and_then(|bytes| String::from_utf8(bytes).ok())
         .unwrap_or_default()
 }
