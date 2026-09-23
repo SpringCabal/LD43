@@ -8,10 +8,6 @@ build = "../build.rs"
 [lib]
 crate-type = ["cdylib"]
 
-[features]
-headless-integration = []
-e2e = []
-
 [dependencies]
 spring = { workspace = true }
 
