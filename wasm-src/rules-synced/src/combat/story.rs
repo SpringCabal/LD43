@@ -164,7 +164,7 @@ pub fn spawn_wave(wave: &Wave) {
     for (kind, count) in wave.units {
         for _ in 0..*count {
             let (x, z) = ring_position();
-            units::create(kind.def_name(), x, z, ENEMY_TEAM, 0);
+            units::create(kind.unit(), x, z, ENEMY_TEAM, 0);
         }
     }
 }

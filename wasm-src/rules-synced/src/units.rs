@@ -4,6 +4,8 @@ use alloc::vec::Vec;
 use spring::generated::owned::unit_control;
 use spring::types::Float3;
 
+use crate::defs::{UnitKind, defs};
+
 pub const PLAYER_TEAM: i32 = 0;
 pub const ENEMY_TEAM: i32 = 1;
 pub const NEUTRAL_TEAM: i32 = 2;
@@ -11,9 +13,6 @@ pub const NEUTRAL_TEAM: i32 = 2;
 /// The point the orks attack and flee from.
 pub const TOWN_CENTRE_X: f32 = 5650.0;
 pub const TOWN_CENTRE_Z: f32 = 5720.0;
-
-pub const BLOOD_MAGE: &str = "bloodmage";
-pub const HOUSE: &str = "house";
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum VillagerKind {
@@ -31,44 +30,39 @@ pub enum OrkKind {
 }
 
 impl VillagerKind {
-    pub fn def_name(self) -> &'static str {
+    pub fn unit(self) -> UnitKind {
         match self {
-            Self::Swordsman => "swordsman",
-            Self::Crossbowman => "crossbowman",
-            Self::Coward => "coward",
-            Self::Peasant => "peasant",
+            Self::Swordsman => UnitKind::Swordsman,
+            Self::Crossbowman => UnitKind::Crossbowman,
+            Self::Coward => UnitKind::Coward,
+            Self::Peasant => UnitKind::Peasant,
         }
     }
 }
 
 impl OrkKind {
-    pub fn def_name(self) -> &'static str {
+    pub fn unit(self) -> UnitKind {
         match self {
-            Self::Small => "orksmall",
-            Self::Big => "orkbig",
-            Self::Boss => "orkboss",
+            Self::Small => UnitKind::OrkSmall,
+            Self::Big => UnitKind::OrkBig,
+            Self::Boss => UnitKind::OrkBoss,
         }
     }
-}
-
-pub fn def_id(name: &str) -> Option<i32> {
-    spring::get_unit_def_id_by_name(name).ok()
 }
 
 pub fn ground_height(x: f32, z: f32) -> f32 {
     spring::get_ground_height(x, z).unwrap_or(0.0)
 }
 
-pub fn create(name: &str, x: f32, z: f32, team: i32, facing: i32) -> Option<i32> {
-    let def_id = def_id(name)?;
+pub fn create(kind: UnitKind, x: f32, z: f32, team: i32, facing: i32) -> Option<i32> {
     let y = ground_height(x, z);
-    create_at(name, def_id, Float3 { x, y, z }, team, facing)
+    create_at(kind, Float3 { x, y, z }, team, facing)
 }
 
-pub fn create_at(name: &str, def_id: i32, position: Float3, team: i32, facing: i32) -> Option<i32> {
+pub fn create_at(kind: UnitKind, position: Float3, team: i32, facing: i32) -> Option<i32> {
     let unit_def = unit_control::DefRef {
-        name: String::from(name),
-        id: def_id,
+        name: String::from(kind.def_name()),
+        id: defs().id(kind)?,
     };
     let options = unit_control::CreateUnitOptions {
         build: false,

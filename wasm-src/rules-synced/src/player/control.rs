@@ -1,3 +1,4 @@
+use crate::defs::{UnitKind, defs};
 use crate::engine::set_unit_number;
 use crate::units;
 
@@ -41,7 +42,7 @@ impl Player {
     }
 
     pub fn adopt(&mut self, unit_id: i32, unit_def_id: i32) {
-        if units::def_id(units::BLOOD_MAGE) == Some(unit_def_id) {
+        if defs().is(unit_def_id, UnitKind::BloodMage) {
             self.unit_id = Some(unit_id);
         }
     }

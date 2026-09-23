@@ -1,6 +1,10 @@
+use alloc::collections::BTreeMap;
 use alloc::vec::Vec;
+use core::cell::RefCell;
 
 use spring::typed::MoveTypeNumericField;
+
+use crate::defs::{DefInfo, defs};
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum Effect {
@@ -18,30 +22,27 @@ pub struct Modifier {
 }
 
 pub fn add_effect(unit_id: i32, effect: Effect, modifier: Modifier) {
-    with_effects(|effects| {
-        effects.retain(|entry| entry.unit_id != unit_id || entry.effect != effect);
-        effects.push(Entry {
-            unit_id,
-            effect,
-            modifier,
-        });
+    with_store(|store| {
+        let effects = store.effects.entry(unit_id).or_default();
+        effects.retain(|(existing, _)| *existing != effect);
+        effects.push((effect, modifier));
     });
     apply(unit_id);
 }
 
 pub fn remove_effect(unit_id: i32, effect: Effect) {
-    with_effects(|effects| {
-        effects.retain(|entry| entry.unit_id != unit_id || entry.effect != effect);
+    with_store(|store| {
+        if let Some(effects) = store.effects.get_mut(&unit_id) {
+            effects.retain(|(existing, _)| *existing != effect);
+        }
     });
     apply(unit_id);
 }
 
 pub fn forget(unit_id: i32) {
-    with_effects(|effects| effects.retain(|entry| entry.unit_id != unit_id));
-    let _ = BASE_RELOADS.with(|reloads| {
-        reloads
-            .try_borrow_mut()
-            .map(|mut reloads| reloads.retain(|(id, _)| *id != unit_id))
+    with_store(|store| {
+        store.effects.remove(&unit_id);
+        store.base_reloads.remove(&unit_id);
     });
 }
 
@@ -51,48 +52,51 @@ const MINIMUM_MOVE: f32 = 0.001;
 // Long enough that a paused weapon never comes off cooldown in a match.
 const PAUSED_RELOAD: f32 = 100000.0;
 
-#[derive(Clone, Copy)]
-struct Entry {
-    unit_id: i32,
-    effect: Effect,
-    modifier: Modifier,
+/// The attribute effects on every unit, like the Lua build's GG.Attributes.
+///
+/// Module state rather than addon state because the unit scripts (Core-CUS,
+/// which has no addon context) add effects too. Borrows never span an engine
+/// call, and a conflicting borrow panics instead of skipping the update.
+#[derive(Default)]
+struct Store {
+    /// Each unit's effects in the order they were added, which is the order
+    /// their factors multiply in.
+    effects: BTreeMap<i32, Vec<(Effect, Modifier)>>,
+    /// Each unit's unmodified reload; see `base_reload`.
+    base_reloads: BTreeMap<i32, f32>,
 }
 
 thread_local! {
-    static BASE_RELOADS: core::cell::RefCell<Vec<(i32, f32)>> = const {
-        core::cell::RefCell::new(Vec::new())
-    };
-    static EFFECTS: core::cell::RefCell<Vec<Entry>> = const {
-        core::cell::RefCell::new(Vec::new())
-    };
+    static STORE: RefCell<Store> = RefCell::new(Store::default());
 }
 
-fn with_effects<R>(function: impl FnOnce(&mut Vec<Entry>) -> R) -> Option<R> {
-    EFFECTS.with(|effects| effects.try_borrow_mut().ok().map(|mut e| function(&mut e)))
+fn with_store<R>(function: impl FnOnce(&mut Store) -> R) -> R {
+    STORE.with(|store| function(&mut store.borrow_mut()))
 }
 
 fn apply(unit_id: i32) {
-    let Some((move_factor, reload_factor)) = combined(unit_id) else {
-        return;
-    };
+    let (move_factor, reload_factor) = combined(unit_id);
     apply_movement(unit_id, move_factor);
     apply_reload(unit_id, reload_factor);
 }
 
-fn combined(unit_id: i32) -> Option<(f32, f32)> {
-    with_effects(|effects| {
+fn combined(unit_id: i32) -> (f32, f32) {
+    with_store(|store| {
         let mut move_factor = BASE_MOVE;
         let mut reload_factor = BASE_RELOAD;
-        for entry in effects.iter().filter(|entry| entry.unit_id == unit_id) {
-            move_factor *= entry.modifier.move_factor;
-            reload_factor *= entry.modifier.reload_factor;
+        for (_, modifier) in store.effects.get(&unit_id).into_iter().flatten() {
+            move_factor *= modifier.move_factor;
+            reload_factor *= modifier.reload_factor;
         }
         (move_factor, reload_factor)
     })
 }
 
 fn apply_movement(unit_id: i32, factor: f32) {
-    let Some(base) = base_speed(unit_id) else {
+    let Some(info) = def_info(unit_id) else {
+        return;
+    };
+    let Some(base) = info.speed else {
         return;
     };
     let factor = factor.max(0.0);
@@ -112,7 +116,7 @@ fn apply_movement(unit_id: i32, factor: f32) {
     let _ = spring::typed::set_move_type_numeric(
         unit_id,
         MoveTypeNumericField::MoveTypeGroundTurnRate,
-        turn_rate(unit_id) * factor.max(MINIMUM_MOVE),
+        info.turn_rate * factor.max(MINIMUM_MOVE),
     );
 }
 
@@ -142,28 +146,18 @@ fn apply_reload(unit_id: i32, factor: f32) {
 /// compound. The first call happens before any effect has been applied, so what
 /// the weapon reports then is the def value.
 fn base_reload(unit_id: i32) -> Option<f32> {
-    BASE_RELOADS.with(|reloads| {
-        let mut reloads = reloads.try_borrow_mut().ok()?;
-        if let Some((_, base)) = reloads.iter().find(|(id, _)| *id == unit_id) {
-            return Some(*base);
-        }
-        let base = spring::owned::units_weapons::get_unit_weapon_state(unit_id, 1, "reloadTime")
-            .ok()
-            .map(|state| state.reload_time)
-            .filter(|reload| *reload > 0.0)?;
-        reloads.push((unit_id, base));
-        Some(base)
-    })
-}
-
-fn base_speed(unit_id: i32) -> Option<f32> {
-    let unit_def_id = spring::units_info::get_unit_def_id(unit_id).ok()?;
-    spring::get_unit_def_speed(unit_def_id).ok()
-}
-
-fn turn_rate(unit_id: i32) -> f32 {
-    spring::units_info::get_unit_def_id(unit_id)
+    if let Some(base) = with_store(|store| store.base_reloads.get(&unit_id).copied()) {
+        return Some(base);
+    }
+    let base = spring::owned::units_weapons::get_unit_weapon_state(unit_id, 1, "reloadTime")
         .ok()
-        .and_then(|unit_def_id| spring::get_unit_def_param_float(unit_def_id, "turnRate").ok())
-        .unwrap_or(0.0)
+        .map(|state| state.reload_time)
+        .filter(|reload| *reload > 0.0)?;
+    with_store(|store| store.base_reloads.insert(unit_id, base));
+    Some(base)
+}
+
+fn def_info(unit_id: i32) -> Option<DefInfo> {
+    let unit_def_id = spring::units_info::get_unit_def_id(unit_id).ok()?;
+    Some(defs().info(unit_def_id))
 }

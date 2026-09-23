@@ -2,6 +2,7 @@ extern crate alloc;
 
 mod cmd;
 mod combat;
+mod defs;
 mod diagnostics;
 mod engine;
 mod gadgets;

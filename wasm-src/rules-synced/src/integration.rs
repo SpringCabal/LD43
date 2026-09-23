@@ -10,6 +10,7 @@ use alloc::vec::Vec;
 use core::cell::RefCell;
 
 use crate::combat;
+use crate::defs::{UnitKind, defs};
 use crate::state::World;
 use crate::units::{self, ENEMY_TEAM, OrkKind, TOWN_CENTRE_X, TOWN_CENTRE_Z};
 
@@ -76,7 +77,7 @@ fn rules_param(unit_id: i32, name: &str) -> Option<f32> {
 fn ork_def_ids() -> Vec<i32> {
     [OrkKind::Small, OrkKind::Big, OrkKind::Boss]
         .into_iter()
-        .filter_map(|kind| units::def_id(kind.def_name()))
+        .filter_map(|kind| defs().id(kind.unit()))
         .collect()
 }
 
@@ -131,12 +132,13 @@ fn setup_checks(tracker: &mut Tracker, world: &mut World) {
     );
     check(
         tracker,
-        units::def_id("orksmall").is_some() && units::def_id("house").is_some(),
+        defs().id(UnitKind::OrkSmall).is_some() && defs().id(UnitKind::House).is_some(),
         "unit defs resolve (weapon/unit def tables loaded cleanly)",
     );
     // Houses are drawn scaled, and the unsynced UI reads the factors straight
     // out of the def's custom params.
-    let scales = units::def_id("house")
+    let scales = defs()
+        .id(UnitKind::House)
         .map(|house| {
             (
                 spring::get_unit_def_custom_param(house, "hscale"),
@@ -152,7 +154,8 @@ fn setup_checks(tracker: &mut Tracker, world: &mut World) {
             scales.0, scales.1
         ),
     );
-    let leader_scales = units::def_id("orkboss")
+    let leader_scales = defs()
+        .id(UnitKind::OrkBoss)
         .map(|leader| {
             (
                 spring::get_unit_def_custom_param(leader, "hscale"),
@@ -301,7 +304,13 @@ fn spell_checks() {
         );
     });
 
-    let target = units::create("orksmall", position.x + 100.0, position.z, ENEMY_TEAM, 0);
+    let target = units::create(
+        UnitKind::OrkSmall,
+        position.x + 100.0,
+        position.z,
+        ENEMY_TEAM,
+        0,
+    );
     let target_health = target
         .and_then(|unit_id| spring::units_info::get_unit_health(unit_id).ok())
         .map(|health| health.health)
@@ -323,7 +332,13 @@ fn spell_checks() {
     // Keep this target outside Heartburn's 250-unit damage radius. This is a
     // deterministic integration check for spell 5's delayed AddUnitImpulse,
     // rather than relying on a transient particle effect in a screenshot.
-    let poultice_target = units::create("orksmall", position.x + 600.0, position.z, ENEMY_TEAM, 0);
+    let poultice_target = units::create(
+        UnitKind::OrkSmall,
+        position.x + 600.0,
+        position.z,
+        ENEMY_TEAM,
+        0,
+    );
     if let Some(target) = poultice_target
         && crate::player::cast(
             unit_id,

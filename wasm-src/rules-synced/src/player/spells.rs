@@ -1,9 +1,11 @@
 use alloc::string::String;
 use alloc::vec::Vec;
 
+use spring::generated::owned::effects_control::DefRef;
 use spring::types::Float3;
 
 use crate::combat;
+use crate::defs::{UnitKind, defs};
 use crate::engine::set_game_number;
 use crate::random;
 use crate::units::{self, ENEMY_TEAM, NEUTRAL_TEAM, PLAYER_TEAM};
@@ -255,7 +257,7 @@ fn resolve_heartburn(unit_id: i32, tx: f32, tz: f32, frame: i32) {
     let Some(origin) = units::position(unit_id) else {
         return;
     };
-    let Some(weapon_def_id) = spring::weapon_defs::get_weapon_def_id("fireball").ok() else {
+    let Some(weapon_def_id) = defs().fireball else {
         return;
     };
     play_sound("sounds/fireballfire.wav", unit_id);
@@ -313,7 +315,7 @@ fn resolve_adrenaline(unit_id: i32, frame: i32) {
         return;
     };
     play_sound("sounds/buff_spell.wav", unit_id);
-    let house = units::def_id(units::HOUSE);
+    let house = defs().id(UnitKind::House);
     for target in units_in_cylinder(origin.x, origin.z, ADRENALINE_RADIUS, PLAYER_TEAM) {
         if def_of(target) == house {
             continue;
@@ -437,7 +439,7 @@ fn resolve_fireball_impacts(frame: i32) {
     })
     .unwrap_or_default();
 
-    let Some(weapon_def_id) = spring::weapon_defs::get_weapon_def_id("fireball").ok() else {
+    let Some(weapon_def_id) = defs().fireball else {
         return;
     };
     for impact in due {
@@ -482,7 +484,7 @@ fn drain(collector_id: i32, required: f32, allow_partial: bool) -> (bool, Option
     let Some(origin) = units::position(collector_id) else {
         return (false, None);
     };
-    let house = units::def_id(units::HOUSE);
+    let house = defs().id(UnitKind::House);
     let mut remaining = required;
     let mut to_kill: Vec<i32> = Vec::new();
     let mut to_restore: Vec<i32> = Vec::new();
@@ -568,15 +570,16 @@ fn blood_trail(origin: Float3, target_id: i32) {
         y: dy / distance,
         z: dz / distance,
     };
+    let blood = ceg(CEG_SINGLE_BLOOD);
     let mut travelled = 10.0;
     while travelled < distance {
-        spawn_effect_at(
+        spawn_ceg(
             Float3 {
                 x: target.x + step.x * travelled,
                 y: target.y + step.y * travelled,
                 z: target.z + step.z * travelled,
             },
-            CEG_SINGLE_BLOOD,
+            &blood,
         );
         travelled += 10.0;
     }
@@ -601,14 +604,21 @@ fn spawn_effect(unit_id: i32, ceg_name: &str) {
 }
 
 fn spawn_effect_at(position: Float3, ceg_name: &str) {
+    spawn_ceg(position, &ceg(ceg_name));
+}
+
+fn ceg(name: &str) -> DefRef {
     // A non-negative id takes precedence over the name, so -1 makes the
     // engine look the CEG up by name.
-    let ceg = spring::generated::owned::effects_control::DefRef {
-        name: String::from(ceg_name),
+    DefRef {
+        name: String::from(name),
         id: -1,
-    };
+    }
+}
+
+fn spawn_ceg(position: Float3, ceg: &DefRef) {
     let _ = spring::generated::owned::effects_control::spawn_ceg(
-        &ceg,
+        ceg,
         position,
         Float3::default(),
         CEG_RADIUS,

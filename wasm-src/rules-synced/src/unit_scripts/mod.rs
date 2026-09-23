@@ -16,6 +16,7 @@ use spring::cus::{
     TaskDefinition, UnitCtx, UnitScript, UnitScriptCall, WeaponId, WreckLevel,
 };
 
+use crate::defs::{UnitKind, defs};
 use crate::engine::{self, set_unit_number};
 use crate::{cmd, combat};
 
@@ -41,31 +42,20 @@ enum ScriptKind {
 }
 
 fn script_kind_for_def(def: i32) -> Option<ScriptKind> {
-    let matches = |name: &str| spring::get_unit_def_id_by_name(name).ok() == Some(def);
-    if matches("bloodmage") {
-        Some(ScriptKind::BloodMage)
-    } else if matches("house") {
-        Some(ScriptKind::House)
-    } else if matches("orksmall") {
-        Some(ScriptKind::OrkSmall)
-    } else if matches("orkbig") {
-        Some(ScriptKind::OrkBig)
-    } else if matches("orkboss") {
-        Some(ScriptKind::OrkBoss)
-    } else if matches("coward") {
-        Some(ScriptKind::Coward)
-    } else if matches("crossbowman") || matches("builder") {
+    Some(match defs().kind(def)? {
+        UnitKind::BloodMage => ScriptKind::BloodMage,
+        UnitKind::House => ScriptKind::House,
+        UnitKind::OrkSmall => ScriptKind::OrkSmall,
+        UnitKind::OrkBig => ScriptKind::OrkBig,
+        UnitKind::OrkBoss => ScriptKind::OrkBoss,
+        UnitKind::Coward => ScriptKind::Coward,
         // The Lua build names defender.lua for the builder, a file it never
         // shipped. The builder has the crossbowman's model and weapon, so it
         // gets the crossbowman's script.
-        Some(ScriptKind::Crossbowman)
-    } else if matches("swordsman") {
-        Some(ScriptKind::Swordsman)
-    } else if matches("peasant") {
-        Some(ScriptKind::Peasant)
-    } else {
-        None
-    }
+        UnitKind::Crossbowman | UnitKind::Builder => ScriptKind::Crossbowman,
+        UnitKind::Swordsman => ScriptKind::Swordsman,
+        UnitKind::Peasant => ScriptKind::Peasant,
+    })
 }
 
 fn capabilities(kind: ScriptKind) -> ScriptCapabilities {
@@ -1134,7 +1124,7 @@ impl TtldCusModule {
 
     #[cfg(feature = "pose-probe")]
     fn run_pose_trigger(&mut self, level: i32) {
-        let Some(target_def) = spring::get_unit_def_id_by_name("bloodmage").ok() else {
+        let Some(target_def) = defs().id(UnitKind::BloodMage) else {
             return;
         };
         let Ok(units) = spring::get_all_units() else {

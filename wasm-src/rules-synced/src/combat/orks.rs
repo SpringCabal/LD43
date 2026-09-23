@@ -1,6 +1,7 @@
 use alloc::vec::Vec;
 
-use crate::units::{self, ENEMY_TEAM, OrkKind};
+use crate::defs::defs;
+use crate::units::{self, ENEMY_TEAM};
 use crate::{cmd, random};
 
 use super::attributes::{self, Effect, Modifier};
@@ -115,10 +116,7 @@ const FLEE_DISTANCE: f32 = 4000.0;
 const UPDATE_DIVISOR: usize = 80;
 
 fn is_ork(unit_def_id: i32) -> bool {
-    [OrkKind::Small, OrkKind::Big, OrkKind::Boss]
-        .into_iter()
-        .filter_map(|kind| units::def_id(kind.def_name()))
-        .any(|id| id == unit_def_id)
+    defs().is_ork(unit_def_id)
 }
 
 fn fight(unit_id: i32, x: f32, z: f32) {

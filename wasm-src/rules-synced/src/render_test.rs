@@ -7,6 +7,7 @@
 
 use core::cell::Cell;
 
+use crate::defs::UnitKind;
 use crate::state;
 use crate::units::{self, PLAYER_TEAM};
 
@@ -35,13 +36,19 @@ pub fn spawn_leader_fixture() {
     // fixture stationary; the draw path is the same for allied and enemy
     // units.
     let boss = units::create(
-        "orkboss",
+        UnitKind::OrkBoss,
         origin.x - 220.0,
         origin.z - 140.0,
         PLAYER_TEAM,
         0,
     );
-    let orkbig = units::create("orkbig", origin.x + 220.0, origin.z - 140.0, PLAYER_TEAM, 0);
+    let orkbig = units::create(
+        UnitKind::OrkBig,
+        origin.x + 220.0,
+        origin.z - 140.0,
+        PLAYER_TEAM,
+        0,
+    );
     let _ = spring::echo(
         &alloc::format!(
             "{FIXTURE_MESSAGE}: boss={:?} orkbig={:?} origin=({:.0},{:.0})",

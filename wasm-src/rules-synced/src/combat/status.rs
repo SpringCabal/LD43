@@ -1,6 +1,6 @@
 use alloc::vec::Vec;
 
-use crate::units::{self, BLOOD_MAGE, OrkKind};
+use crate::defs::{UnitKind, defs};
 
 use super::attributes::{self, Effect, Modifier};
 
@@ -91,13 +91,10 @@ fn resists(unit_id: i32) -> bool {
     let Ok(unit_def_id) = spring::units_info::get_unit_def_id(unit_id) else {
         return false;
     };
-    [
-        units::def_id(OrkKind::Boss.def_name()),
-        units::def_id(BLOOD_MAGE),
-    ]
-    .into_iter()
-    .flatten()
-    .any(|id| id == unit_def_id)
+    matches!(
+        defs().kind(unit_def_id),
+        Some(UnitKind::OrkBoss | UnitKind::BloodMage)
+    )
 }
 
 fn call_script(unit_id: i32, function_name: &str, argument: f32) {

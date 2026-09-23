@@ -1,5 +1,5 @@
-use crate::units;
-use crate::units::{ENEMY_TEAM, OrkKind};
+use crate::defs::{UnitKind, defs};
+use crate::units::ENEMY_TEAM;
 
 pub struct Victory {
     declared: bool,
@@ -24,7 +24,7 @@ impl Victory {
 }
 
 fn boss_alive() -> bool {
-    let Some(def_id) = units::def_id(OrkKind::Boss.def_name()) else {
+    let Some(def_id) = defs().id(UnitKind::OrkBoss) else {
         return true;
     };
     spring::get_team_unit_def_count(ENEMY_TEAM, def_id)

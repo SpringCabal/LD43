@@ -4,6 +4,7 @@ use alloc::vec::Vec;
 use spring::generated::owned::unit_control;
 use spring::types::Float3;
 
+use crate::defs::{UnitKind, defs};
 use crate::diagnostics;
 use crate::random;
 use crate::state::Villager;
@@ -57,13 +58,13 @@ fn spawn_houses() {
     for (x, z) in HOUSE_POSITIONS {
         let x = (x / HOUSE_GRID).floor() * HOUSE_GRID;
         let z = (z / HOUSE_GRID).floor() * HOUSE_GRID;
-        units::create(units::HOUSE, x, z, PLAYER_TEAM, random::facing());
+        units::create(UnitKind::House, x, z, PLAYER_TEAM, random::facing());
     }
 }
 
 fn spawn_blood_mage() {
     if units::create(
-        units::BLOOD_MAGE,
+        UnitKind::BloodMage,
         BLOOD_MAGE_X,
         BLOOD_MAGE_Z,
         PLAYER_TEAM,
@@ -79,12 +80,13 @@ fn fill_villager_areas() -> Vec<Villager> {
     let mut spawned = Vec::new();
     for area in &VILLAGER_AREAS {
         for (kind, count) in area.units {
-            let Some(def_id) = units::def_id(kind.def_name()) else {
+            let kind = kind.unit();
+            let Some(def_id) = defs().id(kind) else {
                 diagnostics::warning(&format!("unknown villager def {}", kind.def_name()));
                 continue;
             };
             for _ in 0..*count {
-                if let Some(unit_id) = spawn_villager(area, kind.def_name(), def_id) {
+                if let Some(unit_id) = spawn_villager(area, kind, def_id) {
                     spawned.push(Villager { unit_id, area });
                 }
             }
@@ -93,10 +95,10 @@ fn fill_villager_areas() -> Vec<Villager> {
     spawned
 }
 
-fn spawn_villager(area: &'static VillagerArea, def_name: &str, def_id: i32) -> Option<i32> {
+fn spawn_villager(area: &'static VillagerArea, kind: UnitKind, def_id: i32) -> Option<i32> {
     let facing = random::facing();
     let position = find_placement(area, def_id, facing);
-    let unit_id = units::create_at(def_name, def_id, position, PLAYER_TEAM, facing)?;
+    let unit_id = units::create_at(kind, position, PLAYER_TEAM, facing)?;
     let _ = unit_control::set_unit_rotation(
         unit_id,
         Float3 {

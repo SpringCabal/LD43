@@ -1,9 +1,9 @@
+use crate::defs::defs;
 use crate::units;
 
 const IMPASSIBLE_TERRAIN: i32 = 137;
 const PLAYER_FUDGE: f32 = 16.0;
 const SQUARE: f32 = 8.0;
-const FOOTPRINT_TO_WORLD: f32 = 4.0;
 
 pub fn initialize() {
     let _ = spring::set_terrain_type_data(IMPASSIBLE_TERRAIN, 0.0, 0.0, 0.0, 0.0, 0.0, false, "");
@@ -19,27 +19,20 @@ pub fn unblock(unit_id: i32, unit_def_id: i32) {
     apply(unit_id, unit_def_id, 0);
 }
 
+/// Only immobile units, which are the ones with a footprint, block terrain.
 fn apply(unit_id: i32, unit_def_id: i32, value: i32) {
-    if !is_immobile(unit_def_id) {
+    let Some(footprint) = defs().info(unit_def_id).footprint else {
         return;
-    }
-    let Some(extents) = extents(unit_id, unit_def_id) else {
+    };
+    let Some(extents) = extents(unit_id, footprint) else {
         return;
     };
     set_square(extents, value);
 }
 
-fn is_immobile(unit_def_id: i32) -> bool {
-    spring::get_unit_def_speed(unit_def_id)
-        .map(|speed| speed <= 0.0)
-        .unwrap_or(false)
-}
-
-fn extents(unit_id: i32, unit_def_id: i32) -> Option<(f32, f32, f32, f32)> {
+fn extents(unit_id: i32, (x_size, z_size): (f32, f32)) -> Option<(f32, f32, f32, f32)> {
     let position = units::position(unit_id)?;
     let facing = spring::units_info::get_unit_build_facing(unit_id).ok()?;
-    let x_size = footprint(unit_def_id, "xsize")? * FOOTPRINT_TO_WORLD;
-    let z_size = footprint(unit_def_id, "zsize")? * FOOTPRINT_TO_WORLD;
     let (half_x, half_z) = if facing == 0 || facing == 2 {
         (x_size, z_size)
     } else {
@@ -53,12 +46,6 @@ fn extents(unit_id: i32, unit_def_id: i32) -> Option<(f32, f32, f32, f32)> {
         center_x + half_x - SQUARE,
         center_z + half_z - SQUARE,
     ))
-}
-
-fn footprint(unit_def_id: i32, key: &str) -> Option<f32> {
-    spring::get_unit_def_param_int(unit_def_id, key)
-        .ok()
-        .map(|size| size as f32)
 }
 
 fn snap(value: f32, size: f32) -> f32 {
