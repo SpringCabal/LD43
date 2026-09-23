@@ -7,9 +7,7 @@ use spring::rules_params::los;
 
 /// The current game frame.
 pub fn frame() -> i32 {
-    spring::game::get_game_frame(0)
-        .map(|frame| (frame.low16 | (frame.high16 << 16)) as i32)
-        .unwrap_or_default()
+    spring::game::frame().unwrap_or_default() as i32
 }
 
 /// Publishes a number every reader can see, the game's own UI included.

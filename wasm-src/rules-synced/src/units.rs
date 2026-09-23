@@ -99,14 +99,7 @@ pub fn has_orders(unit_id: i32) -> bool {
 }
 
 pub fn units_in_cylinder(x: f32, z: f32, radius: f32, allegiance: i32) -> Vec<i32> {
-    let mut output = alloc::vec![0i32; 512];
-    match spring::get_units_in_cylinder_into(x, z, radius, allegiance, &mut output) {
-        Ok(spring::BufferFill::Complete(count)) => {
-            output.truncate(count);
-            output
-        }
-        _ => Vec::new(),
-    }
+    spring::get_units_in_cylinder(x, z, radius, allegiance).unwrap_or_default()
 }
 
 pub fn valid(unit_id: i32) -> bool {

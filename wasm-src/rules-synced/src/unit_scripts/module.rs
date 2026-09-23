@@ -225,16 +225,8 @@ impl CoreCusModule for TtldCusModule {
         self.attach_pending();
         self.apply_pending_calls();
         #[cfg(feature = "pose-probe")]
-        {
-            if frame == 30 {
-                self.run_pose_trigger(1);
-            }
-            if frame == 90 {
-                self.run_pose_trigger(2);
-            }
-            if frame == 145 {
-                self.run_pose_trigger(3);
-            }
+        if let Some(level) = crate::pose_probe::cast_level_at(frame as i32) {
+            self.run_pose_trigger(level);
         }
         self.registry.tick(frame as u64);
     }

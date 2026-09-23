@@ -1,8 +1,10 @@
 use alloc::vec::Vec;
 
+use spring::cmd;
+
 use crate::defs::defs;
+use crate::random;
 use crate::units::{self, ENEMY_TEAM};
-use crate::{cmd, random};
 
 use super::attributes::{self, Effect, Modifier};
 

@@ -14,6 +14,7 @@ use spring_addons::rules::Gadget;
 use crate::state::Global;
 
 const TARGET_DEF: &str = "bloodmage";
+/// The frames that start CastAnimation levels 1, 2 and 3.
 const TRIGGER_FRAMES: &[i32] = &[30, 90, 145];
 const LAST_FRAME: i32 = 195;
 const SAMPLE_FRAMES: &[i32] = &[
@@ -21,6 +22,14 @@ const SAMPLE_FRAMES: &[i32] = &[
     120, 130, 146, 148, 150, 155, 160, 163, 168, 173, 180, 190, 195,
 ];
 const POSE_PIECES: &[&str] = &["Torso", "Hand_Right", "Hand_Left"];
+
+/// The CastAnimation level the probe triggers at `frame`, if any.
+pub fn cast_level_at(frame: i32) -> Option<i32> {
+    let index = TRIGGER_FRAMES
+        .iter()
+        .position(|trigger| *trigger == frame)?;
+    Some(index as i32 + 1)
+}
 
 #[derive(Default)]
 pub struct PoseProbeGadget {

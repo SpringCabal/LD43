@@ -4,13 +4,14 @@ use alloc::rc::Rc;
 use core::cell::RefCell;
 
 use spring::UnitId;
+use spring::cmd;
 use spring::cus::UnitCtx;
 
-use crate::{cmd, engine};
+use crate::engine;
+use crate::random::unit_float;
 
 use super::TtldState;
 use super::common::face_direction;
-use crate::random::unit_float;
 
 pub(super) fn issue_patrol_orders(ctx: &UnitCtx) {
     let _ = spring::give_order_to_unit(ctx.unit(), cmd::REPEAT, &[1.0], 0, 0);
@@ -70,18 +71,9 @@ pub(super) fn ork_toss(unit: UnitId, target: i32, state: &Rc<RefCell<TtldState>>
     let Some(unit_position) = spring::get_unit_position(unit.0, false, false).ok() else {
         return;
     };
-    let mut ids = [0i32; 256];
-    let count = match spring::get_units_in_cylinder_into(
-        target_position.x,
-        target_position.z,
-        radius,
-        -1,
-        &mut ids,
-    ) {
-        Ok(spring::BufferFill::Complete(count)) => count,
-        _ => 0,
-    };
-    for other in ids[..count].iter().copied() {
+    let nearby = spring::get_units_in_cylinder(target_position.x, target_position.z, radius, -1)
+        .unwrap_or_default();
+    for other in nearby {
         if other == unit.0 {
             continue;
         }

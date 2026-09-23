@@ -1,7 +1,9 @@
 use alloc::vec::Vec;
 
+use spring::cmd;
+
+use crate::random;
 use crate::units;
-use crate::{cmd, random};
 
 use super::spawn::VillagerArea;
 

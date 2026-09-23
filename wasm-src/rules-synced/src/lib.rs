@@ -1,6 +1,5 @@
 extern crate alloc;
 
-mod cmd;
 mod combat;
 mod defs;
 mod diagnostics;
