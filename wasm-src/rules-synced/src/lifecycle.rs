@@ -33,6 +33,9 @@ fn publish_draw_scale(unit_id: i32, unit_def_id: i32) {
 }
 
 pub fn unit_created(unit_id: i32, unit_def_id: i32, unit_team: i32, _builder_id: i32) {
+    // A dying unit's Killed script adds its death paralysis after UnitDestroyed
+    // has already cleared its effects, so a reused unit id can still carry it.
+    combat::forget(unit_id);
     crate::unit_scripts::queue_unit_created(unit_id, unit_def_id);
     publish_draw_scale(unit_id, unit_def_id);
     terrain::block(unit_id, unit_def_id);
