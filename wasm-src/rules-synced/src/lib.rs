@@ -5,6 +5,7 @@ mod combat;
 mod defs;
 mod diagnostics;
 mod engine;
+mod fx;
 mod gadgets;
 #[cfg(feature = "headless-integration")]
 mod integration;

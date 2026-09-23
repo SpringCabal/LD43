@@ -1,14 +1,16 @@
-use alloc::string::String;
 use alloc::vec::Vec;
 
-use spring::generated::owned::effects_control::DefRef;
 use spring::types::Float3;
 
 use crate::combat;
 use crate::defs::{UnitKind, defs};
 use crate::engine::set_game_number;
+use crate::fx::{play_sound, play_sound_at, spawn_effect, spawn_effect_at};
 use crate::random;
-use crate::units::{self, ENEMY_TEAM, NEUTRAL_TEAM, PLAYER_TEAM};
+
+use super::drain::{drain, drain_for_transfusion};
+use crate::units::{self, ENEMY_TEAM, PLAYER_TEAM};
+use crate::units::{def_of, health, health_value, units_in_cylinder, valid};
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum Spell {
@@ -113,18 +115,15 @@ pub fn resolve_pending(frame: i32) {
     resolve_fireball_impacts(frame);
 }
 
-const BLOOD_MAGIC_RANGE: f32 = 600.0;
 const FIREBALL_COST: f32 = 1350.0;
 const BUFF_COST: f32 = 1350.0;
 const STUN_COST: f32 = 1350.0;
 const THROW_COST: f32 = 1350.0;
-const LIFE_BONUS: f32 = 500.0;
 const CASTING_TIME_SHORT: i32 = 8;
 const CASTING_TIME: i32 = 12;
 const CASTING_TIME_LONG: i32 = 18;
 const SHORT_CAST_DELAY: i32 = 9;
 const LONG_CAST_DELAY: i32 = 14;
-const DRAIN_SEARCH_LIMIT: i32 = 50;
 const ADRENALINE_RADIUS: f32 = 450.0;
 const MIGRAINE_RADIUS: f32 = 450.0;
 const POULTICE_RADIUS: f32 = 720.0;
@@ -158,17 +157,11 @@ const POULTICE_JITTER: f32 = 20.0;
 // positive value here; the ground move type applies downward gravity after
 // the impulse. A negative value points Poultice into the ground.
 const DEFAULT_UNIT_GRAVITY: f32 = 115.0 / 30.0 / 30.0;
-const CEG_SINGLE_BLOOD: &str = "feature_poof_single";
-const CEG_FLAMES: &str = "feature_poof_spawner";
 const CEG_HEALTH: &str = "feature_slurp_spawner";
 const CEG_MIGRAINE: &str = "migraine_pulse_spawner";
 const CEG_ADRENALINE: &str = "adrenaline_sparkles";
 const CEG_POULTICE: &str = "gtfo_pulse";
 const CEG_FIREBALL_IMPACT: &str = "fireball_impact";
-/// The radius and damage every spell effect CEG is spawned with.
-const CEG_RADIUS: f32 = 20.0;
-const CEG_DAMAGE: f32 = 20.0;
-const SOUND_DRAIN: &str = "sounds/blooddrain.wav";
 
 #[derive(Clone, Copy)]
 struct PendingEffect {
@@ -464,207 +457,5 @@ fn resolve_fireball_impacts(frame: i32) {
                 Float3::default(),
             );
         }
-    }
-}
-
-fn drain_for_transfusion(unit_id: i32) -> Option<Option<f32>> {
-    let health = health(unit_id)?;
-    if health.current >= health.max {
-        return None;
-    }
-    let required = LIFE_BONUS + health.max - health.current;
-    let (found, shortfall) = drain(unit_id, required, true);
-    if !found && shortfall.is_none() {
-        return None;
-    }
-    Some(shortfall.map(|value| value - LIFE_BONUS))
-}
-
-fn drain(collector_id: i32, required: f32, allow_partial: bool) -> (bool, Option<f32>) {
-    let Some(origin) = units::position(collector_id) else {
-        return (false, None);
-    };
-    let house = defs().id(UnitKind::House);
-    let mut remaining = required;
-    let mut to_kill: Vec<i32> = Vec::new();
-    let mut to_restore: Vec<i32> = Vec::new();
-    for _ in 0..DRAIN_SEARCH_LIMIT {
-        let Ok(target) = spring::get_unit_nearest_ally(collector_id, BLOOD_MAGIC_RANGE) else {
-            break;
-        };
-        let target = target.0;
-        if target < 0 {
-            break;
-        }
-        if def_of(target) == house {
-            let _ = spring::transfer_unit(target, NEUTRAL_TEAM, false, false);
-            to_restore.push(target);
-            continue;
-        }
-        let Some(health) = health(target) else {
-            break;
-        };
-        let available = health.current + LIFE_BONUS;
-        if available > remaining {
-            spawn_effect(target, CEG_FLAMES);
-            play_sound_at(SOUND_DRAIN, origin);
-            blood_trail(origin, target);
-            let _ = spring::set_unit_health(target, health_value(available - remaining));
-            restore(&to_restore);
-            record_drained(consume(&to_kill, origin));
-            return (true, None);
-        }
-        to_kill.push(target);
-        let _ = spring::transfer_unit(target, NEUTRAL_TEAM, false, false);
-        remaining -= available;
-    }
-    restore(&to_restore);
-    if allow_partial && !to_kill.is_empty() {
-        record_drained(consume(&to_kill, origin));
-        return (false, Some(remaining));
-    }
-    restore(&to_kill);
-    (false, None)
-}
-
-fn consume(units: &[i32], origin: Float3) -> i32 {
-    let mut drained = 0;
-    for unit_id in units {
-        spawn_effect(*unit_id, CEG_FLAMES);
-        play_sound_at(SOUND_DRAIN, origin);
-        blood_trail(origin, *unit_id);
-        let _ = spring::destroy_unit(
-            *unit_id,
-            spring::generated::owned::unit_control::DestroyUnitOptions {
-                selfd: true,
-                reclaimed: false,
-                attacker_id: -1,
-                recycle_id: false,
-            },
-        );
-        drained += 1;
-    }
-    drained
-}
-
-fn record_drained(count: i32) {
-    let _ = crate::state::with_world(|world| world.allies_drained += count);
-}
-
-fn restore(units: &[i32]) {
-    for unit_id in units {
-        let _ = spring::transfer_unit(*unit_id, PLAYER_TEAM, false, false);
-    }
-}
-
-fn blood_trail(origin: Float3, target_id: i32) {
-    let Some(target) = units::position(target_id) else {
-        return;
-    };
-    let dx = origin.x - target.x;
-    let dy = origin.y - target.y;
-    let dz = origin.z - target.z;
-    let distance = (dx * dx + dy * dy + dz * dz).sqrt().max(0.1);
-    let step = Float3 {
-        x: dx / distance,
-        y: dy / distance,
-        z: dz / distance,
-    };
-    let blood = ceg(CEG_SINGLE_BLOOD);
-    let mut travelled = 10.0;
-    while travelled < distance {
-        spawn_ceg(
-            Float3 {
-                x: target.x + step.x * travelled,
-                y: target.y + step.y * travelled,
-                z: target.z + step.z * travelled,
-            },
-            &blood,
-        );
-        travelled += 10.0;
-    }
-}
-
-fn units_in_cylinder(x: f32, z: f32, radius: f32, allegiance: i32) -> Vec<i32> {
-    let mut output = alloc::vec![0i32; 512];
-    match spring::get_units_in_cylinder_into(x, z, radius, allegiance, &mut output) {
-        Ok(spring::BufferFill::Complete(count)) => {
-            output.truncate(count);
-            output
-        }
-        _ => Vec::new(),
-    }
-}
-
-fn spawn_effect(unit_id: i32, ceg_name: &str) {
-    let Some(position) = units::position(unit_id) else {
-        return;
-    };
-    spawn_effect_at(position, ceg_name);
-}
-
-fn spawn_effect_at(position: Float3, ceg_name: &str) {
-    spawn_ceg(position, &ceg(ceg_name));
-}
-
-fn ceg(name: &str) -> DefRef {
-    // A non-negative id takes precedence over the name, so -1 makes the
-    // engine look the CEG up by name.
-    DefRef {
-        name: String::from(name),
-        id: -1,
-    }
-}
-
-fn spawn_ceg(position: Float3, ceg: &DefRef) {
-    let _ = spring::generated::owned::effects_control::spawn_ceg(
-        ceg,
-        position,
-        Float3::default(),
-        CEG_RADIUS,
-        CEG_DAMAGE,
-        0.0,
-    );
-}
-
-fn play_sound(name: &str, unit_id: i32) {
-    let Some(position) = units::position(unit_id) else {
-        return;
-    };
-    play_sound_at(name, position);
-}
-
-fn play_sound_at(name: &str, position: Float3) {
-    let _ = spring::sound::play_sound_file(name, 1.0, position, Float3::default(), 0);
-}
-
-fn valid(unit_id: i32) -> bool {
-    spring::valid_unit_id(unit_id).unwrap_or(false)
-}
-
-fn def_of(unit_id: i32) -> Option<i32> {
-    spring::units_info::get_unit_def_id(unit_id).ok()
-}
-
-fn health(unit_id: i32) -> Option<Health> {
-    let health = spring::units_info::get_unit_health(unit_id).ok()?;
-    Some(Health {
-        current: health.health,
-        max: health.max_health,
-    })
-}
-
-struct Health {
-    current: f32,
-    max: f32,
-}
-
-fn health_value(health: f32) -> spring::types::UnitHealthValue {
-    spring::types::UnitHealthValue {
-        health,
-        capture: -1.0,
-        paralyze: -1.0,
-        build: -1.0,
-        use_amounts: false,
     }
 }

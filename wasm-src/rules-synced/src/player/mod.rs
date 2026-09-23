@@ -1,4 +1,5 @@
 mod control;
+mod drain;
 mod messages;
 mod spells;
 

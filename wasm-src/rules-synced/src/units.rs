@@ -97,3 +97,45 @@ pub fn has_orders(unit_id: i32) -> bool {
         .map(|commands| !commands.is_empty())
         .unwrap_or(true)
 }
+
+pub fn units_in_cylinder(x: f32, z: f32, radius: f32, allegiance: i32) -> Vec<i32> {
+    let mut output = alloc::vec![0i32; 512];
+    match spring::get_units_in_cylinder_into(x, z, radius, allegiance, &mut output) {
+        Ok(spring::BufferFill::Complete(count)) => {
+            output.truncate(count);
+            output
+        }
+        _ => Vec::new(),
+    }
+}
+
+pub fn valid(unit_id: i32) -> bool {
+    spring::valid_unit_id(unit_id).unwrap_or(false)
+}
+
+pub fn def_of(unit_id: i32) -> Option<i32> {
+    spring::units_info::get_unit_def_id(unit_id).ok()
+}
+
+pub fn health(unit_id: i32) -> Option<Health> {
+    let health = spring::units_info::get_unit_health(unit_id).ok()?;
+    Some(Health {
+        current: health.health,
+        max: health.max_health,
+    })
+}
+
+pub struct Health {
+    pub current: f32,
+    pub max: f32,
+}
+
+pub fn health_value(health: f32) -> spring::types::UnitHealthValue {
+    spring::types::UnitHealthValue {
+        health,
+        capture: -1.0,
+        paralyze: -1.0,
+        build: -1.0,
+        use_amounts: false,
+    }
+}
