@@ -77,7 +77,7 @@ pub fn cast(unit_id: i32, spell: Spell, tx: f32, tz: f32, frame: i32) -> Option<
         }
     };
     let level = spell.animation_level();
-    let _ = spring::typed::call_unit_script(unit_id, "CastAnimation", &[level as f32, tx, tz], 0);
+    crate::unit_scripts::queue_call(unit_id, "CastAnimation", &[level as f32, tx, tz]);
     publish_cast(frame, spell.cast_frames());
     schedule(PendingEffect {
         unit_id,
@@ -380,7 +380,7 @@ fn resolve_poultice(unit_id: i32, frame: i32) {
                 frame: frame + (distance / 60.0).ceil() as i32,
             })
         });
-        let _ = spring::typed::call_unit_script(target, "StopMoving", &[], 0);
+        crate::unit_scripts::queue_call(target, "StopMoving", &[]);
     }
     spawn_effect_at(origin, CEG_POULTICE);
 }

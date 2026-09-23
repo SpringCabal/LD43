@@ -101,5 +101,5 @@ fn resists(unit_id: i32) -> bool {
 }
 
 fn call_script(unit_id: i32, function_name: &str, argument: f32) {
-    let _ = spring::typed::call_unit_script(unit_id, function_name, &[argument], 0);
+    crate::unit_scripts::queue_call(unit_id, function_name, &[argument]);
 }
