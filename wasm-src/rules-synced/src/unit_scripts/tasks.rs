@@ -6,11 +6,12 @@ use core::cell::RefCell;
 use spring::cus::{Axis, Duration, UnitCtx, WreckLevel};
 
 use crate::engine;
+use crate::random::unit_float;
 
 use super::actions::face_from_position;
 use super::common::{
-    SIG_ATTACK, SIG_BUFF, SIG_DEATH, SIG_MOVE, SIG_STUN, move_piece, play_unit_sound, random_unit,
-    spin, stop_spin, turn,
+    SIG_ATTACK, SIG_BUFF, SIG_DEATH, SIG_MOVE, SIG_STUN, move_piece, play_unit_sound, spin,
+    stop_spin, turn,
 };
 use super::kinds::ScriptKind;
 use super::{Pieces, TtldState};
@@ -20,7 +21,7 @@ pub(super) async fn bob_task(state: Rc<RefCell<TtldState>>, ctx: UnitCtx) {
     let initial_delay = {
         let mut state = state.borrow_mut();
         if state.is_ork && state.first_bob_run {
-            let delay = (random_unit(&mut state.random) * 464.0).ceil() as u64;
+            let delay = (unit_float() * 464.0).ceil() as u64;
             state.first_bob_run = false;
             Some(delay)
         } else {
@@ -91,9 +92,9 @@ pub(super) async fn attack_bob_task(state: Rc<RefCell<TtldState>>, ctx: UnitCtx)
 
 pub(super) async fn attack_task(state: Rc<RefCell<TtldState>>, ctx: UnitCtx) {
     ctx.set_signal_mask(SIG_ATTACK);
-    let (pieces, kind, dead, random) = {
+    let (pieces, kind, dead) = {
         let state = state.borrow();
-        (state.pieces, state.kind, state.dead, state.random)
+        (state.pieces, state.kind, state.dead)
     };
     if dead {
         return;
@@ -114,20 +115,19 @@ pub(super) async fn attack_task(state: Rc<RefCell<TtldState>>, ctx: UnitCtx) {
         100.0_f32.to_radians(),
     );
     if kind == Some(ScriptKind::BloodMage) {
-        let mut seed = random;
         turn(
             &ctx,
             pieces.torso,
             Axis::X,
-            -(5.0 + random_unit(&mut seed) * 2.0).to_radians(),
+            -(5.0 + unit_float() * 2.0).to_radians(),
             120.0_f32.to_radians(),
         );
         move_piece(
             &ctx,
             pieces.torso,
             Axis::Y,
-            -8.0 - random_unit(&mut seed) * 4.0,
-            45.0 + random_unit(&mut seed) * 10.0,
+            -8.0 - unit_float() * 4.0,
+            45.0 + unit_float() * 10.0,
         );
     }
     ctx.sleep(Duration::from_millis(100)).await;
@@ -278,12 +278,8 @@ pub(super) async fn stun_task(state: Rc<RefCell<TtldState>>, ctx: UnitCtx) {
     ctx.set_signal_mask(SIG_STUN);
     let (piece, duration, direction, spin_speed) = {
         let mut state = state.borrow_mut();
-        let direction = if random_unit(&mut state.random) < 0.5 {
-            -1.0
-        } else {
-            1.0
-        };
-        let spin_speed = 250.0 + random_unit(&mut state.random) * 100.0;
+        let direction = if unit_float() < 0.5 { -1.0 } else { 1.0 };
+        let spin_speed = 250.0 + unit_float() * 100.0;
         state.bob_scale = state.static_bob_scale * 0.1;
         (
             state.pieces.torso,
@@ -349,27 +345,26 @@ pub(super) async fn house_death_task(state: Rc<RefCell<TtldState>>, ctx: UnitCtx
     let piece = state.borrow().pieces.house;
     play_unit_sound(ctx.unit(), "sounds/house_fall.wav", 10.0);
     move_piece(&ctx, piece, Axis::Z, -250.0, 250.0);
-    let mut seed = state.borrow().random;
     turn(
         &ctx,
         piece,
         Axis::X,
-        (random_unit(&mut seed) - 0.5) / 2.0,
-        random_unit(&mut seed) / 2.0,
+        (unit_float() - 0.5) / 2.0,
+        unit_float() / 2.0,
     );
     turn(
         &ctx,
         piece,
         Axis::Y,
-        (random_unit(&mut seed) - 0.5) / 2.0,
-        random_unit(&mut seed) / 2.0,
+        (unit_float() - 0.5) / 2.0,
+        unit_float() / 2.0,
     );
     turn(
         &ctx,
         piece,
         Axis::Z,
-        (random_unit(&mut seed) - 0.5) / 4.0,
-        random_unit(&mut seed) / 4.0,
+        (unit_float() - 0.5) / 4.0,
+        unit_float() / 4.0,
     );
     ctx.sleep(Duration::from_millis(1200)).await;
     state.borrow_mut().death_pending = false;

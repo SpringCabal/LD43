@@ -9,7 +9,8 @@ use spring::cus::UnitCtx;
 use crate::{cmd, engine};
 
 use super::TtldState;
-use super::common::{face_direction, random_unit};
+use super::common::face_direction;
+use crate::random::unit_float;
 
 pub(super) fn issue_patrol_orders(ctx: &UnitCtx) {
     let _ = spring::give_order_to_unit(ctx.unit(), cmd::REPEAT, &[1.0], 0, 0);
@@ -42,9 +43,8 @@ pub(super) fn coward_block(ctx: &UnitCtx, target: UnitId) -> bool {
     };
     let dx = target_position.x - unit_position.x;
     let dz = target_position.z - unit_position.z;
-    let mut seed = ctx.unit().0 as u32 ^ engine::frame() as u32;
-    let cx = unit_position.x - dx + random_unit(&mut seed) * 50.0 - 25.0;
-    let cz = unit_position.z - dz + random_unit(&mut seed) * 50.0 - 25.0;
+    let cx = unit_position.x - dx + unit_float() * 50.0 - 25.0;
+    let cz = unit_position.z - dz + unit_float() * 50.0 - 25.0;
     let cy = spring::get_ground_height(cx, cz).unwrap_or(unit_position.y);
     let _ = spring::give_order_to_unit(ctx.unit(), cmd::MOVE, &[cx, cy, cz], 0, 0);
     let _ = spring::set_unit_weapon_state(

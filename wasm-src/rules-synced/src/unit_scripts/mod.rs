@@ -17,13 +17,13 @@ use spring::cus::{
     Axis, InitCtx, Piece, TaskDefinition, UnitCtx, UnitScript, WeaponId, WreckLevel,
 };
 
-use crate::combat;
 use crate::engine::{self, set_unit_number};
+use crate::{combat, random};
 
 use self::actions::{coward_block, face_from_position, issue_patrol_orders, ork_toss};
 use self::common::{
     SIG_ATTACK, SIG_BUFF, SIG_MOVE, SIG_STUN, collision_volume, face_target, move_piece,
-    play_unit_sound, random_unit, set_blocking,
+    play_unit_sound, set_blocking,
 };
 use self::kinds::ScriptKind;
 use self::tasks::{
@@ -71,12 +71,10 @@ pub(super) struct TtldState {
     cast_level: i32,
     cast_tx: f32,
     cast_tz: f32,
-    random: u32,
 }
 
 impl TtldState {
     fn new(ctx: &mut InitCtx<'_>) -> Self {
-        let unit = ctx.unit();
         Self {
             kind: None,
             pieces: Pieces::from_init(ctx),
@@ -96,7 +94,6 @@ impl TtldState {
             cast_level: 1,
             cast_tx: 0.0,
             cast_tz: 0.0,
-            random: unit.0 as u32 ^ 0x5454_4c44,
         }
     }
 }
@@ -386,7 +383,7 @@ impl UnitScript for TtldUnitScript {
                 let state = Rc::clone(&self.state);
                 let sound = self.state.borrow().death_sound;
                 let chance = self.state.borrow().death_sound_chance;
-                if sound.is_some() && random_unit(&mut self.state.borrow_mut().random) < chance {
+                if sound.is_some() && random::unit_float() < chance {
                     play_unit_sound(ctx.unit(), sound.unwrap_or_default(), 10.0);
                 }
                 collision_volume(ctx.unit(), false);

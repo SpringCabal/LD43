@@ -121,12 +121,3 @@ pub(super) fn collision_volume(unit: UnitId, selection: bool) {
         let _ = spring::set_unit_collision_volume_data(unit.0, scales, offsets, 0, 1, 0);
     }
 }
-
-pub(super) fn random_next(state: &mut u32) -> u32 {
-    *state = state.wrapping_mul(1_664_525).wrapping_add(1_013_904_223);
-    *state
-}
-
-pub(super) fn random_unit(state: &mut u32) -> f32 {
-    random_next(state) as f32 / u32::MAX as f32
-}
