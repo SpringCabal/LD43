@@ -1,4 +1,6 @@
+use alloc::collections::BTreeMap;
 use alloc::vec::Vec;
+use core::cell::RefCell;
 
 use crate::state;
 
@@ -37,8 +39,40 @@ const BEAM_RADIUS_CAP: f32 = 150.0;
 const COLOR_OFFSET: f32 = 0.2;
 const ASSUMED_SIZE: f32 = 1.0;
 
+/// The radius and colour of the light a weapon def's projectiles carry, or
+/// `None` for projectiles without a light.
+#[derive(Clone, Copy)]
+struct DefLight {
+    radius: f32,
+    color: [f32; 3],
+}
+
+thread_local! {
+    static DEF_LIGHTS: RefCell<BTreeMap<i32, Option<DefLight>>> = const {
+        RefCell::new(BTreeMap::new())
+    };
+}
+
 fn light_for(projectile_id: i32) -> Option<spring::lights::LightParams> {
     let weapon_def_id = spring::projectiles::get_projectile_def_id(projectile_id).ok()?;
+    let light = DEF_LIGHTS.with(|lights| lights.borrow().get(&weapon_def_id).copied());
+    let light = match light {
+        Some(light) => light,
+        None => {
+            let light = def_light(weapon_def_id);
+            DEF_LIGHTS.with(|lights| lights.borrow_mut().insert(weapon_def_id, light));
+            light
+        }
+    }?;
+    let position = spring::projectiles::get_projectile_position(projectile_id).ok()?;
+    Some(params::point(
+        [position.x, position.y, position.z],
+        light.color,
+        light.radius,
+    ))
+}
+
+fn def_light(weapon_def_id: i32) -> Option<DefLight> {
     let weapon = spring::weapon_defs::get_weapon_def_by_id(weapon_def_id).ok()?;
     let custom_radius =
         spring::weapon_defs::get_weapon_def_custom_param(weapon_def_id, "light_radius")
@@ -48,7 +82,6 @@ fn light_for(projectile_id: i32) -> Option<spring::lights::LightParams> {
     if radius <= 0.0 {
         return None;
     }
-    let position = spring::projectiles::get_projectile_position(projectile_id).ok()?;
     let color = if custom_radius.is_some() {
         // The blood mage's fireball carries its own warm light in the desktop
         // widget.  Keep that information in the weapon definition so the WASM
@@ -57,11 +90,7 @@ fn light_for(projectile_id: i32) -> Option<spring::lights::LightParams> {
     } else {
         [COLOR_OFFSET, COLOR_OFFSET, COLOR_OFFSET]
     };
-    Some(params::point(
-        [position.x, position.y, position.z],
-        color,
-        radius,
-    ))
+    Some(DefLight { radius, color })
 }
 
 fn radius_for(weapon_type: &str, range: f32) -> f32 {
