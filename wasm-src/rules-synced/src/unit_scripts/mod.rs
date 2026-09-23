@@ -1088,6 +1088,11 @@ impl TtldCusModule {
             if self.handles.contains_key(&instance) {
                 continue;
             }
+            // Drop units destroyed before the tick, whose id may even belong to
+            // a new unit by now; retrying them would never end.
+            if spring::get_unit_def_id(unit_id).map_or(true, |current| current.0 != def) {
+                continue;
+            }
             let Ok(map) = spring::get_unit_piece_map(unit_id) else {
                 queue_unit_created(unit_id, def);
                 continue;
