@@ -1,60 +1,74 @@
+use spring_addons::AddonContext;
 use spring_addons::register_gadgets;
 use spring_addons::rules::{Gadget, GadgetHandler};
 
-use super::*;
 #[cfg(feature = "pose-probe")]
 use crate::pose_probe::PoseProbeGadget;
-use crate::state::{self, Global};
+use crate::state::{Global, Phase};
+use crate::{diagnostics, terrain};
 
+use super::combat::CombatGadget;
+#[cfg(feature = "headless-integration")]
+use super::integration::IntegrationGadget;
+use super::orks::OrksGadget;
+use super::player::PlayerGadget;
+#[cfg(feature = "e2e")]
+use super::render_test::RenderTestGadget;
+use super::status::StatusGadget;
+use super::story::StoryGadget;
+use super::terrain::TerrainGadget;
+use super::town::TownGadget;
+use super::unit_scripts::UnitScriptsGadget;
+use super::victory::VictoryGadget;
+
+/// Starts the world on the first game frame: opens the map to every ally team
+/// and prepares the terrain types. The town itself is built by the town
+/// gadget in the same frame; see [`Phase`].
 #[derive(Default)]
-pub struct SetupGadget;
-
-impl SetupGadget {
-    pub fn new() -> Self {
-        Self
-    }
-}
+struct SetupGadget;
 
 impl Gadget<Global> for SetupGadget {
     fn name(&self) -> &'static str {
         "Setup"
     }
 
-    fn game_frame(&self, _ctx: &spring_addons::AddonContext<'_, Global>, frame: i32) {
-        let _ = state::with_world(|world| {
-            world.frame = frame;
-            world.frame_consumed = false;
-        });
-        if crate::setup::take_setup_flag() {
-            crate::setup::setup();
-            let _ = state::with_world(|world| world.frame_consumed = true);
+    fn game_frame(&self, ctx: &AddonContext<'_, Global>, frame: i32) {
+        if ctx.global().phase(frame) != Phase::Loading {
+            return;
         }
+        ctx.global().begin_setup(frame);
+        for ally_team in 0..ALLY_TEAMS {
+            let _ = spring::team_control::set_global_los(ally_team, true);
+        }
+        terrain::initialize();
+        diagnostics::info("world setup started");
     }
 }
 
+const ALLY_TEAMS: i32 = 3;
+
+/// Registers the gadgets. Their order is the order they run in each frame,
+/// which also fixes the order in which they draw from the synced RNG.
 pub fn setup(handler: &mut GadgetHandler<Global>) {
     register_gadgets!(
         handler,
         [
-            SetupGadget::new(),
-            CombatGadget::new(),
-            PlayerGadget::new(),
-            StoryGadget::new(),
-            TownGadget::new(),
-            VictoryGadget::new(),
-            StatusGadget::new(),
+            SetupGadget,
+            CombatGadget,
+            TerrainGadget,
+            PlayerGadget::default(),
+            StoryGadget::default(),
+            OrksGadget,
+            TownGadget::default(),
+            VictoryGadget,
+            StatusGadget::default(),
         ]
     );
-
     #[cfg(feature = "headless-integration")]
-    register_gadgets!(handler, [IntegrationGadget::new()]);
-
+    register_gadgets!(handler, [IntegrationGadget]);
     #[cfg(feature = "pose-probe")]
     register_gadgets!(handler, [PoseProbeGadget::new()]);
-
-    register_gadgets!(handler, [LifecycleGadget::new(), InputGadget::new()]);
-}
-
-pub fn frame_consumed() -> bool {
-    state::with_world(|world| world.frame_consumed).unwrap_or(false)
+    #[cfg(feature = "e2e")]
+    register_gadgets!(handler, [RenderTestGadget::default()]);
+    register_gadgets!(handler, [UnitScriptsGadget::default()]);
 }

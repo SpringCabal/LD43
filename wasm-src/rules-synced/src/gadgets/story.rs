@@ -1,15 +1,15 @@
+use core::cell::RefCell;
+
+use spring_addons::AddonContext;
 use spring_addons::rules::Gadget;
 
-use crate::gadgets::setup::frame_consumed;
-use crate::state::Global;
+use crate::combat::{self, Story};
+use crate::state::{GameEnd, Global};
 
+/// Sends the ork waves on schedule until the town is saved.
 #[derive(Default)]
-pub struct StoryGadget;
-
-impl StoryGadget {
-    pub fn new() -> Self {
-        Self
-    }
+pub struct StoryGadget {
+    story: RefCell<Story>,
 }
 
 impl Gadget<Global> for StoryGadget {
@@ -17,10 +17,17 @@ impl Gadget<Global> for StoryGadget {
         "Story"
     }
 
-    fn game_frame(&self, _ctx: &spring_addons::AddonContext<'_, Global>, frame: i32) {
-        if frame_consumed() {
+    fn game_frame(&self, ctx: &AddonContext<'_, Global>, frame: i32) {
+        let global = ctx.global();
+        if !global.running(frame) || global.game_end.get() == GameEnd::Victory {
             return;
         }
-        crate::orchestration::advance_story(frame);
+        let wave = self.story.borrow_mut().take_due_wave(frame);
+        if let Some(wave) = wave {
+            if wave.able_to_win {
+                global.game_end.set(GameEnd::VictoryPossible);
+            }
+            combat::spawn_wave(wave);
+        }
     }
 }

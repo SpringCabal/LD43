@@ -1,3 +1,7 @@
+use alloc::vec::Vec;
+
+use spring::types::Float3;
+
 use crate::defs::{UnitKind, defs};
 use crate::engine::set_unit_number;
 use crate::units;
@@ -12,6 +16,7 @@ pub enum PlayerCommand {
     Cast { spell: Spell, x: f32, z: f32 },
 }
 
+#[derive(Default)]
 pub struct Player {
     unit_id: Option<i32>,
     pending: Option<Pending>,
@@ -20,23 +25,14 @@ pub struct Player {
     moving_to_attack: bool,
     casting_until: i32,
     cast_start_frame: i32,
-    cast_animation_time: i32,
+    /// How long the cast animation (and the staff glow) lasts, in frames.
+    cast_animation_frames: i32,
+    /// Engine orders decided while updating, issued by the caller once it has
+    /// released the player; see [`Order`].
+    orders: Vec<Order>,
 }
 
 impl Player {
-    pub fn new() -> Self {
-        Self {
-            unit_id: None,
-            pending: None,
-            move_goal: None,
-            attacking: false,
-            moving_to_attack: false,
-            casting_until: 0,
-            cast_start_frame: 0,
-            cast_animation_time: 0,
-        }
-    }
-
     pub fn unit_id(&self) -> Option<i32> {
         self.unit_id
     }
@@ -71,22 +67,27 @@ impl Player {
         });
     }
 
+    pub fn begin_cast(&mut self, frame: i32, frames: i32) {
+        self.casting_until = frame + frames;
+        self.cast_start_frame = frame;
+        self.cast_animation_frames = frames + CAST_ANIMATION_EXTRA_FRAMES;
+        if let Some(unit_id) = self.unit_id {
+            self.orders.push(Order::ClearGoal(unit_id));
+        }
+        self.move_goal = None;
+    }
+
+    /// The orders the last calls decided on, in order.
+    pub fn take_orders(&mut self) -> Vec<Order> {
+        core::mem::take(&mut self.orders)
+    }
+
     pub fn cast_start_frame(&self) -> i32 {
         self.cast_start_frame
     }
 
-    pub fn cast_animation_time(&self) -> i32 {
-        self.cast_animation_time
-    }
-
-    pub fn begin_cast(&mut self, frame: i32, frames: i32) {
-        self.casting_until = frame + frames;
-        self.cast_start_frame = frame;
-        self.cast_animation_time = frames + 8;
-        if let Some(unit_id) = self.unit_id {
-            let _ = spring::clear_unit_goal(unit_id, true);
-        }
-        self.move_goal = None;
+    pub fn cast_animation_frames(&self) -> i32 {
+        self.cast_animation_frames
     }
 
     pub fn casting(&self, frame: i32) -> bool {
@@ -126,6 +127,8 @@ impl Player {
 }
 
 const INPUT_WINDOW: i32 = 2;
+/// The cast animation outlasts the cast by this many frames.
+const CAST_ANIMATION_EXTRA_FRAMES: i32 = 8;
 const GOAL_RADIUS: f32 = 60.0;
 const ATTACK_RADIUS: f32 = 50.0;
 const ATTACK_REACH: f32 = 50.0;
@@ -186,58 +189,35 @@ impl Player {
         let tx = position.x + ATTACK_REACH * dx / distance;
         let tz = position.z + ATTACK_REACH * dz / distance;
         let ty = units::ground_height(tx, tz) + AIM_HEIGHT;
-        let _ = spring::set_unit_target(
+        self.orders.push(Order::Target(
             unit_id,
-            spring::types::UnitTargetRef {
-                target_id: -1,
-                pos: spring::types::Float3 {
-                    x: tx,
-                    y: ty,
-                    z: tz,
-                },
-                is_ground_target: true,
-            },
-            spring::types::SetUnitTargetOptions {
-                manual_fire: false,
-                user_target: false,
-            },
-            0,
-        );
-        publish_fire_target(unit_id, Some((tx, tz)));
+            Some(Float3 {
+                x: tx,
+                y: ty,
+                z: tz,
+            }),
+        ));
         self.attacking = true;
     }
 
     fn set_move_goal(&mut self, unit_id: i32, x: f32, z: f32, radius: f32) {
         let (x, z) = clamp_to_map(x, z);
         let y = units::ground_height(x, z);
-        let _ =
-            spring::set_unit_move_goal(unit_id, spring::types::Float3 { x, y, z }, 10.0, 0.0, true);
+        self.orders
+            .push(Order::MoveGoal(unit_id, Float3 { x, y, z }));
         self.move_goal = Some(MoveGoal { x, z, radius });
     }
 
     fn clear_move(&mut self, unit_id: i32) {
         if self.move_goal.is_some() {
-            let _ = spring::clear_unit_goal(unit_id, true);
+            self.orders.push(Order::ClearGoal(unit_id));
             self.move_goal = None;
         }
     }
 
     fn clear_attack(&mut self, unit_id: i32) {
         if self.attacking {
-            let _ = spring::set_unit_target(
-                unit_id,
-                spring::types::UnitTargetRef {
-                    target_id: -1,
-                    pos: spring::types::Float3::default(),
-                    is_ground_target: false,
-                },
-                spring::types::SetUnitTargetOptions {
-                    manual_fire: false,
-                    user_target: false,
-                },
-                0,
-            );
-            publish_fire_target(unit_id, None);
+            self.orders.push(Order::Target(unit_id, None));
             self.attacking = false;
         }
     }
@@ -253,6 +233,47 @@ impl Player {
         let dz = position.z - goal.z;
         if dx * dx + dz * dz < goal.radius * goal.radius {
             self.clear_move(unit_id);
+        }
+    }
+}
+
+/// An engine call the player decided on.
+///
+/// The player is shared state, so it records these instead of calling the
+/// engine while borrowed; whoever updated it issues them afterwards.
+#[derive(Clone, Copy)]
+pub enum Order {
+    /// Aim at a ground point, or stop aiming.
+    Target(i32, Option<Float3>),
+    MoveGoal(i32, Float3),
+    ClearGoal(i32),
+}
+
+impl Order {
+    pub fn issue(self) {
+        match self {
+            Self::Target(unit_id, target) => {
+                let _ = spring::set_unit_target(
+                    unit_id,
+                    spring::types::UnitTargetRef {
+                        target_id: -1,
+                        pos: target.unwrap_or_default(),
+                        is_ground_target: target.is_some(),
+                    },
+                    spring::types::SetUnitTargetOptions {
+                        manual_fire: false,
+                        user_target: false,
+                    },
+                    0,
+                );
+                publish_fire_target(unit_id, target.map(|target| (target.x, target.z)));
+            }
+            Self::MoveGoal(unit_id, goal) => {
+                let _ = spring::set_unit_move_goal(unit_id, goal, 10.0, 0.0, true);
+            }
+            Self::ClearGoal(unit_id) => {
+                let _ = spring::clear_unit_goal(unit_id, true);
+            }
         }
     }
 }

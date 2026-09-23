@@ -4,9 +4,9 @@ use spring::types::Float3;
 
 use crate::combat;
 use crate::defs::{UnitKind, defs};
-use crate::engine::set_game_number;
 use crate::fx::{play_sound, play_sound_at, spawn_effect, spawn_effect_at};
 use crate::random;
+use crate::state::Global;
 
 use super::drain::{drain, drain_for_transfusion};
 use crate::units::{self, ENEMY_TEAM, PLAYER_TEAM};
@@ -71,11 +71,18 @@ impl Spell {
     }
 }
 
-pub fn cast(unit_id: i32, spell: Spell, tx: f32, tz: f32, frame: i32) -> Option<CastOutcome> {
+pub fn cast(
+    global: &Global,
+    unit_id: i32,
+    spell: Spell,
+    tx: f32,
+    tz: f32,
+    frame: i32,
+) -> Option<CastOutcome> {
     let drained = match spell {
-        Spell::Transfusion => drain_for_transfusion(unit_id)?,
+        Spell::Transfusion => drain_for_transfusion(global, unit_id)?,
         _ => {
-            if !drain(unit_id, spell.cost(), false).0 {
+            if !drain(global, unit_id, spell.cost(), false).0 {
                 return None;
             }
             None
@@ -83,8 +90,7 @@ pub fn cast(unit_id: i32, spell: Spell, tx: f32, tz: f32, frame: i32) -> Option<
     };
     let level = spell.animation_level();
     crate::unit_scripts::queue_call(unit_id, "CastAnimation", &[level as f32, tx, tz]);
-    publish_cast(frame, spell.cast_frames());
-    schedule(PendingEffect {
+    global.spells.access_mut().effects.push(PendingEffect {
         unit_id,
         spell,
         tx,
@@ -97,22 +103,16 @@ pub fn cast(unit_id: i32, spell: Spell, tx: f32, tz: f32, frame: i32) -> Option<
     })
 }
 
-pub fn resolve_pending(frame: i32) {
-    let due = with_pending(|pending| {
-        let due: Vec<PendingEffect> = pending
-            .iter()
-            .copied()
-            .filter(|effect| effect.frame <= frame)
-            .collect();
-        pending.retain(|effect| effect.frame > frame);
-        due
-    })
-    .unwrap_or_default();
+/// Resolves the spell effects, impulses and fireball impacts that are due.
+pub fn resolve_pending(global: &Global, frame: i32) {
+    let due = take_due(&mut global.spells.access_mut().effects, frame, |effect| {
+        effect.frame
+    });
     for effect in due {
-        resolve(effect, frame);
+        resolve(global, effect, frame);
     }
-    resolve_impulses(frame);
-    resolve_fireball_impacts(frame);
+    resolve_impulses(global, frame);
+    resolve_fireball_impacts(global, frame);
 }
 
 const FIREBALL_COST: f32 = 1350.0;
@@ -189,50 +189,38 @@ struct FireballImpact {
     frame: i32,
 }
 
-thread_local! {
-    static PENDING: core::cell::RefCell<Vec<PendingEffect>> = const {
-        core::cell::RefCell::new(Vec::new())
-    };
-    static IMPULSES: core::cell::RefCell<Vec<DelayedImpulse>> = const {
-        core::cell::RefCell::new(Vec::new())
-    };
-    static FIREBALL_IMPACTS: core::cell::RefCell<Vec<FireballImpact>> = const {
-        core::cell::RefCell::new(Vec::new())
-    };
+/// Spells cast but not resolved yet.
+#[derive(Default)]
+pub struct Spellbook {
+    /// Cast spells that take effect after their cast delay.
+    effects: Vec<PendingEffect>,
+    /// Migraine stuns and Poultice throws, delayed by their wave's travel.
+    impulses: Vec<DelayedImpulse>,
+    /// Heartburn fireballs, which hit when their flight time is up.
+    fireball_impacts: Vec<FireballImpact>,
 }
 
-fn with_pending<R>(function: impl FnOnce(&mut Vec<PendingEffect>) -> R) -> Option<R> {
-    PENDING.with(|pending| pending.try_borrow_mut().ok().map(|mut p| function(&mut p)))
+/// Removes and returns the entries due at `frame`.
+fn take_due<T: Copy>(entries: &mut Vec<T>, frame: i32, due_frame: impl Fn(&T) -> i32) -> Vec<T> {
+    let due = entries
+        .iter()
+        .copied()
+        .filter(|entry| due_frame(entry) <= frame)
+        .collect();
+    entries.retain(|entry| due_frame(entry) > frame);
+    due
 }
 
-fn with_impulses<R>(function: impl FnOnce(&mut Vec<DelayedImpulse>) -> R) -> Option<R> {
-    IMPULSES.with(|impulses| impulses.try_borrow_mut().ok().map(|mut i| function(&mut i)))
-}
-
-fn with_fireball_impacts<R>(function: impl FnOnce(&mut Vec<FireballImpact>) -> R) -> Option<R> {
-    FIREBALL_IMPACTS.with(|impacts| impacts.try_borrow_mut().ok().map(|mut i| function(&mut i)))
-}
-
-fn publish_cast(frame: i32, cast_frames: i32) {
-    set_game_number("castingFreeze", (frame + cast_frames) as f32);
-    set_game_number("castAnimTime", (cast_frames + 8) as f32);
-    set_game_number("start_cast", frame as f32);
-}
-
-fn schedule(effect: PendingEffect) {
-    let _ = with_pending(|pending| pending.push(effect));
-}
-
-fn resolve(effect: PendingEffect, frame: i32) {
+fn resolve(global: &Global, effect: PendingEffect, frame: i32) {
     if !valid(effect.unit_id) {
         return;
     }
     match effect.spell {
         Spell::Transfusion => resolve_transfusion(effect.unit_id, effect.shortfall),
-        Spell::Heartburn => resolve_heartburn(effect.unit_id, effect.tx, effect.tz, frame),
-        Spell::Adrenaline => resolve_adrenaline(effect.unit_id, frame),
-        Spell::Migraine => resolve_migraine(effect.tx, effect.tz, frame),
-        Spell::Poultice => resolve_poultice(effect.unit_id, frame),
+        Spell::Heartburn => resolve_heartburn(global, effect.unit_id, effect.tx, effect.tz, frame),
+        Spell::Adrenaline => resolve_adrenaline(global, effect.unit_id, frame),
+        Spell::Migraine => resolve_migraine(global, effect.tx, effect.tz, frame),
+        Spell::Poultice => resolve_poultice(global, effect.unit_id, frame),
     }
 }
 
@@ -246,7 +234,7 @@ fn resolve_transfusion(unit_id: i32, shortfall: Option<f32>) {
     spawn_effect(unit_id, CEG_HEALTH);
 }
 
-fn resolve_heartburn(unit_id: i32, tx: f32, tz: f32, frame: i32) {
+fn resolve_heartburn(global: &Global, unit_id: i32, tx: f32, tz: f32, frame: i32) {
     let Some(origin) = units::position(unit_id) else {
         return;
     };
@@ -293,17 +281,16 @@ fn resolve_heartburn(unit_id: i32, tx: f32, tz: f32, frame: i32) {
         // exactly once.
         let _ = spring::projectile_control::set_projectile_damages(projectile, 0, "default", 0.0);
     }
-    let _ = with_fireball_impacts(|impacts| {
-        impacts.push(FireballImpact {
-            unit_id,
-            x: tx,
-            z: tz,
-            frame: frame + fly_time as i32,
-        })
-    });
+    let impact = FireballImpact {
+        unit_id,
+        x: tx,
+        z: tz,
+        frame: frame + fly_time as i32,
+    };
+    global.spells.access_mut().fireball_impacts.push(impact);
 }
 
-fn resolve_adrenaline(unit_id: i32, frame: i32) {
+fn resolve_adrenaline(global: &Global, unit_id: i32, frame: i32) {
     let Some(origin) = units::position(unit_id) else {
         return;
     };
@@ -314,13 +301,13 @@ fn resolve_adrenaline(unit_id: i32, frame: i32) {
             continue;
         }
         let duration = ADRENALINE_FRAMES + random::unit_float() * ADRENALINE_FRAMES_SPREAD;
-        combat::adrenaline(target, duration as i32, frame);
+        combat::adrenaline(global, target, duration as i32, frame);
         spawn_effect(target, CEG_ADRENALINE);
     }
     spawn_effect_at(origin, CEG_ADRENALINE);
 }
 
-fn resolve_migraine(tx: f32, tz: f32, frame: i32) {
+fn resolve_migraine(global: &Global, tx: f32, tz: f32, frame: i32) {
     let ty = units::ground_height(tx, tz);
     play_sound_at(
         "sounds/curse_spell.wav",
@@ -337,15 +324,14 @@ fn resolve_migraine(tx: f32, tz: f32, frame: i32) {
         let dx = position.x - tx;
         let dz = position.z - tz;
         let distance = (dx * dx + dz * dz).sqrt();
-        let _ = with_impulses(|impulses| {
-            impulses.push(DelayedImpulse {
-                unit_id: target,
-                impulse: Float3::default(),
-                stun: (1.0 - distance / MIGRAINE_FALLOFF)
-                    * (MIGRAINE_STUN_FRAMES + random::unit_float() * MIGRAINE_STUN_FRAMES_SPREAD),
-                frame: frame + (distance / MIGRAINE_WAVE_SPEED).ceil() as i32,
-            })
-        });
+        let delayed = DelayedImpulse {
+            unit_id: target,
+            impulse: Float3::default(),
+            stun: (1.0 - distance / MIGRAINE_FALLOFF)
+                * (MIGRAINE_STUN_FRAMES + random::unit_float() * MIGRAINE_STUN_FRAMES_SPREAD),
+            frame: frame + (distance / MIGRAINE_WAVE_SPEED).ceil() as i32,
+        };
+        global.spells.access_mut().impulses.push(delayed);
     }
     spawn_effect_at(
         Float3 {
@@ -357,7 +343,7 @@ fn resolve_migraine(tx: f32, tz: f32, frame: i32) {
     );
 }
 
-fn resolve_poultice(unit_id: i32, frame: i32) {
+fn resolve_poultice(global: &Global, unit_id: i32, frame: i32) {
     let Some(origin) = units::position(unit_id) else {
         return;
     };
@@ -384,54 +370,40 @@ fn resolve_poultice(unit_id: i32, frame: i32) {
             y: fly_time * unit_gravity / 2.0 + dy / fly_time - velocity.y,
             z: dz / fly_time - velocity.z,
         };
-        let _ = with_impulses(|impulses| {
-            impulses.push(DelayedImpulse {
-                unit_id: target,
-                impulse,
-                stun: 0.0,
-                frame: frame + (distance / POULTICE_ELMOS_PER_FRAME).ceil() as i32,
-            })
-        });
+        let delayed = DelayedImpulse {
+            unit_id: target,
+            impulse,
+            stun: 0.0,
+            frame: frame + (distance / POULTICE_ELMOS_PER_FRAME).ceil() as i32,
+        };
+        global.spells.access_mut().impulses.push(delayed);
         crate::unit_scripts::queue_call(target, "StopMoving", &[]);
     }
     spawn_effect_at(origin, CEG_POULTICE);
 }
 
-fn resolve_impulses(frame: i32) {
-    let due = with_impulses(|impulses| {
-        let due: Vec<DelayedImpulse> = impulses
-            .iter()
-            .copied()
-            .filter(|impulse| impulse.frame <= frame)
-            .collect();
-        impulses.retain(|impulse| impulse.frame > frame);
-        due
-    })
-    .unwrap_or_default();
+fn resolve_impulses(global: &Global, frame: i32) {
+    let due = take_due(&mut global.spells.access_mut().impulses, frame, |impulse| {
+        impulse.frame
+    });
     for entry in due {
         if !valid(entry.unit_id) {
             continue;
         }
         if entry.stun > 0.0 {
-            combat::stun(entry.unit_id, entry.stun as i32, frame);
+            combat::stun(global, entry.unit_id, entry.stun as i32, frame);
         } else {
             let _ = spring::add_unit_impulse(entry.unit_id, entry.impulse, 0.0);
         }
     }
 }
 
-fn resolve_fireball_impacts(frame: i32) {
-    let due = with_fireball_impacts(|impacts| {
-        let due: Vec<FireballImpact> = impacts
-            .iter()
-            .copied()
-            .filter(|impact| impact.frame <= frame)
-            .collect();
-        impacts.retain(|impact| impact.frame > frame);
-        due
-    })
-    .unwrap_or_default();
-
+fn resolve_fireball_impacts(global: &Global, frame: i32) {
+    let due = take_due(
+        &mut global.spells.access_mut().fireball_impacts,
+        frame,
+        |impact| impact.frame,
+    );
     let Some(weapon_def_id) = defs().fireball else {
         return;
     };

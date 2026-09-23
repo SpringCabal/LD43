@@ -9,17 +9,11 @@ mod fx;
 mod gadgets;
 #[cfg(feature = "headless-integration")]
 mod integration;
-mod lifecycle;
-mod orchestration;
 mod player;
 #[cfg(feature = "pose-probe")]
 mod pose_probe;
 mod random;
-#[cfg(feature = "e2e")]
-mod render_test;
-mod setup;
 mod state;
-mod status;
 mod terrain;
 mod town;
 mod unit_scripts;

@@ -6,6 +6,7 @@ mod cursor;
 mod deferred_lighting;
 mod diagnostics;
 mod fire;
+mod game;
 mod gl_uniforms;
 mod highlight;
 mod hud;

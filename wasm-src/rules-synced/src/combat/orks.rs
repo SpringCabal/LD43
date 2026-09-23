@@ -6,23 +6,14 @@ use crate::{cmd, random};
 
 use super::attributes::{self, Effect, Modifier};
 
+#[derive(Default)]
 pub struct OrkAi {
     units: Vec<i32>,
     cursor: usize,
-    killed: i32,
     fleeing: bool,
 }
 
 impl OrkAi {
-    pub fn new() -> Self {
-        Self {
-            units: Vec::new(),
-            cursor: 0,
-            killed: 0,
-            fleeing: false,
-        }
-    }
-
     pub fn created(&mut self, unit_id: i32, unit_def_id: i32, team: i32) -> bool {
         if team != ENEMY_TEAM || !is_ork(unit_def_id) {
             return false;
@@ -31,14 +22,16 @@ impl OrkAi {
         true
     }
 
-    pub fn destroyed(&mut self, unit_id: i32) -> Option<i32> {
-        let index = self.units.iter().position(|id| *id == unit_id)?;
+    /// Forgets a dead ork; returns whether it was one.
+    pub fn destroyed(&mut self, unit_id: i32) -> bool {
+        let Some(index) = self.units.iter().position(|id| *id == unit_id) else {
+            return false;
+        };
         self.units.swap_remove(index);
         if self.cursor >= self.units.len() {
             self.cursor = 0;
         }
-        self.killed += 1;
-        Some(self.killed)
+        true
     }
 
     pub fn next_batch(&mut self) -> Vec<i32> {
@@ -57,12 +50,8 @@ impl OrkAi {
         batch
     }
 
-    pub fn killed(&self) -> i32 {
-        self.killed
-    }
-
-    pub fn all(&self) -> Vec<i32> {
-        self.units.clone()
+    pub fn units(&self) -> &[i32] {
+        &self.units
     }
 
     pub fn start_fleeing(&mut self) {

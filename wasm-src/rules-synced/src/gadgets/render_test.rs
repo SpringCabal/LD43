@@ -7,24 +7,44 @@
 
 use core::cell::Cell;
 
+use spring_addons::AddonContext;
+use spring_addons::rules::Gadget;
+
 use crate::defs::UnitKind;
-use crate::state;
+use crate::state::Global;
 use crate::units::{self, PLAYER_TEAM};
 
 const FIXTURE_MESSAGE: &str = "TTLD E2E leader render fixture";
+const REQUEST: &[u8] = b"e2e|leader-render";
 
-thread_local! {
-    static SPAWNED: Cell<bool> = const { Cell::new(false) };
+/// Spawns the leader render fixture when the e2e UI asks for it.
+#[derive(Default)]
+pub struct RenderTestGadget {
+    spawned: Cell<bool>,
 }
 
-pub fn spawn_leader_fixture() {
-    if SPAWNED.with(|spawned| spawned.replace(true)) {
-        return;
+impl Gadget<Global> for RenderTestGadget {
+    fn name(&self) -> &'static str {
+        "RenderTest"
     }
 
-    let Some(origin) =
-        state::with_world(|world| world.player.unit_id().and_then(units::position)).flatten()
-    else {
+    fn handle_lua_msg(
+        &self,
+        ctx: &AddonContext<'_, Global>,
+        _player_id: i32,
+        _script: i32,
+        _mode: i32,
+        data: &[u8],
+    ) {
+        if data == REQUEST && !self.spawned.replace(true) {
+            spawn_leader_fixture(ctx.global());
+        }
+    }
+}
+
+fn spawn_leader_fixture(global: &Global) {
+    let player = global.player.access().unit_id();
+    let Some(origin) = player.and_then(units::position) else {
         let _ = spring::echo("TTLD E2E leader render fixture skipped: no player", "");
         return;
     };

@@ -392,6 +392,9 @@ impl UnitScript for TtldUnitScript {
                 collision_volume(ctx.unit(), false);
                 collision_volume(ctx.unit(), true);
                 let _ = spring::set_unit_neutral(ctx.unit().0, true);
+                // Safe inside a CUS callin: the UnitGiven/UnitTaken this raises
+                // have no handler in this module, and the attribute store is
+                // never borrowed across an engine call.
                 let _ =
                     spring::transfer_unit(ctx.unit().0, crate::units::NEUTRAL_TEAM, false, false);
                 combat::add_effect(

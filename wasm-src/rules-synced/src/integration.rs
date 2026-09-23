@@ -11,8 +11,10 @@ use core::cell::RefCell;
 
 use crate::combat;
 use crate::defs::{UnitKind, defs};
-use crate::state::World;
-use crate::units::{self, ENEMY_TEAM, OrkKind, TOWN_CENTRE_X, TOWN_CENTRE_Z};
+use crate::state::{GameEnd, Global, Phase};
+use crate::units::{
+    self, ENEMY_TEAM, OrkKind, PLAYER_TEAM, TOWN_CENTRE_X, TOWN_CENTRE_Z, VillagerKind,
+};
 
 const TAG: &str = "[TTLD-Rust-Test]";
 /// CSolidObject::PSTATE_BIT_FLYING.
@@ -55,7 +57,7 @@ fn check(tracker: &mut Tracker, condition: bool, message: &str) {
 /// Mean distance of the living orks from the town centre they are ordered to
 /// attack.  Used to prove the ork AI actually received and followed orders.
 fn ork_distance(world: &World) -> f32 {
-    let orks = world.orks.all();
+    let orks = world.global.orks.access().units().to_vec();
     let mut total = 0.0;
     let mut counted = 0.0;
     for unit_id in &orks {
@@ -81,6 +83,20 @@ fn ork_def_ids() -> Vec<i32> {
         .collect()
 }
 
+fn villager_count() -> i32 {
+    [
+        VillagerKind::Swordsman,
+        VillagerKind::Crossbowman,
+        VillagerKind::Coward,
+        VillagerKind::Peasant,
+    ]
+    .into_iter()
+    .filter_map(|kind| defs().id(kind.unit()))
+    .filter_map(|def_id| spring::get_team_unit_def_count(PLAYER_TEAM, def_id).ok())
+    .map(|count| count as i32)
+    .sum()
+}
+
 fn enemy_unit_count() -> i32 {
     ork_def_ids()
         .into_iter()
@@ -89,42 +105,52 @@ fn enemy_unit_count() -> i32 {
         .sum()
 }
 
-/// Called from `game_frame` with the world state *unborrowed*: several checks
-/// spawn or destroy units, which re-enters this module through the call-ins.
-pub fn update(frame: i32) {
+/// What the checks see: the gadgets' shared state and the current frame.
+struct World<'a> {
+    global: &'a Global,
+    frame: i32,
+}
+
+/// Called from `game_frame` with no state borrowed: several checks spawn or
+/// destroy units, which re-enters this module through the callins.
+pub fn update(global: &Global, frame: i32) {
+    let world = World { global, frame };
     let done = TRACKER.with_borrow(|tracker| tracker.done);
     if done {
         return;
     }
     match frame {
-        10 => with_checks(setup_checks),
-        40 => with_checks(ork_spawn_checks),
-        60 => with_checks(player_attack_checks),
-        120 => spell_checks(),
-        150 => with_checks(heartburn_checks),
-        200 => with_checks(stun_a_target),
-        230 => with_checks(stun_landed_checks),
-        300 => with_checks(ork_advance_checks),
-        330 => with_checks(victory_checks),
+        10 => with_checks(&world, setup_checks),
+        40 => with_checks(&world, ork_spawn_checks),
+        60 => with_checks(&world, player_attack_checks),
+        120 => spell_checks(&world),
+        150 => with_checks(&world, heartburn_checks),
+        200 => with_checks(&world, stun_a_target),
+        230 => with_checks(&world, stun_landed_checks),
+        300 => with_checks(&world, ork_advance_checks),
+        330 => with_checks(&world, victory_checks),
         360 => TRACKER.with_borrow_mut(finish),
         _ => {}
     }
 }
 
-fn with_checks(function: impl FnOnce(&mut Tracker, &mut World)) {
-    let _ = crate::state::with_world(|world| {
-        TRACKER.with_borrow_mut(|tracker| function(tracker, world));
-    });
+fn with_checks(world: &World, function: impl FnOnce(&mut Tracker, &World)) {
+    TRACKER.with_borrow_mut(|tracker| function(tracker, world));
 }
 
-fn setup_checks(tracker: &mut Tracker, world: &mut World) {
-    check(tracker, world.initialized, "world setup ran");
+fn setup_checks(tracker: &mut Tracker, world: &World) {
     check(
         tracker,
-        world.villagers.len() > 300,
-        &format!("town is populated ({} villagers)", world.villagers.len()),
+        world.global.phase(world.frame) != Phase::Loading,
+        "world setup ran",
     );
-    let player = world.player.unit_id().unwrap_or(-1);
+    let villagers = villager_count();
+    check(
+        tracker,
+        villagers > 300,
+        &format!("town is populated ({villagers} villagers)"),
+    );
+    let player = world.global.player.access().unit_id().unwrap_or(-1);
     check(
         tracker,
         player >= 0 && spring::valid_unit_id(player).unwrap_or(false),
@@ -192,8 +218,9 @@ fn setup_checks(tracker: &mut Tracker, world: &mut World) {
     );
 }
 
-fn ork_spawn_checks(tracker: &mut Tracker, world: &mut World) {
-    let registered = world.orks.all().len();
+fn ork_spawn_checks(tracker: &mut Tracker, world: &World) {
+    let orks = world.global.orks.access().units().to_vec();
+    let registered = orks.len();
     let alive = enemy_unit_count();
     check(
         tracker,
@@ -208,9 +235,7 @@ fn ork_spawn_checks(tracker: &mut Tracker, world: &mut World) {
         registered as i32 == alive,
         &format!("every spawned ork is registered with the AI ({registered}/{alive})"),
     );
-    let with_orders = world
-        .orks
-        .all()
+    let with_orders = orks
         .into_iter()
         .filter(|unit_id| {
             spring::units_commands::get_command_queue(*unit_id, 1)
@@ -226,8 +251,8 @@ fn ork_spawn_checks(tracker: &mut Tracker, world: &mut World) {
     tracker.ork_distance = ork_distance(world);
 }
 
-fn player_attack_checks(tracker: &mut Tracker, world: &mut World) {
-    let Some(unit_id) = world.player.unit_id() else {
+fn player_attack_checks(tracker: &mut Tracker, world: &World) {
+    let Some(unit_id) = world.global.player.access().unit_id() else {
         check(
             tracker,
             false,
@@ -245,11 +270,16 @@ fn player_attack_checks(tracker: &mut Tracker, world: &mut World) {
         "mage is not firing before an attack order",
     );
     let message = format!("attack|{}|{}", position.x + 200.0, position.z);
-    world.player.accept(
-        crate::player::parse(message.as_bytes()).expect("attack message parses"),
-        frame_of(world),
-    );
-    world.player.update(frame_of(world));
+    let orders = {
+        let mut player = world.global.player.access_mut();
+        player.accept(
+            crate::player::parse(message.as_bytes()).expect("attack message parses"),
+            world.frame,
+        );
+        player.update(world.frame);
+        player.take_orders()
+    };
+    orders.into_iter().for_each(crate::player::Order::issue);
     // The blood mage's unit script aims and fires from these params.
     let firing = rules_param(unit_id, "firing").unwrap_or(0.0);
     let fire_tx = rules_param(unit_id, "fireTx").unwrap_or(0.0);
@@ -265,13 +295,14 @@ fn player_attack_checks(tracker: &mut Tracker, world: &mut World) {
     );
 }
 
-fn spell_checks() {
-    let Some((unit_id, position, frame, before)) = crate::state::with_world(|world| {
-        let unit_id = world.player.unit_id()?;
-        let position = units::position(unit_id)?;
-        Some((unit_id, position, world.frame, world.allies_drained))
-    })
-    .flatten() else {
+fn spell_checks(world: &World) {
+    let global = world.global;
+    let frame = world.frame;
+    let before = global.score.access().allies_drained;
+    let unit_id = global.player.access().unit_id();
+    let Some((unit_id, position)) =
+        unit_id.and_then(|unit_id| Some((unit_id, units::position(unit_id)?)))
+    else {
         TRACKER.with_borrow_mut(|tracker| {
             check(
                 tracker,
@@ -282,15 +313,16 @@ fn spell_checks() {
         return;
     };
     // Casting drains (destroys) nearby villagers, which re-enters the module
-    // through UnitDestroyed, so it has to happen with the world unborrowed.
+    // through UnitDestroyed, so it has to happen with nothing borrowed.
     let outcome = crate::player::cast(
+        global,
         unit_id,
         crate::player::Spell::Adrenaline,
         position.x,
         position.z,
         frame,
     );
-    let drained = crate::state::with_world(|world| world.allies_drained).unwrap_or(before);
+    let drained = global.score.access().allies_drained;
     TRACKER.with_borrow_mut(|tracker| {
         check(
             tracker,
@@ -316,6 +348,7 @@ fn spell_checks() {
         .map(|health| health.health)
         .unwrap_or(0.0);
     let outcome = target.zip(crate::player::cast(
+        global,
         unit_id,
         crate::player::Spell::Heartburn,
         position.x + 100.0,
@@ -341,6 +374,7 @@ fn spell_checks() {
     );
     if let Some(target) = poultice_target
         && crate::player::cast(
+            global,
             unit_id,
             crate::player::Spell::Poultice,
             position.x,
@@ -360,7 +394,7 @@ fn spell_checks() {
     }
 }
 
-fn heartburn_checks(tracker: &mut Tracker, _world: &mut World) {
+fn heartburn_checks(tracker: &mut Tracker, _world: &World) {
     let target = tracker.heartburn_target;
     let health = spring::units_info::get_unit_health(target)
         .map(|health| health.health)
@@ -408,10 +442,10 @@ fn heartburn_checks(tracker: &mut Tracker, _world: &mut World) {
 
 /// Stunning scales the weapon's reload; make sure the weapon state really
 /// changes and that reading it back reports the live value.
-fn stun_a_target(tracker: &mut Tracker, world: &mut World) {
+fn stun_a_target(tracker: &mut Tracker, world: &World) {
     // The mage rather than an ork: orks die and their ids get recycled, which
     // would make the follow-up read meaningless.
-    let Some(unit_id) = world.player.unit_id() else {
+    let Some(unit_id) = world.global.player.access().unit_id() else {
         check(
             tracker,
             false,
@@ -421,10 +455,10 @@ fn stun_a_target(tracker: &mut Tracker, world: &mut World) {
     };
     tracker.stunned_unit = unit_id;
     tracker.stunned_base = live_reload(unit_id);
-    combat::stun(unit_id, 300, world.frame);
+    combat::stun(world.global, unit_id, 300, world.frame);
 }
 
-fn stun_landed_checks(tracker: &mut Tracker, _world: &mut World) {
+fn stun_landed_checks(tracker: &mut Tracker, _world: &World) {
     let unit_id = tracker.stunned_unit;
     if unit_id <= 0 || !spring::valid_unit_id(unit_id).unwrap_or(false) {
         return;
@@ -455,7 +489,7 @@ fn live_reload(unit_id: i32) -> f32 {
         .unwrap_or(0.0)
 }
 
-fn ork_advance_checks(tracker: &mut Tracker, world: &mut World) {
+fn ork_advance_checks(tracker: &mut Tracker, world: &World) {
     let now = ork_distance(world);
     check(
         tracker,
@@ -465,27 +499,30 @@ fn ork_advance_checks(tracker: &mut Tracker, world: &mut World) {
             tracker.ork_distance, now
         ),
     );
+    let (villagers_killed, orks_killed) = {
+        let score = world.global.score.access();
+        (score.villagers_killed, score.orks_killed)
+    };
     check(
         tracker,
-        world.villagers_killed > 0 || world.orks.killed() > 0,
+        villagers_killed > 0 || orks_killed > 0,
         &format!(
-            "combat is resolving (villagers lost {}, orks killed {})",
-            world.villagers_killed,
-            world.orks.killed()
+            "combat is resolving (villagers lost {villagers_killed}, orks killed {orks_killed})"
         ),
     );
 }
 
-fn victory_checks(tracker: &mut Tracker, world: &mut World) {
+fn victory_checks(tracker: &mut Tracker, world: &World) {
     // The boss only appears in the last wave; short-circuit the schedule so the
     // victory path is exercised without playing the whole match.
-    world.story.force_victory_possible();
-    let possible = world.story.victory_possible();
-    let declared = world.victory.update(possible);
+    let game_end = &world.global.game_end;
+    game_end.set(GameEnd::VictoryPossible);
+    let possible = game_end.get() == GameEnd::VictoryPossible;
+    let declared = combat::declare_if_won(world.global);
     check(tracker, possible, "story can report the win condition");
     check(
         tracker,
-        declared && world.game_end_state() == "victory",
+        declared && game_end.get() == GameEnd::Victory,
         "victory is declared once the boss is gone",
     );
 }
@@ -507,8 +544,4 @@ fn finish(tracker: &mut Tracker) {
         "",
     );
     tracker.done = true;
-}
-
-fn frame_of(world: &World) -> i32 {
-    world.frame
 }

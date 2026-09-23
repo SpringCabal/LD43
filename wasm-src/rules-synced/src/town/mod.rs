@@ -3,4 +3,4 @@ mod spawn;
 mod villagers;
 
 pub use spawn::{VillagerArea, populate};
-pub use villagers::update;
+pub use villagers::{Villagers, check_idle};

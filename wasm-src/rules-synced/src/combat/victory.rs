@@ -1,26 +1,30 @@
+use alloc::format;
+
 use crate::defs::{UnitKind, defs};
+use crate::diagnostics;
+use crate::state::{GameEnd, Global};
 use crate::units::ENEMY_TEAM;
 
-pub struct Victory {
-    declared: bool,
-}
+use super::orks;
 
-impl Victory {
-    pub fn new() -> Self {
-        Self { declared: false }
+/// Declares victory once the final wave has come and the boss is dead, and
+/// sends every ork fleeing. Returns whether it declared victory.
+pub fn declare_if_won(global: &Global) -> bool {
+    if global.game_end.get() != GameEnd::VictoryPossible || boss_alive() {
+        return false;
     }
-
-    pub fn update(&mut self, possible: bool) -> bool {
-        if self.declared || !possible || boss_alive() {
-            return false;
-        }
-        self.declared = true;
-        true
+    global.game_end.set(GameEnd::Victory);
+    diagnostics::info("victory");
+    let fleeing = {
+        let mut orks = global.orks.access_mut();
+        orks.start_fleeing();
+        orks.units().to_vec()
+    };
+    for unit_id in &fleeing {
+        orks::flee(*unit_id);
     }
-
-    pub fn declared(&self) -> bool {
-        self.declared
-    }
+    diagnostics::info(&format!("{} orks fleeing", fleeing.len()));
+    true
 }
 
 fn boss_alive() -> bool {

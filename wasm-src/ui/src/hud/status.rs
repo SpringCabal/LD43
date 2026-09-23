@@ -22,10 +22,6 @@ pub fn update(message: &str) {
                 let unit_id = value.parse().unwrap_or(-1);
                 let _ = state::with_state(|ui| ui.player_unit = unit_id);
             }
-            "frame" => {
-                let frame = value.parse().unwrap_or(0);
-                let _ = state::with_state(|ui| ui.game_frame = frame);
-            }
             "castStart" => {
                 let frame = value.parse().unwrap_or(0);
                 let _ = state::with_state(|ui| ui.cast_start_frame = frame);

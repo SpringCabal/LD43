@@ -1,23 +1,19 @@
-pub mod combat;
-pub mod input;
-#[cfg(feature = "headless-integration")]
-pub mod integration;
-pub mod lifecycle;
-pub mod player;
-pub mod setup;
-pub mod status;
-pub mod story;
-pub mod town;
-pub mod victory;
+//! The rules gadgets. Each owns its part of the game and handles its own
+//! callins; `setup` registers them in the order they run each frame.
 
-pub use combat::CombatGadget;
-pub use input::InputGadget;
+mod combat;
 #[cfg(feature = "headless-integration")]
-pub use integration::IntegrationGadget;
-pub use lifecycle::LifecycleGadget;
-pub use player::PlayerGadget;
+mod integration;
+mod orks;
+mod player;
+#[cfg(feature = "e2e")]
+mod render_test;
+mod setup;
+mod status;
+mod story;
+mod terrain;
+mod town;
+mod unit_scripts;
+mod victory;
+
 pub use setup::setup;
-pub use status::StatusGadget;
-pub use story::StoryGadget;
-pub use town::TownGadget;
-pub use victory::VictoryGadget;

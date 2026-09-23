@@ -3,8 +3,8 @@ mod drain;
 mod messages;
 mod spells;
 
-pub use control::Player;
+pub use control::{Order, Player};
 pub use messages::parse;
 #[cfg(feature = "headless-integration")]
 pub use spells::Spell;
-pub use spells::{cast, resolve_pending};
+pub use spells::{Spellbook, cast, resolve_pending};

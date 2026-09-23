@@ -4,10 +4,11 @@ use crate::diagnostics;
 use crate::random;
 use crate::units::{self, ENEMY_TEAM, OrkKind};
 
+/// The wave schedule.
+#[derive(Default)]
 pub struct Story {
     step: usize,
     next_frame: i32,
-    victory_possible: bool,
 }
 
 pub struct Wave {
@@ -19,39 +20,19 @@ pub struct Wave {
 }
 
 impl Story {
-    pub fn new() -> Self {
-        Self {
-            step: 0,
-            next_frame: 0,
-            victory_possible: false,
-        }
-    }
-
     /// Picks the wave that is due, if any, and advances the schedule.  Spawning
     /// is deliberately left to the caller: creating a unit re-enters the module
-    /// through the UnitCreated call-in, which needs the world state unborrowed.
+    /// through UnitCreated, which must find the story unborrowed.
     pub fn take_due_wave(&mut self, frame: i32) -> Option<&'static Wave> {
         if self.step >= WAVES.len() || frame < self.next_frame {
             return None;
         }
         let wave = &WAVES[self.step];
-        if wave.able_to_win {
-            self.victory_possible = true;
-        }
         if !wave.infinite_loop {
             self.step += 1;
         }
         self.next_frame = frame + wave.seconds * GAME_FRAMES_PER_SECOND;
         Some(wave)
-    }
-
-    pub fn victory_possible(&self) -> bool {
-        self.victory_possible
-    }
-
-    #[cfg(feature = "headless-integration")]
-    pub fn force_victory_possible(&mut self) {
-        self.victory_possible = true;
     }
 }
 

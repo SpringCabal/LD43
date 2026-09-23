@@ -21,6 +21,7 @@ impl Widget<Global> for GuiHudWidget {
         hud::initialize();
         hud::hide_default_layout();
         hud::apply_bindings();
+        hud::evaluate_endgame();
     }
 }
 

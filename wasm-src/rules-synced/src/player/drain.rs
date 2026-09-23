@@ -6,6 +6,7 @@ use spring::types::Float3;
 
 use crate::defs::{UnitKind, defs};
 use crate::fx::{ceg, play_sound_at, spawn_ceg, spawn_effect};
+use crate::state::Global;
 use crate::units::{self, NEUTRAL_TEAM, PLAYER_TEAM, def_of, health, health_value};
 
 const BLOOD_MAGIC_RANGE: f32 = 600.0;
@@ -15,20 +16,25 @@ const CEG_SINGLE_BLOOD: &str = "feature_poof_single";
 const CEG_FLAMES: &str = "feature_poof_spawner";
 const SOUND_DRAIN: &str = "sounds/blooddrain.wav";
 
-pub(super) fn drain_for_transfusion(unit_id: i32) -> Option<Option<f32>> {
+pub(super) fn drain_for_transfusion(global: &Global, unit_id: i32) -> Option<Option<f32>> {
     let health = health(unit_id)?;
     if health.current >= health.max {
         return None;
     }
     let required = LIFE_BONUS + health.max - health.current;
-    let (found, shortfall) = drain(unit_id, required, true);
+    let (found, shortfall) = drain(global, unit_id, required, true);
     if !found && shortfall.is_none() {
         return None;
     }
     Some(shortfall.map(|value| value - LIFE_BONUS))
 }
 
-pub(super) fn drain(collector_id: i32, required: f32, allow_partial: bool) -> (bool, Option<f32>) {
+pub(super) fn drain(
+    global: &Global,
+    collector_id: i32,
+    required: f32,
+    allow_partial: bool,
+) -> (bool, Option<f32>) {
     let Some(origin) = units::position(collector_id) else {
         return (false, None);
     };
@@ -59,7 +65,7 @@ pub(super) fn drain(collector_id: i32, required: f32, allow_partial: bool) -> (b
             blood_trail(origin, target);
             let _ = spring::set_unit_health(target, health_value(available - remaining));
             restore(&to_restore);
-            record_drained(consume(&to_kill, origin));
+            record_drained(global, consume(&to_kill, origin));
             return (true, None);
         }
         to_kill.push(target);
@@ -68,7 +74,7 @@ pub(super) fn drain(collector_id: i32, required: f32, allow_partial: bool) -> (b
     }
     restore(&to_restore);
     if allow_partial && !to_kill.is_empty() {
-        record_drained(consume(&to_kill, origin));
+        record_drained(global, consume(&to_kill, origin));
         return (false, Some(remaining));
     }
     restore(&to_kill);
@@ -95,8 +101,8 @@ fn consume(units: &[i32], origin: Float3) -> i32 {
     drained
 }
 
-fn record_drained(count: i32) {
-    let _ = crate::state::with_world(|world| world.allies_drained += count);
+fn record_drained(global: &Global, count: i32) {
+    global.score.access_mut().allies_drained += count;
 }
 
 fn restore(units: &[i32]) {

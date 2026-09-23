@@ -17,6 +17,11 @@ impl Widget<Global> for ApiSyncWidget {
         "ApiSync"
     }
 
+    fn update(&self, _ctx: &spring_addons::AddonContext<'_, Global>, _dt: f32) {
+        let frame = crate::game::status_frame();
+        let _ = crate::state::with_state(|ui| ui.game_frame = frame);
+    }
+
     fn recv_from_synced(&self, _ctx: &spring_addons::AddonContext<'_, Global>, message: &[u8]) {
         let Ok(text) = core::str::from_utf8(message) else {
             return;

@@ -4,10 +4,10 @@ use alloc::vec::Vec;
 use spring::generated::owned::unit_control;
 use spring::types::Float3;
 
+use super::villagers::Villager;
 use crate::defs::{UnitKind, defs};
 use crate::diagnostics;
 use crate::random;
-use crate::state::Villager;
 use crate::units::{self, PLAYER_TEAM, VillagerKind};
 
 use super::data::{HOUSE_POSITIONS, VILLAGER_AREAS};
