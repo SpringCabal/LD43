@@ -59,12 +59,10 @@ pub fn track() {
         return;
     };
 
-    // `track` is stateful: camera/minimap interaction can disable it, while
-    // the old one-shot setup still believed it was active. Re-arm the native
-    // tracker whenever the controlled unit changes. The target update below
-    // is deliberately done every frame because it is the same existing camera
-    // API as Spring.SetCameraTarget and remains effective after tracker input
-    // has been disabled by the engine.
+    // `track` is stateful and camera/minimap interaction can disable it, so
+    // re-arm the native tracker whenever the controlled unit changes. The
+    // target is set every frame as well (Spring.SetCameraTarget), which keeps
+    // working after the engine has disabled the tracker.
     let needs_tracker_setup = state::with_state(|ui| ui.tracked_unit != unit_id).unwrap_or(true);
     if needs_tracker_setup {
         let _ = spring::selection::select_unit_array(&[unit_id], false);

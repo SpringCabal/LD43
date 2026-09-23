@@ -61,6 +61,9 @@ const RING_CENTER_Z: f32 = 5700.0;
 const RING_RADIUS: f32 = 3000.0;
 const RING_RADIUS_JITTER: f32 = 200.0;
 const ANGLE_SPAN: f32 = 320.0;
+/// Arcs of the spawn ring, in degrees, that game_storyteller.lua keeps orks out
+/// of, and how far it rotates a spawn that lands in one.
+const SKIPPED_ARCS: [(f32, f32, f32); 2] = [(65.0, 85.0, 270.0), (180.0, 200.0, 210.0)];
 
 const WAVES: [Wave; 13] = [
     Wave {
@@ -169,11 +172,10 @@ pub fn spawn_wave(wave: &Wave) {
 fn ring_position() -> (f32, f32) {
     let radius = RING_RADIUS + random::unit_float() * RING_RADIUS_JITTER;
     let mut angle = random::unit_float() * ANGLE_SPAN;
-    if angle > 65.0 && angle < 85.0 {
-        angle += ANGLE_SPAN - 50.0;
-    }
-    if angle > 180.0 && angle < 200.0 {
-        angle += 340.0 - 130.0;
+    for (from, to, rotation) in SKIPPED_ARCS {
+        if angle > from && angle < to {
+            angle += rotation;
+        }
     }
     let angle = angle * core::f32::consts::PI / 180.0;
     (

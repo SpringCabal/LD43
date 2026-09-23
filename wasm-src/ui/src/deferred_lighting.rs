@@ -3,8 +3,8 @@ use core::cell::RefCell;
 
 use spring::{gfx, gl};
 
-use crate::diagnostics;
 use crate::state::{self, DeferredPointLight};
+use crate::{diagnostics, gl_uniforms};
 
 const VERTEX: &str = r#"
 void main(void)
@@ -176,18 +176,18 @@ fn resources(width: i32, height: i32) -> Option<Resources> {
         .shader_id;
         let light = LightResources {
             shader: light_shader,
-            light_position: uniform(light_shader, "lightpos")?,
-            light_color: uniform(light_shader, "lightcolor")?,
-            eye_position: uniform(light_shader, "eyePos")?,
-            view_projection_inverse: uniform(light_shader, "viewProjectionInv")?,
+            light_position: gl_uniforms::location(light_shader, "lightpos")?,
+            light_color: gl_uniforms::location(light_shader, "lightcolor")?,
+            eye_position: gl_uniforms::location(light_shader, "eyePos")?,
+            view_projection_inverse: gl_uniforms::location(light_shader, "viewProjectionInv")?,
         };
 
         let _ = gfx::use_shader(light_shader);
-        let _ = uniform_int(light_shader, "modelnormals", 0);
-        let _ = uniform_int(light_shader, "modeldepths", 1);
-        let _ = uniform_int(light_shader, "mapnormals", 2);
-        let _ = uniform_int(light_shader, "mapdepths", 3);
-        let _ = uniform_int(light_shader, "modelExtra", 4);
+        let _ = gl_uniforms::set_int(light_shader, "modelnormals", 0);
+        let _ = gl_uniforms::set_int(light_shader, "modeldepths", 1);
+        let _ = gl_uniforms::set_int(light_shader, "mapnormals", 2);
+        let _ = gl_uniforms::set_int(light_shader, "mapdepths", 3);
+        let _ = gl_uniforms::set_int(light_shader, "modelExtra", 4);
         let _ = gfx::use_shader(0);
 
         let screen_hdr = create_texture(width, height, gl::RGBA32F_ARB, true)?;
@@ -197,35 +197,35 @@ fn resources(width: i32, height: i32) -> Option<Resources> {
         let bright_shader = effect_shader(BLOOM_BRIGHT_FRAGMENT)?;
         let bright = BrightResources {
             shader: bright_shader,
-            illumination_threshold: uniform(bright_shader, "illuminationThreshold")?,
+            illumination_threshold: gl_uniforms::location(bright_shader, "illuminationThreshold")?,
         };
         let blur_h_shader = effect_shader(BLOOM_BLUR_H_FRAGMENT)?;
         let blur_h = BlurResources {
             shader: blur_h_shader,
-            inverse_resolution: uniform(blur_h_shader, "inverseRX")?,
-            kernel_radius: uniform(blur_h_shader, "fragKernelRadius")?,
+            inverse_resolution: gl_uniforms::location(blur_h_shader, "inverseRX")?,
+            kernel_radius: gl_uniforms::location(blur_h_shader, "fragKernelRadius")?,
         };
         let blur_v_shader = effect_shader(BLOOM_BLUR_V_FRAGMENT)?;
         let blur_v = BlurResources {
             shader: blur_v_shader,
-            inverse_resolution: uniform(blur_v_shader, "inverseRY")?,
-            kernel_radius: uniform(blur_v_shader, "fragKernelRadius")?,
+            inverse_resolution: gl_uniforms::location(blur_v_shader, "inverseRY")?,
+            kernel_radius: gl_uniforms::location(blur_v_shader, "fragKernelRadius")?,
         };
         let combine_shader = effect_shader(BLOOM_COMBINE_FRAGMENT)?;
         let combine = CombineResources {
             shader: combine_shader,
-            max_brightness: uniform(combine_shader, "fragMaxBrightness")?,
+            max_brightness: gl_uniforms::location(combine_shader, "fragMaxBrightness")?,
         };
 
         let _ = gfx::use_shader(bright_shader);
-        let _ = uniform_int(bright_shader, "texture0", 0);
+        let _ = gl_uniforms::set_int(bright_shader, "texture0", 0);
         let _ = gfx::use_shader(blur_h_shader);
-        let _ = uniform_int(blur_h_shader, "texture0", 0);
+        let _ = gl_uniforms::set_int(blur_h_shader, "texture0", 0);
         let _ = gfx::use_shader(blur_v_shader);
-        let _ = uniform_int(blur_v_shader, "texture0", 0);
+        let _ = gl_uniforms::set_int(blur_v_shader, "texture0", 0);
         let _ = gfx::use_shader(combine_shader);
-        let _ = uniform_int(combine_shader, "texture0", 0);
-        let _ = uniform_int(combine_shader, "texture1", 1);
+        let _ = gl_uniforms::set_int(combine_shader, "texture0", 0);
+        let _ = gl_uniforms::set_int(combine_shader, "texture1", 1);
         let _ = gfx::use_shader(0);
 
         let resources = Resources {
@@ -485,15 +485,4 @@ fn draw_bloom(resources: &Resources) {
 fn view_projection_inverse() -> Option<[f32; 16]> {
     let matrix = gfx::get_matrix_data(0x10000).ok()?;
     Some(matrix)
-}
-
-fn uniform(shader: u32, name: &str) -> Option<i32> {
-    gfx::get_uniform_location(shader, name).ok()
-}
-
-fn uniform_int(shader: u32, name: &str, value: i32) -> bool {
-    let Some(location) = uniform(shader, name) else {
-        return false;
-    };
-    gfx::uniform_int(location, &[value], 1).is_ok()
 }

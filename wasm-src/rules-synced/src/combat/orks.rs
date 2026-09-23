@@ -1,7 +1,7 @@
 use alloc::vec::Vec;
 
-use crate::random;
 use crate::units::{self, ENEMY_TEAM, OrkKind};
+use crate::{cmd, random};
 
 use super::attributes::{self, Effect, Modifier};
 
@@ -76,7 +76,7 @@ pub fn advance(unit_id: i32) {
 }
 
 pub fn check_idle(unit_id: i32) {
-    if has_orders(unit_id) {
+    if units::has_orders(unit_id) {
         return;
     }
     let dx = AIM_X + random::centered(AIM_REACHED_VARIANCE);
@@ -94,7 +94,7 @@ pub fn flee(unit_id: i32) {
     let cx = position.x + FLEE_DISTANCE * dx / distance;
     let cz = position.z + FLEE_DISTANCE * dz / distance;
     let cy = units::ground_height(cx, cz);
-    let _ = spring::give_order_to_unit(unit_id, CMD_FIRE_STATE, &[0.0], 0, 0);
+    let _ = spring::give_order_to_unit(unit_id, cmd::FIRE_STATE, &[0.0], 0, 0);
     attributes::add_effect(
         unit_id,
         Effect::Flee,
@@ -103,18 +103,16 @@ pub fn flee(unit_id: i32) {
             reload_factor: 0.0,
         },
     );
-    let _ = spring::give_order_to_unit(unit_id, CMD_MOVE, &[cx, cy, cz], 0, 0);
+    let _ = spring::give_order_to_unit(unit_id, cmd::MOVE, &[cx, cy, cz], 0, 0);
 }
 
-const AIM_X: f32 = 5650.0;
-const AIM_Z: f32 = 5720.0;
+// Orks attack the town centre.
+const AIM_X: f32 = units::TOWN_CENTRE_X;
+const AIM_Z: f32 = units::TOWN_CENTRE_Z;
 const AIM_VARIANCE: f32 = 600.0;
 const AIM_REACHED_VARIANCE: f32 = 2000.0;
 const FLEE_DISTANCE: f32 = 4000.0;
 const UPDATE_DIVISOR: usize = 80;
-const CMD_MOVE: i32 = 10;
-const CMD_FIGHT: i32 = 16;
-const CMD_FIRE_STATE: i32 = 45;
 
 fn is_ork(unit_def_id: i32) -> bool {
     [OrkKind::Small, OrkKind::Big, OrkKind::Boss]
@@ -125,13 +123,5 @@ fn is_ork(unit_def_id: i32) -> bool {
 
 fn fight(unit_id: i32, x: f32, z: f32) {
     let y = units::ground_height(x, z);
-    let _ = spring::give_order_to_unit(unit_id, CMD_FIGHT, &[x, y, z], 0, 0);
-}
-
-fn has_orders(unit_id: i32) -> bool {
-    // Ask for one command: a limit of zero returns an empty queue for every
-    // unit, which made every idle check re-issue the same order.
-    spring::units_commands::get_command_queue(unit_id, 1)
-        .map(|commands| !commands.is_empty())
-        .unwrap_or(true)
+    let _ = spring::give_order_to_unit(unit_id, cmd::FIGHT, &[x, y, z], 0, 0);
 }

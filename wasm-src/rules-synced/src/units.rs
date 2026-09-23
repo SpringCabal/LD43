@@ -8,6 +8,10 @@ pub const PLAYER_TEAM: i32 = 0;
 pub const ENEMY_TEAM: i32 = 1;
 pub const NEUTRAL_TEAM: i32 = 2;
 
+/// The point the orks attack and flee from.
+pub const TOWN_CENTRE_X: f32 = 5650.0;
+pub const TOWN_CENTRE_Z: f32 = 5720.0;
+
 pub const BLOOD_MAGE: &str = "bloodmage";
 pub const HOUSE: &str = "house";
 
@@ -89,4 +93,13 @@ pub fn position(unit_id: i32) -> Option<Float3> {
 
 pub fn all_units() -> Vec<i32> {
     spring::get_all_units().unwrap_or_default()
+}
+
+/// Whether the unit has anything queued.
+pub fn has_orders(unit_id: i32) -> bool {
+    // Ask for one command: a limit of zero returns an empty queue for every
+    // unit, which made every idle check re-issue the same order.
+    spring::units_commands::get_command_queue(unit_id, 1)
+        .map(|commands| !commands.is_empty())
+        .unwrap_or(true)
 }

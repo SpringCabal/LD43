@@ -447,19 +447,7 @@ fn hover_fixture(label: &str, def_name: &str) {
 }
 
 fn trace_unit(x: i32, y: i32) -> Option<i32> {
-    let trace = spring::camera::trace_screen_ray(
-        x as f32,
-        y as f32,
-        spring::camera::TraceScreenRayOptions {
-            only_coords: false,
-            use_minimap: false,
-            include_sky: false,
-            ignore_water: false,
-            height_offset: 0.0,
-        },
-    )
-    .ok()?;
-    (trace.hit_type == 1).then_some(trace.hit_id)
+    crate::cursor::unit_at(x as f32, y as f32)
 }
 
 fn trace_hit(x: i32, y: i32) -> alloc::string::String {

@@ -1,5 +1,6 @@
 use alloc::vec::Vec;
 
+use crate::random::{next, unit_float};
 use crate::state;
 
 use super::particles::{self, Particle};
@@ -95,13 +96,4 @@ fn spawn(position: spring::types::Float3, radius: f32, seed: u64) {
             + unit_float(next(seed.wrapping_add(23))) * particles::ROTATION_SPEED_SPREAD,
     };
     let _ = state::with_state(|ui| ui.fire.spawn(particle));
-}
-
-fn next(seed: u64) -> u64 {
-    seed.wrapping_mul(6_364_136_223_846_793_005)
-        .wrapping_add(1_442_695_040_888_963_407)
-}
-
-fn unit_float(seed: u64) -> f32 {
-    ((seed >> 40) as u32) as f32 / 16_777_216.0
 }

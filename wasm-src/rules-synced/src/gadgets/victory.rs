@@ -17,11 +17,10 @@ impl Gadget<Global> for VictoryGadget {
         "Victory"
     }
 
-    fn game_frame(&self, _ctx: &spring_addons::AddonContext<'_, Global>, frame: i32) {
+    fn game_frame(&self, _ctx: &spring_addons::AddonContext<'_, Global>, _frame: i32) {
         if frame_consumed() {
             return;
         }
-        let _ = frame;
         crate::orchestration::check_victory();
     }
 }

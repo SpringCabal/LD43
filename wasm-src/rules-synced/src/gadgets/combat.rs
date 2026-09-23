@@ -22,7 +22,6 @@ impl Gadget<Global> for CombatGadget {
         if frame_consumed() {
             return;
         }
-        let _ = frame;
         combat::status_update(frame);
     }
 }

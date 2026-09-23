@@ -130,12 +130,3 @@ pub(super) fn random_next(state: &mut u32) -> u32 {
 pub(super) fn random_unit(state: &mut u32) -> f32 {
     random_next(state) as f32 / u32::MAX as f32
 }
-
-pub(super) fn rules_value(value: f32) -> spring::generated::owned::rules_params::RulesParamValue {
-    spring::generated::owned::rules_params::RulesParamValue {
-        type_: spring::generated::owned::rules_params::RulesParamType::RulesparamTypeFloat,
-        bool_value: false,
-        float_value: value,
-        string_value: alloc::string::String::new(),
-    }
-}

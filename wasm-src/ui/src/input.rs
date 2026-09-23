@@ -1,7 +1,7 @@
 use alloc::format;
 
-use crate::hud;
 use crate::state;
+use crate::{cursor, hud};
 
 pub fn mouse_press(x: i32, y: i32, button: i32) -> bool {
     let _ = state::with_state(|ui| {
@@ -56,7 +56,7 @@ pub fn hold_mouse() {
 
 pub fn key_press(key: i32, ctrl: bool) -> bool {
     if ctrl && matches!(key, KEY_Q | KEY_Q_UPPER) {
-        hud::quit();
+        hud::exit_to_menu();
         return true;
     }
     if state::with_state(|ui| ui.intro_open).unwrap_or(false) {
@@ -118,22 +118,9 @@ fn cast_spell(index: i32) {
 }
 
 fn cursor() -> Option<(i32, i32)> {
-    let mouse = spring::input::get_mouse_state(0).ok()?;
-    (!mouse.offscreen).then(|| (mouse.x.round() as i32, mouse.y.round() as i32))
+    cursor::screen().map(|(x, y)| (x.round() as i32, y.round() as i32))
 }
 
 fn ground_at(x: i32, y: i32) -> Option<spring::types::Float3> {
-    let trace = spring::camera::trace_screen_ray(
-        x as f32,
-        y as f32,
-        spring::camera::TraceScreenRayOptions {
-            only_coords: true,
-            use_minimap: false,
-            include_sky: false,
-            ignore_water: false,
-            height_offset: 0.0,
-        },
-    )
-    .ok()?;
-    Some(trace.hit_pos)
+    cursor::ground_at(x as f32, y as f32)
 }

@@ -1,6 +1,6 @@
 use spring::gl;
 
-use crate::state;
+use crate::{gl_uniforms, state};
 
 pub fn draw() {
     let Some((shader_id, list_id)) = resources() else {
@@ -119,7 +119,7 @@ impl Uniforms {
 }
 
 fn location(shader_id: u32, name: &str) -> i32 {
-    spring::gfx::get_uniform_location(shader_id, name).unwrap_or(-1)
+    gl_uniforms::location(shader_id, name).unwrap_or(-1)
 }
 
 fn resources() -> Option<(u32, u32)> {

@@ -3,11 +3,14 @@ use core::cell::{Cell, RefCell};
 
 use spring::{gfx, gl};
 
+use crate::gl_uniforms;
+
 const MINIMAP_SCALE: f32 = 1.3;
 const SOURCE_SIZE: i32 = 600;
 const SCREEN_X: f32 = 0.0;
 const SCREEN_Y: f32 = 0.0;
 const MINIMAP_ALPHA: f32 = 1.0;
+// The viewport is as large as the town area, x 3300..8000 and z 3400..8100.
 const VIEWPORT_WORLD_X: f32 = 8000.0 - 3300.0;
 const VIEWPORT_WORLD_Z: f32 = 8100.0 - 3400.0;
 
@@ -172,16 +175,16 @@ fn create_resources(width: i32, height: i32) -> Option<Resources> {
         source,
         fbo,
         shader,
-        alpha: uniform(shader, "alpha")?,
-        source_bounds: uniform(shader, "sourceBounds")?,
-        screen_rect: uniform(shader, "screenRect")?,
-        screen: uniform(shader, "screen")?,
+        alpha: gl_uniforms::location(shader, "alpha")?,
+        source_bounds: gl_uniforms::location(shader, "sourceBounds")?,
+        screen_rect: gl_uniforms::location(shader, "screenRect")?,
+        screen: gl_uniforms::location(shader, "screen")?,
         width,
         height,
     };
 
     let _ = gfx::use_shader(shader);
-    let _ = uniform_int(shader, "tex0", 0);
+    let _ = gl_uniforms::set_int(shader, "tex0", 0);
     let _ = gfx::use_shader(0);
     Some(resources)
 }
@@ -217,8 +220,7 @@ fn draw_composed(resources: &Resources) {
 
     // Native minimap coordinates are world X and a GL Y coordinate with
     // world-Z flipped. Convert the player-centered crop directly into the
-    // off-screen texture instead of applying the old screen-normalized Lua
-    // formula a second time.
+    // off-screen texture's coordinates.
     let source_left =
         (geometry.pos_x as f32 + minimap_width * viewport.origin_x / map_width) / source_width;
     let source_bottom = (geometry.pos_y as f32
@@ -351,17 +353,6 @@ fn pop_lua_state() {
     let _ = gfx::pop_attrib(0);
 }
 
-fn uniform(shader: u32, name: &str) -> Option<i32> {
-    gfx::get_uniform_location(shader, name).ok()
-}
-
-fn uniform_int(shader: u32, name: &str, value: i32) -> bool {
-    let Some(location) = uniform(shader, name) else {
-        return false;
-    };
-    gfx::uniform_int(location, &[value], 1).is_ok()
-}
-
 const MINIMAP_VERTEX: &str = r#"
 varying vec2 mapCoord;
 
@@ -382,8 +373,8 @@ varying vec2 mapCoord;
 const float edgeFadePixels = 16.0;
 
 void main(void) {
-    // The old widget's screen quad is deliberately kept intact: Spring's
-    // screen projection is not always the conventional OpenGL pixel space.
+    // The Lua widget's full-screen quad is kept: Spring's screen projection
+    // is not always the conventional OpenGL pixel space.
     // Work out the crop in the fragment shader, where screen coordinates are
     // unambiguous, and discard fragments outside the displayed rectangle.
     vec2 screenPosition = vec2(

@@ -1,6 +1,4 @@
 //! The per-frame steps the gadgets drive.
-//!
-//! These were the private helpers of the original single `game_frame`.
 
 use alloc::format;
 

@@ -1,4 +1,4 @@
-use crate::state;
+use crate::state::{self, GameEnd};
 
 use super::endgame;
 use super::model;
@@ -76,7 +76,7 @@ fn set_counter(value: &str, counter: Counter) {
 }
 
 fn set_game_end(value: &str) {
-    let _ = state::with_state(|ui| ui.game_end = value.into());
+    let _ = state::with_state(|ui| ui.game_end = GameEnd::parse(value));
 }
 
 fn set_player_alive(alive: bool) {

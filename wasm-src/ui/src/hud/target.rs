@@ -1,15 +1,11 @@
 use alloc::format;
 
-use crate::state;
+use crate::{cursor, state};
 
 use super::model;
 
 pub fn track_target() {
-    let Some((x, y)) = mouse_position() else {
-        clear();
-        return;
-    };
-    let Some(unit_id) = unit_under_cursor(x, y) else {
+    let Some(unit_id) = cursor::screen().and_then(|(x, y)| cursor::unit_at(x, y)) else {
         clear();
         return;
     };
@@ -45,8 +41,6 @@ pub fn track_target() {
     });
 }
 
-const HIT_UNIT: i32 = 1;
-
 fn clear() {
     let _ = state::with_state(|ui| {
         if ui.target_unit == -1 {
@@ -59,31 +53,6 @@ fn clear() {
             model::set_bool(hud.target_enemy, false);
         }
     });
-}
-
-fn mouse_position() -> Option<(i32, i32)> {
-    let mouse = spring::input::get_mouse_state(0).ok()?;
-    (!mouse.offscreen).then(|| (mouse.x.round() as i32, mouse.y.round() as i32))
-}
-
-fn unit_under_cursor(x: i32, y: i32) -> Option<i32> {
-    let trace = spring::camera::trace_screen_ray(
-        x as f32,
-        y as f32,
-        spring::camera::TraceScreenRayOptions {
-            only_coords: false,
-            use_minimap: false,
-            include_sky: false,
-            ignore_water: false,
-            height_offset: 0.0,
-        },
-    )
-    .ok()?;
-    if trace.hit_type == HIT_UNIT {
-        return Some(trace.hit_id);
-    }
-
-    None
 }
 
 fn is_enemy(unit_id: i32) -> bool {

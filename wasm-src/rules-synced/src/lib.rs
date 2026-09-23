@@ -1,7 +1,9 @@
 extern crate alloc;
 
+mod cmd;
 mod combat;
 mod diagnostics;
+mod engine;
 mod gadgets;
 #[cfg(feature = "headless-integration")]
 mod integration;

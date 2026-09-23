@@ -1,6 +1,6 @@
 use alloc::format;
 
-use crate::state;
+use crate::state::{self, GameEnd};
 
 use super::model;
 
@@ -20,7 +20,7 @@ pub fn close_intro() {
 pub fn close_endgame() {
     let _ = state::with_state(|ui| {
         ui.endgame_open = false;
-        ui.game_end.clear();
+        ui.game_end = GameEnd::Start;
         ui.player_alive = true;
         ui.player_unit = -1;
         ui.tracked_unit = -1;
@@ -82,7 +82,7 @@ pub fn evaluate() {
         if ui.intro_open || ui.endgame_open {
             return None;
         }
-        if ui.game_end == "victory" {
+        if ui.game_end == GameEnd::Victory {
             return Some(true);
         }
         (!ui.player_alive).then_some(false)

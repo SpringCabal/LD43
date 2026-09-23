@@ -1,7 +1,7 @@
 use alloc::string::String;
 use spring::gl;
 
-use crate::state;
+use crate::{cursor, gl_uniforms, state};
 
 pub fn draw_pre_unit() {
     let Some(resources) = resources() else {
@@ -39,7 +39,6 @@ const THICKNESS: f32 = 1.0;
 const LINE_WIDTH: f32 = 4.0;
 const POLYGON_OFFSET_FACTOR: f32 = 8.0;
 const POLYGON_OFFSET_UNITS: f32 = 4.0;
-const HIT_UNIT: i32 = 1;
 
 const DEPTH_FRAGMENT: &str = include_str!("shaders/highlight_depth.frag");
 
@@ -162,7 +161,7 @@ fn apply_resolution(resources: &Resources, width: i32, height: i32) {
 
 fn set_uniform_float2(shader_id: u32, name: &str, first: f32, second: f32) {
     let _ = spring::gfx::use_shader(shader_id);
-    if let Ok(location) = spring::gfx::get_uniform_location(shader_id, name) {
+    if let Some(location) = gl_uniforms::location(shader_id, name) {
         let _ = spring::gfx::uniform(location, &[first, second], 2);
     }
     let _ = spring::gfx::use_shader(0);
@@ -170,9 +169,7 @@ fn set_uniform_float2(shader_id: u32, name: &str, first: f32, second: f32) {
 
 fn set_uniform_int(shader_id: u32, name: &str, value: i32) {
     let _ = spring::gfx::use_shader(shader_id);
-    if let Ok(location) = spring::gfx::get_uniform_location(shader_id, name) {
-        let _ = spring::gfx::uniform_int(location, &[value], 1);
-    }
+    gl_uniforms::set_int(shader_id, name, value);
     let _ = spring::gfx::use_shader(0);
 }
 
@@ -307,24 +304,5 @@ fn view_size() -> (i32, i32) {
 }
 
 fn unit_under_cursor() -> Option<i32> {
-    let mouse = spring::input::get_mouse_state(0).ok()?;
-    if mouse.offscreen {
-        return None;
-    }
-    if let Ok(trace) = spring::camera::trace_screen_ray(
-        mouse.x,
-        mouse.y,
-        spring::camera::TraceScreenRayOptions {
-            only_coords: false,
-            use_minimap: false,
-            include_sky: false,
-            ignore_water: false,
-            height_offset: 0.0,
-        },
-    ) && trace.hit_type == HIT_UNIT
-    {
-        return Some(trace.hit_id);
-    }
-
-    None
+    cursor::screen().and_then(|(x, y)| cursor::unit_at(x, y))
 }

@@ -4,6 +4,7 @@ use alloc::vec::Vec;
 use spring::types::Float3;
 
 use crate::combat;
+use crate::engine::set_game_number;
 use crate::random;
 use crate::units::{self, ENEMY_TEAM, NEUTRAL_TEAM, PLAYER_TEAM};
 
@@ -128,6 +129,28 @@ const POULTICE_RADIUS: f32 = 720.0;
 const FIREBALL_RADIUS: f32 = 250.0;
 const FIREBALL_DAMAGE: f32 = 1600.0;
 const FIREBALL_GRAVITY: f32 = 0.18;
+/// The fireball leaves this far above the mage and aims this far above the
+/// ground at its target.
+const FIREBALL_LAUNCH_HEIGHT: f32 = 120.0;
+const FIREBALL_TARGET_HEIGHT: f32 = 20.0;
+/// Flight time in frames: a minimum plus one frame per this many elmos.
+const FIREBALL_MIN_FLIGHT: f32 = 10.0;
+const FIREBALL_ELMOS_PER_FRAME: f32 = 45.0;
+/// Adrenaline lasts this many frames, plus up to the spread.
+const ADRENALINE_FRAMES: f32 = 320.0;
+const ADRENALINE_FRAMES_SPREAD: f32 = 60.0;
+/// Migraine stuns for this many frames, plus up to the spread, scaled down
+/// linearly to nothing at the falloff distance. Its wave travels this many
+/// elmos per frame.
+const MIGRAINE_STUN_FRAMES: f32 = 400.0;
+const MIGRAINE_STUN_FRAMES_SPREAD: f32 = 80.0;
+const MIGRAINE_FALLOFF: f32 = 1000.0;
+const MIGRAINE_WAVE_SPEED: f32 = 30.0;
+/// Poultice throws for a minimum flight time plus one frame per this many
+/// elmos (give or take half the jitter), and its wave travels just as fast.
+const POULTICE_MIN_FLIGHT: f32 = 45.0;
+const POULTICE_ELMOS_PER_FRAME: f32 = 60.0;
+const POULTICE_JITTER: f32 = 20.0;
 // Game.gravity is exposed to Lua as a positive downward acceleration. The
 // engine's unit impulse uses +Y as up, so the launch velocity needs the
 // positive value here; the ground move type applies downward gravity after
@@ -140,9 +163,10 @@ const CEG_MIGRAINE: &str = "migraine_pulse_spawner";
 const CEG_ADRENALINE: &str = "adrenaline_sparkles";
 const CEG_POULTICE: &str = "gtfo_pulse";
 const CEG_FIREBALL_IMPACT: &str = "fireball_impact";
+/// The radius and damage every spell effect CEG is spawned with.
+const CEG_RADIUS: f32 = 20.0;
+const CEG_DAMAGE: f32 = 20.0;
 const SOUND_DRAIN: &str = "sounds/blooddrain.wav";
-// LuaRulesParams::RULESPARAMLOS_PUBLIC
-const LOS_PUBLIC: i32 = 32;
 
 #[derive(Clone, Copy)]
 struct PendingEffect {
@@ -195,19 +219,9 @@ fn with_fireball_impacts<R>(function: impl FnOnce(&mut Vec<FireballImpact>) -> R
 }
 
 fn publish_cast(frame: i32, cast_frames: i32) {
-    set_number("castingFreeze", (frame + cast_frames) as f32);
-    set_number("castAnimTime", (cast_frames + 8) as f32);
-    set_number("start_cast", frame as f32);
-}
-
-fn set_number(name: &str, value: f32) {
-    let value = spring::generated::owned::rules_params::RulesParamValue {
-        type_: spring::generated::owned::rules_params::RulesParamType::RulesparamTypeFloat,
-        bool_value: false,
-        float_value: value,
-        string_value: alloc::string::String::new(),
-    };
-    let _ = spring::generated::owned::rules_params::set_game_rules_param(name, &value, LOS_PUBLIC);
+    set_game_number("castingFreeze", (frame + cast_frames) as f32);
+    set_game_number("castAnimTime", (cast_frames + 8) as f32);
+    set_game_number("start_cast", frame as f32);
 }
 
 fn schedule(effect: PendingEffect) {
@@ -245,12 +259,13 @@ fn resolve_heartburn(unit_id: i32, tx: f32, tz: f32, frame: i32) {
         return;
     };
     play_sound("sounds/fireballfire.wav", unit_id);
-    let ty = units::ground_height(tx, tz) + 20.0;
-    let y = origin.y + 120.0;
+    let ty = units::ground_height(tx, tz) + FIREBALL_TARGET_HEIGHT;
+    let y = origin.y + FIREBALL_LAUNCH_HEIGHT;
     let dx = tx - origin.x;
     let dy = ty - y;
     let dz = tz - origin.z;
-    let fly_time = 10.0 + ((dx * dx + dz * dz).sqrt() / 45.0).floor();
+    let fly_time =
+        FIREBALL_MIN_FLIGHT + ((dx * dx + dz * dz).sqrt() / FIREBALL_ELMOS_PER_FRAME).floor();
     let speed = Float3 {
         x: dx / fly_time,
         y: fly_time * FIREBALL_GRAVITY / 2.0 + dy / fly_time,
@@ -268,8 +283,7 @@ fn resolve_heartburn(unit_id: i32, tx: f32, tz: f32, frame: i32) {
             ttl: fly_time,
             owner: unit_id,
             team: PLAYER_TEAM,
-            // This is a spell projectile, rather than a live weapon shot. A
-            // zero weapon number avoids inheriting state from weapon slot 0.
+            // A spell projectile, not a shot from one of the mage's weapons.
             weapon_number: -1,
             gravity: -FIREBALL_GRAVITY,
             ceg_tag: "fireball_ball",
@@ -304,7 +318,8 @@ fn resolve_adrenaline(unit_id: i32, frame: i32) {
         if def_of(target) == house {
             continue;
         }
-        combat::adrenaline(target, (320.0 + random::unit_float() * 60.0) as i32, frame);
+        let duration = ADRENALINE_FRAMES + random::unit_float() * ADRENALINE_FRAMES_SPREAD;
+        combat::adrenaline(target, duration as i32, frame);
         spawn_effect(target, CEG_ADRENALINE);
     }
     spawn_effect_at(origin, CEG_ADRENALINE);
@@ -331,8 +346,9 @@ fn resolve_migraine(tx: f32, tz: f32, frame: i32) {
             impulses.push(DelayedImpulse {
                 unit_id: target,
                 impulse: Float3::default(),
-                stun: (1.0 - distance / 1000.0) * (400.0 + random::unit_float() * 80.0),
-                frame: frame + (distance / 30.0).ceil() as i32,
+                stun: (1.0 - distance / MIGRAINE_FALLOFF)
+                    * (MIGRAINE_STUN_FRAMES + random::unit_float() * MIGRAINE_STUN_FRAMES_SPREAD),
+                frame: frame + (distance / MIGRAINE_WAVE_SPEED).ceil() as i32,
             })
         });
     }
@@ -365,7 +381,8 @@ fn resolve_poultice(unit_id: i32, frame: i32) {
         let dy = position.y - origin.y;
         let dz = position.z - origin.z;
         let distance = (dx * dx + dz * dz).sqrt();
-        let fly_time = 45.0 + ((distance + random::centered(20.0)) / 60.0).floor();
+        let fly_time = POULTICE_MIN_FLIGHT
+            + ((distance + random::centered(POULTICE_JITTER)) / POULTICE_ELMOS_PER_FRAME).floor();
         let velocity = spring::units_info::get_unit_velocity(target).unwrap_or_default();
         let impulse = Float3 {
             x: dx / fly_time - velocity.x,
@@ -377,7 +394,7 @@ fn resolve_poultice(unit_id: i32, frame: i32) {
                 unit_id: target,
                 impulse,
                 stun: 0.0,
-                frame: frame + (distance / 60.0).ceil() as i32,
+                frame: frame + (distance / POULTICE_ELMOS_PER_FRAME).ceil() as i32,
             })
         });
         crate::unit_scripts::queue_call(target, "StopMoving", &[]);
@@ -427,7 +444,7 @@ fn resolve_fireball_impacts(frame: i32) {
         if !valid(impact.unit_id) {
             continue;
         }
-        let y = units::ground_height(impact.x, impact.z) + 20.0;
+        let y = units::ground_height(impact.x, impact.z) + FIREBALL_TARGET_HEIGHT;
         let position = Float3 {
             x: impact.x,
             y,
@@ -584,9 +601,8 @@ fn spawn_effect(unit_id: i32, ceg_name: &str) {
 }
 
 fn spawn_effect_at(position: Float3, ceg_name: &str) {
-    // The typed helper historically encoded every named CEG with id 0.  The
-    // native host treats non-negative IDs as authoritative, so use the owned
-    // generated call with -1 to force name lookup.
+    // A non-negative id takes precedence over the name, so -1 makes the
+    // engine look the CEG up by name.
     let ceg = spring::generated::owned::effects_control::DefRef {
         name: String::from(ceg_name),
         id: -1,
@@ -595,8 +611,8 @@ fn spawn_effect_at(position: Float3, ceg_name: &str) {
         &ceg,
         position,
         Float3::default(),
-        20.0,
-        20.0,
+        CEG_RADIUS,
+        CEG_DAMAGE,
         0.0,
     );
 }

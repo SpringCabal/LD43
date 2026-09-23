@@ -1,3 +1,4 @@
+use crate::engine::set_unit_number;
 use crate::units;
 
 use super::spells::Spell;
@@ -129,8 +130,6 @@ const ATTACK_RADIUS: f32 = 50.0;
 const ATTACK_REACH: f32 = 50.0;
 const AIM_HEIGHT: f32 = 25.0;
 const MAP_MARGIN: f32 = 32.0;
-// LuaRulesParams::RULESPARAMLOS_PUBLIC; a zero mask is readable by nobody.
-const LOS_PUBLIC: i32 = 32;
 
 #[derive(Clone, Copy)]
 struct Pending {
@@ -257,9 +256,9 @@ impl Player {
     }
 }
 
-/// The blood mage's Lua script decides whether to block its shot and which way
-/// to face from these params, mirroring the GG.fireTx/fireTz globals the Lua
-/// build of the game published from its player-controller gadget.
+/// The blood mage's unit script decides whether to block its shot and which way
+/// to face from these params, as the Lua build did from its GG.fireTx/fireTz
+/// globals.
 fn publish_fire_target(unit_id: i32, target: Option<(f32, f32)>) {
     let (firing, tx, tz) = match target {
         Some((tx, tz)) => (1.0, tx, tz),
@@ -268,10 +267,6 @@ fn publish_fire_target(unit_id: i32, target: Option<(f32, f32)>) {
     set_unit_number(unit_id, "firing", firing);
     set_unit_number(unit_id, "fireTx", tx);
     set_unit_number(unit_id, "fireTz", tz);
-}
-
-fn set_unit_number(unit_id: i32, name: &str, value: f32) {
-    let _ = spring::set_unit_rules_param_f32(unit_id, name, value, LOS_PUBLIC);
 }
 
 fn clamp_to_map(x: f32, z: f32) -> (f32, f32) {

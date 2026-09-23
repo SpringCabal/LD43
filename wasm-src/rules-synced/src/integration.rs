@@ -2,7 +2,7 @@
 //!
 //! Enabled with the `headless-integration` cargo feature and driven from
 //! `game_frame`, so every check runs against the same synced code path the real
-//! game uses.  The runner (`wasm-test/verify-ttld.sh`) greps the log for the
+//! game uses.  `verification/games/ttld.sh headless` greps the log for the
 //! final verdict line.
 
 use alloc::format;
@@ -11,11 +11,11 @@ use core::cell::RefCell;
 
 use crate::combat;
 use crate::state::World;
-use crate::units::{self, ENEMY_TEAM, OrkKind};
+use crate::units::{self, ENEMY_TEAM, OrkKind, TOWN_CENTRE_X, TOWN_CENTRE_Z};
 
 const TAG: &str = "[TTLD-Rust-Test]";
-const TOWN_X: f32 = 5650.0;
-const TOWN_Z: f32 = 5720.0;
+/// CSolidObject::PSTATE_BIT_FLYING.
+const PHYSICAL_STATE_FLYING: u32 = 1 << 7;
 
 #[derive(Default)]
 struct Tracker {
@@ -61,8 +61,8 @@ fn ork_distance(world: &World) -> f32 {
         let Some(position) = units::position(*unit_id) else {
             continue;
         };
-        let dx = position.x - TOWN_X;
-        let dz = position.z - TOWN_Z;
+        let dx = position.x - TOWN_CENTRE_X;
+        let dz = position.z - TOWN_CENTRE_Z;
         total += (dx * dx + dz * dz).sqrt();
         counted += 1.0;
     }
@@ -247,8 +247,7 @@ fn player_attack_checks(tracker: &mut Tracker, world: &mut World) {
         frame_of(world),
     );
     world.player.update(frame_of(world));
-    // Mirrors the blood-mage firing contract used by the original unit
-    // script, now consumed directly by the Rust CUS implementation.
+    // The blood mage's unit script aims and fires from these params.
     let firing = rules_param(unit_id, "firing").unwrap_or(0.0);
     let fire_tx = rules_param(unit_id, "fireTx").unwrap_or(0.0);
     check(
@@ -383,7 +382,7 @@ fn heartburn_checks(tracker: &mut Tracker, _world: &mut World) {
         ),
     );
     let airborne = spring::get_unit_physical_state(target)
-        .map(|physical_state| (physical_state & (1 << 7)) != 0)
+        .map(|physical_state| (physical_state & PHYSICAL_STATE_FLYING) != 0)
         .unwrap_or(false);
     check(
         tracker,

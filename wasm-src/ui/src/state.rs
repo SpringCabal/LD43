@@ -1,6 +1,5 @@
 use core::cell::RefCell;
 
-use alloc::string::String;
 use alloc::vec::Vec;
 
 use crate::fire::Field;
@@ -52,6 +51,25 @@ pub struct HudBindings {
     pub endgame_line_two: u64,
 }
 
+/// How far the story has got, as the rules publish it in `gameEnd`.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum GameEnd {
+    #[default]
+    Start,
+    VictoryPossible,
+    Victory,
+}
+
+impl GameEnd {
+    pub fn parse(value: &str) -> Self {
+        match value {
+            "victory" => Self::Victory,
+            "victoryPossible" => Self::VictoryPossible,
+            _ => Self::Start,
+        }
+    }
+}
+
 pub struct UiState {
     pub context: u64,
     pub document: u64,
@@ -67,7 +85,7 @@ pub struct UiState {
     pub lighting_applied: bool,
     pub intro_open: bool,
     pub endgame_open: bool,
-    pub game_end: String,
+    pub game_end: GameEnd,
     pub player_alive: bool,
     pub player_unit: i32,
     pub tracked_unit: i32,
@@ -121,7 +139,7 @@ impl UiState {
             lighting_applied: false,
             intro_open: true,
             endgame_open: false,
-            game_end: String::new(),
+            game_end: GameEnd::Start,
             player_alive: true,
             player_unit: -1,
             tracked_unit: -1,

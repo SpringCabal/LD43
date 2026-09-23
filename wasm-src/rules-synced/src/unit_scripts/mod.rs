@@ -1,7 +1,5 @@
-//! TTLD's authored unit scripts, implemented directly with the portable CUS
-//! API.  This is deliberately a small game-owned dispatcher: the unit
-//! definitions still select the models and weapons, while all old Lua
-//! `scripts/*.lua` behavior lives here as typed callbacks and tasks.
+//! TTLD's unit scripts (the Lua build's `scripts/*.lua`) as Core-CUS callbacks
+//! and tasks. The unit definitions still select the models and weapons.
 
 mod common;
 
@@ -18,18 +16,15 @@ use spring::cus::{
     TaskDefinition, UnitCtx, UnitScript, UnitScriptCall, WeaponId, WreckLevel,
 };
 
-use crate::combat;
+use crate::engine::{self, set_unit_number};
+use crate::{cmd, combat};
 
 use self::common::{
     EnginePieces, SIG_ATTACK, SIG_BUFF, SIG_DEATH, SIG_MOVE, SIG_STUN, collision_volume,
-    face_direction, face_target, move_piece, play_unit_sound, random_unit, rules_value,
-    set_blocking, spin, stop_spin, turn,
+    face_direction, face_target, move_piece, play_unit_sound, random_unit, set_blocking, spin,
+    stop_spin, turn,
 };
 
-const LOS_PUBLIC: i32 = 32;
-const CMD_MOVE: i32 = 10;
-const CMD_FIGHT: i32 = 16;
-const CMD_REPEAT: i32 = 115;
 const COB_INBUILDSTANCE: i32 = 5;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -60,10 +55,9 @@ fn script_kind_for_def(def: i32) -> Option<ScriptKind> {
     } else if matches("coward") {
         Some(ScriptKind::Coward)
     } else if matches("crossbowman") || matches("builder") {
-        // The original archive references defender.lua for Builder, but that
-        // file was never present.  Its model/weapon is the crossbowman's, so
-        // the direct port gives it the only behavior that archive could have
-        // provided instead of silently falling back to Lua.
+        // The Lua build names defender.lua for the builder, a file it never
+        // shipped. The builder has the crossbowman's model and weapon, so it
+        // gets the crossbowman's script.
         Some(ScriptKind::Crossbowman)
     } else if matches("swordsman") {
         Some(ScriptKind::Swordsman)
@@ -87,16 +81,7 @@ fn capabilities(kind: ScriptKind) -> ScriptCapabilities {
                 | ScriptCapabilities::AIM_FROM_WEAPON
                 | ScriptCapabilities::BLOCK_SHOT;
         }
-        ScriptKind::BloodMage => {
-            bits |= ScriptCapabilities::START_MOVING
-                | ScriptCapabilities::STOP_MOVING
-                | ScriptCapabilities::QUERY_WEAPON
-                | ScriptCapabilities::AIM_WEAPON
-                | ScriptCapabilities::AIM_FROM_WEAPON
-                | ScriptCapabilities::BLOCK_SHOT
-                | ScriptCapabilities::FIRE_WEAPON;
-        }
-        ScriptKind::Crossbowman | ScriptKind::Peasant => {
+        ScriptKind::Crossbowman | ScriptKind::Peasant | ScriptKind::Swordsman => {
             bits |= ScriptCapabilities::START_MOVING
                 | ScriptCapabilities::STOP_MOVING
                 | ScriptCapabilities::START_BUILDING
@@ -106,17 +91,7 @@ fn capabilities(kind: ScriptKind) -> ScriptCapabilities {
                 | ScriptCapabilities::BLOCK_SHOT
                 | ScriptCapabilities::FIRE_WEAPON;
         }
-        ScriptKind::Swordsman => {
-            bits |= ScriptCapabilities::START_MOVING
-                | ScriptCapabilities::STOP_MOVING
-                | ScriptCapabilities::START_BUILDING
-                | ScriptCapabilities::QUERY_WEAPON
-                | ScriptCapabilities::AIM_WEAPON
-                | ScriptCapabilities::AIM_FROM_WEAPON
-                | ScriptCapabilities::BLOCK_SHOT
-                | ScriptCapabilities::FIRE_WEAPON;
-        }
-        ScriptKind::OrkSmall | ScriptKind::OrkBig | ScriptKind::OrkBoss => {
+        ScriptKind::BloodMage | ScriptKind::OrkSmall | ScriptKind::OrkBig | ScriptKind::OrkBoss => {
             bits |= ScriptCapabilities::START_MOVING
                 | ScriptCapabilities::STOP_MOVING
                 | ScriptCapabilities::QUERY_WEAPON
@@ -221,7 +196,7 @@ impl UnitScript for TtldUnitScript {
         match kind {
             ScriptKind::BloodMage => {
                 self.init_shared(ctx, 2.0, 1.0, false, Some("sounds/death_player.wav"), 1.0);
-                set_unit_param(ctx.unit(), "unorkable", 1.0);
+                set_unit_number(ctx.unit().0, "unorkable", 1.0);
             }
             ScriptKind::Coward => {
                 self.init_shared(ctx, 3.0, 1.0, false, Some("sounds/panicdeathyell.wav"), 0.6);
@@ -247,19 +222,19 @@ impl UnitScript for TtldUnitScript {
                     Some("sounds/smallorkdeathyell.wav"),
                     0.6,
                 );
-                set_unit_param(ctx.unit(), "unorkable", 1.0);
+                set_unit_number(ctx.unit().0, "unorkable", 1.0);
                 let _ = spring::set_unit_max_range(ctx.unit().0, 80.0);
             }
             ScriptKind::OrkBig => {
                 self.init_shared(ctx, 2.0, 2.0, true, Some("sounds/bigorkdeathyell.wav"), 1.0);
-                set_unit_param(ctx.unit(), "unorkable", 1.0);
+                set_unit_number(ctx.unit().0, "unorkable", 1.0);
                 self.state.borrow_mut().toss_radius = 120.0;
                 self.state.borrow_mut().toss_strength = 5.0;
                 let _ = spring::set_unit_max_range(ctx.unit().0, 120.0);
             }
             ScriptKind::OrkBoss => {
                 self.init_shared(ctx, 2.0, 2.0, true, Some("sounds/bossdeathyell.wav"), 1.0);
-                set_unit_param(ctx.unit(), "unorkable", 1.0);
+                set_unit_number(ctx.unit().0, "unorkable", 1.0);
                 {
                     let mut state = self.state.borrow_mut();
                     state.toss_radius = 200.0;
@@ -374,7 +349,7 @@ impl UnitScript for TtldUnitScript {
                     unit.0,
                     weapon.0,
                     "reloadFrame",
-                    current_frame() as f32 + 300.0,
+                    engine::frame() as f32 + 300.0,
                 );
                 true
             }
@@ -452,7 +427,7 @@ impl UnitScript for TtldUnitScript {
         damage: f32,
     ) -> f32 {
         if self.kind == Some(ScriptKind::House) && damage > 400.0 {
-            set_unit_param(ctx.unit(), "on_fire", 1.0);
+            set_unit_number(ctx.unit().0, "on_fire", 1.0);
         }
         damage
     }
@@ -592,22 +567,12 @@ impl TtldUnitScript {
     }
 }
 
-fn set_unit_param(unit: UnitId, name: &str, value: f32) {
-    let _ = spring::set_unit_rules_param_f32(unit.0, name, value, LOS_PUBLIC);
-}
-
-fn current_frame() -> i32 {
-    spring::game::get_game_frame(0)
-        .map(|frame| (frame.low16 | (frame.high16 << 16)) as i32)
-        .unwrap_or_default()
-}
-
 fn issue_patrol_orders(ctx: &UnitCtx) {
-    let _ = spring::give_order_to_unit(ctx.unit(), CMD_REPEAT, &[1.0], 0, 0);
+    let _ = spring::give_order_to_unit(ctx.unit(), cmd::REPEAT, &[1.0], 0, 0);
     if let Ok(position) = spring::get_unit_position(ctx.unit().0, false, false) {
         let _ = spring::give_order_to_unit(
             ctx.unit(),
-            CMD_FIGHT,
+            cmd::FIGHT,
             &[position.x, position.y, position.z],
             0,
             0,
@@ -637,58 +602,35 @@ async fn bob_task(state: Rc<RefCell<TtldState>>, ctx: UnitCtx) {
         ctx.sleep(Duration::from_millis(delay)).await;
     }
     loop {
-        let (piece, scale, time_scale, dead) = {
+        let (piece, dead) = {
             let state = state.borrow();
-            (
-                state.pieces.torso,
-                state.bob_scale,
-                state.time_scale,
-                state.dead,
-            )
+            (state.pieces.torso, state.dead)
         };
         if dead {
             return;
         }
-        move_piece(&ctx, piece, Axis::Z, 3.0 * scale, 20.0 * scale);
-        ctx.sleep(Duration::from_millis((100.0 * time_scale) as u64))
-            .await;
-        let (scale, time_scale) = {
-            let state = state.borrow();
-            (state.bob_scale, state.time_scale)
-        };
-        move_piece(&ctx, piece, Axis::Z, 4.0 * scale, 10.0 * scale);
-        ctx.sleep(Duration::from_millis((66.0 * time_scale) as u64))
-            .await;
-        let (scale, time_scale) = {
-            let state = state.borrow();
-            (state.bob_scale, state.time_scale)
-        };
-        move_piece(&ctx, piece, Axis::Z, 3.0 * scale, 10.0 * scale);
-        ctx.sleep(Duration::from_millis((66.0 * time_scale) as u64))
-            .await;
-        let (scale, time_scale) = {
-            let state = state.borrow();
-            (state.bob_scale, state.time_scale)
-        };
-        move_piece(&ctx, piece, Axis::Z, 0.0, 20.0 * scale);
-        ctx.sleep(Duration::from_millis((100.0 * time_scale) as u64))
-            .await;
-        let (scale, time_scale) = {
-            let state = state.borrow();
-            (state.bob_scale, state.time_scale)
-        };
-        move_piece(&ctx, piece, Axis::Z, -scale, 10.0 * scale);
-        ctx.sleep(Duration::from_millis((66.0 * time_scale) as u64))
-            .await;
-        let (scale, time_scale) = {
-            let state = state.borrow();
-            (state.bob_scale, state.time_scale)
-        };
-        move_piece(&ctx, piece, Axis::Z, 0.0, 10.0 * scale);
-        ctx.sleep(Duration::from_millis((66.0 * time_scale) as u64))
-            .await;
+        for (offset, speed, millis) in BOB_STEPS {
+            let (scale, time_scale) = {
+                let state = state.borrow();
+                (state.bob_scale, state.time_scale)
+            };
+            move_piece(&ctx, piece, Axis::Z, offset * scale, speed * scale);
+            ctx.sleep(Duration::from_millis((millis * time_scale) as u64))
+                .await;
+        }
     }
 }
+
+/// One walk bob: torso offset and speed (both scaled by the bob scale) and the
+/// pause after each move (scaled by the time scale), from shared.lua's Bob.
+const BOB_STEPS: [(f32, f32, f32); 6] = [
+    (3.0, 20.0, 100.0),
+    (4.0, 10.0, 66.0),
+    (3.0, 10.0, 66.0),
+    (0.0, 20.0, 100.0),
+    (-1.0, 10.0, 66.0),
+    (0.0, 10.0, 66.0),
+];
 
 async fn attack_bob_task(state: Rc<RefCell<TtldState>>, ctx: UnitCtx) {
     ctx.set_signal_mask(SIG_ATTACK);
@@ -1013,16 +955,8 @@ async fn boss_position_task(state: Rc<RefCell<TtldState>>, ctx: UnitCtx) {
             return;
         }
         if let Ok(position) = spring::get_unit_position(ctx.unit().0, false, false) {
-            let _ = spring::generated::owned::rules_params::set_game_rules_param(
-                "boss_x",
-                &rules_value(position.x),
-                LOS_PUBLIC,
-            );
-            let _ = spring::generated::owned::rules_params::set_game_rules_param(
-                "boss_z",
-                &rules_value(position.z),
-                LOS_PUBLIC,
-            );
+            engine::set_game_number("boss_x", position.x);
+            engine::set_game_number("boss_z", position.z);
         }
         ctx.sleep(Duration::from_millis(2000)).await;
     }
@@ -1040,16 +974,16 @@ fn coward_block(ctx: &UnitCtx, target: UnitId) -> bool {
     };
     let dx = target_position.x - unit_position.x;
     let dz = target_position.z - unit_position.z;
-    let mut seed = ctx.unit().0 as u32 ^ current_frame() as u32;
+    let mut seed = ctx.unit().0 as u32 ^ engine::frame() as u32;
     let cx = unit_position.x - dx + random_unit(&mut seed) * 50.0 - 25.0;
     let cz = unit_position.z - dz + random_unit(&mut seed) * 50.0 - 25.0;
     let cy = spring::get_ground_height(cx, cz).unwrap_or(unit_position.y);
-    let _ = spring::give_order_to_unit(ctx.unit(), CMD_MOVE, &[cx, cy, cz], 0, 0);
+    let _ = spring::give_order_to_unit(ctx.unit(), cmd::MOVE, &[cx, cy, cz], 0, 0);
     let _ = spring::set_unit_weapon_state(
         ctx.unit().0,
         0,
         "reloadFrame",
-        current_frame() as f32 + 180.0,
+        engine::frame() as f32 + 180.0,
     );
     true
 }
@@ -1189,9 +1123,7 @@ impl TtldCusModule {
     }
 
     fn sync_instance_frame(&mut self, handle: CusHandle) {
-        let frame = spring::game::get_game_frame(0)
-            .map(|frame| (frame.low16 | (frame.high16 << 16)) as u64)
-            .unwrap_or_default();
+        let frame = engine::frame() as u64;
         let _ = self.registry.with(handle, |instance| instance.tick(frame));
     }
 

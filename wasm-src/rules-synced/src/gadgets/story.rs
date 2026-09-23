@@ -21,7 +21,6 @@ impl Gadget<Global> for StoryGadget {
         if frame_consumed() {
             return;
         }
-        let _ = frame;
         crate::orchestration::advance_story(frame);
     }
 }
