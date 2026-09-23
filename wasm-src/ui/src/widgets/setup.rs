@@ -17,7 +17,6 @@ pub fn setup(handler: &mut WidgetHandler<Global>) {
             GuiMinimapWidget::new(),
             GuiInputWidget::new(),
             GfxFireWidget::new(),
-            GfxEnlargerWidget::new(),
             GfxMapEdgeWidget::new(),
             GfxHighlightWidget::new(),
         ]

@@ -36,7 +36,6 @@ impl Widget<Global> for DbgE2eWidget {
                 let _ = spring::send_lua_rules_msg("e2e|leader-render");
             }
             20 => {
-                arm_leader_fixture();
                 report_leader_fixture();
             }
             // SetUnitLuaDraw requests the legacy unit drawer. Give the engine
@@ -112,19 +111,6 @@ impl Widget<Global> for DbgE2eWidget {
 fn screenshot(label: &str) {
     let _ = spring::echo(&alloc::format!("TTLD E2E screenshot {label}"), "");
     let _ = spring::send_commands("screenshot", "");
-}
-
-fn arm_leader_fixture() {
-    let leader_def = spring::get_unit_def_id_by_name("orkboss").ok();
-    let orkbig_def = spring::get_unit_def_id_by_name("orkbig").ok();
-    for unit_id in spring::get_all_units().unwrap_or_default() {
-        let Ok(def_id) = spring::units_info::get_unit_def_id(unit_id) else {
-            continue;
-        };
-        if Some(def_id) == leader_def || Some(def_id) == orkbig_def {
-            crate::enlarger::arm(unit_id);
-        }
-    }
 }
 
 fn report_leader_fixture() {

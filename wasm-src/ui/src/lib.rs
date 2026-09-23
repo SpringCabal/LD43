@@ -5,7 +5,6 @@ mod camera;
 mod cursor;
 mod deferred_lighting;
 mod diagnostics;
-mod enlarger;
 mod fire;
 mod gl_uniforms;
 mod highlight;

@@ -1,7 +1,6 @@
 pub mod api_sync;
 #[cfg(feature = "e2e")]
 pub mod dbg_e2e;
-pub mod gfx_enlarger;
 pub mod gfx_fire;
 pub mod gfx_highlight;
 pub mod gfx_lighting;
@@ -16,7 +15,6 @@ pub mod snd_music;
 pub use api_sync::ApiSyncWidget;
 #[cfg(feature = "e2e")]
 pub use dbg_e2e::DbgE2eWidget;
-pub use gfx_enlarger::GfxEnlargerWidget;
 pub use gfx_fire::GfxFireWidget;
 pub use gfx_highlight::GfxHighlightWidget;
 pub use gfx_lighting::GfxLightingWidget;

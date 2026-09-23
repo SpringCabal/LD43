@@ -10,6 +10,7 @@ crate-type = ["cdylib"]
 
 [dependencies]
 spring = { workspace = true }
+spring-addons = { workspace = true }
 
 [lints]
 workspace = true
