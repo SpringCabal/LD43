@@ -5,7 +5,6 @@ use core::cell::RefCell;
 
 use spring::cus::{Axis, Duration, UnitCtx, WreckLevel};
 
-use crate::engine;
 use crate::random::unit_float;
 
 use super::actions::face_from_position;
@@ -383,17 +382,4 @@ pub(super) async fn house_death_task(state: Rc<RefCell<TtldState>>, ctx: UnitCtx
     ctx.sleep(Duration::from_millis(1200)).await;
     state.borrow_mut().death_pending = false;
     ctx.set_killed_finished(WreckLevel::NoWreck);
-}
-
-pub(super) async fn boss_position_task(state: Rc<RefCell<TtldState>>, ctx: UnitCtx) {
-    loop {
-        if state.borrow().dead {
-            return;
-        }
-        if let Ok(position) = spring::get_unit_position(ctx.unit().0, false, false) {
-            engine::set_game_number("boss_x", position.x);
-            engine::set_game_number("boss_z", position.z);
-        }
-        ctx.sleep(Duration::from_millis(2000)).await;
-    }
 }

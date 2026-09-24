@@ -29,8 +29,8 @@ use self::common::{
 use self::kinds::ScriptKind;
 use self::state::{Pieces, TtldState};
 use self::tasks::{
-    attack_bob_task, attack_task, bob_task, boss_position_task, buff_task, cast_task, death_task,
-    house_death_task, melee_attack_task, stun_task,
+    attack_bob_task, attack_task, bob_task, buff_task, cast_task, death_task, house_death_task,
+    melee_attack_task, stun_task,
 };
 
 const COB_INBUILDSTANCE: i32 = 5;
@@ -101,11 +101,6 @@ impl UnitScript for TtldUnitScript {
                     state.deunorkable = true;
                 }
                 let _ = spring::set_unit_max_range(ctx.unit().0, 200.0);
-                ctx.spawn(TaskDefinition::with_state(
-                    "ttld-ork-boss-position",
-                    Rc::clone(&self.state),
-                    boss_position_task,
-                ));
             }
             ScriptKind::House => {}
         }
