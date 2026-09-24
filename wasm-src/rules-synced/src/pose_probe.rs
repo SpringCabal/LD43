@@ -139,13 +139,14 @@ impl PoseProbeGadget {
     /// Starts CastAnimation on the target, as the Lua probe does from its
     /// GameFrame: level 1 at the first trigger frame, 2 and 3 at the others.
     fn trigger(&self, frame: i32, unit: i32, level: i32) {
-        let arguments = if level == 1 {
-            [level as f32, 0.0, 0.0]
+        let (tx, tz) = if level == 1 {
+            (0.0, 0.0)
         } else {
-            [level as f32, 6000.0, 6000.0]
+            (6000.0, 6000.0)
         };
+        let call = crate::unit_scripts::ScriptCall::CastAnimation { level, tx, tz };
         let handled = crate::with_cus_module(|host| {
-            host.call(UnitId(unit), "CastAnimation", &arguments, &mut [])
+            host.with_script(UnitId(unit), |ctx, script| script.handle(ctx, call))
                 .is_some()
         })
         .unwrap_or(false);

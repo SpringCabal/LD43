@@ -1,10 +1,12 @@
 //! Small wrappers over engine calls that several modules share.
 
+use spring::ResultExt;
 use spring::rules_params::los;
 
 /// Publishes a unit number every reader can see.
 pub fn set_unit_number(unit_id: i32, name: &str, value: f32) {
-    let _ = spring::set_unit_rules_param_f32(unit_id, name, value, los::PUBLIC);
+    spring::set_unit_rules_param_f32(unit_id, name, value, los::PUBLIC)
+        .log_err(&alloc::format!("{name} of unit {unit_id}"));
 }
 
 /// Logs a failed engine call that gameplay depends on (an order, a unit

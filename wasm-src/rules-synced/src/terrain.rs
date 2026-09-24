@@ -2,14 +2,16 @@ use spring::consts::SQUARE_SIZE_F as SQUARE;
 
 use crate::defs::defs;
 use crate::units;
+use spring::ResultExt;
 
 const IMPASSIBLE_TERRAIN: i32 = 137;
 const PLAYER_FUDGE: f32 = 16.0;
 
 pub fn initialize() {
-    let _ = spring::set_terrain_type_data(IMPASSIBLE_TERRAIN, 0.0, 0.0, 0.0, 0.0, 0.0, false, "");
-    let _ =
-        spring::set_terrain_type_data(IMPASSIBLE_TERRAIN + 1, 0.4, 0.0, 0.0, 0.0, 0.0, false, "");
+    spring::set_terrain_type_data(IMPASSIBLE_TERRAIN, 0.0, 0.0, 0.0, 0.0, 0.0, false, "")
+        .log_err("impassable terrain type");
+    spring::set_terrain_type_data(IMPASSIBLE_TERRAIN + 1, 0.4, 0.0, 0.0, 0.0, 0.0, false, "")
+        .log_err("impassable terrain edge type");
 }
 
 pub fn block(unit_id: i32, unit_def_id: i32) {
@@ -72,7 +74,8 @@ fn set_square(extents: (f32, f32, f32, f32), value: i32) {
             } else {
                 value
             };
-            let _ = spring::set_map_square_terrain_type(x as i32, z as i32, terrain);
+            spring::set_map_square_terrain_type(x as i32, z as i32, terrain)
+                .log_err_once("terrain type of a map square");
             z += SQUARE;
         }
         x += SQUARE;

@@ -42,6 +42,11 @@ pub(crate) struct TtldState {
     pub(super) cast_level: i32,
     pub(super) cast_tx: f32,
     pub(super) cast_tz: f32,
+    /// How long the current buff or stun animation lasts, in frames.
+    pub(super) effect_frames: i32,
+    /// The blood mage's ground target while the player attacks, Lua's
+    /// `GG.fireTx`/`GG.fireTz`: without one it holds its fire.
+    pub(super) fire_target: Option<(f32, f32)>,
 }
 
 impl TtldState {
@@ -65,6 +70,8 @@ impl TtldState {
             cast_level: 1,
             cast_tx: 0.0,
             cast_tz: 0.0,
+            effect_frames: 0,
+            fire_target: None,
         }
     }
 }

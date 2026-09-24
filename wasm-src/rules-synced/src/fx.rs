@@ -1,6 +1,7 @@
 //! Sounds and CEGs at units and points.
 
 use alloc::string::String;
+use spring::ResultExt;
 
 use spring::generated::owned::effects_control::DefRef;
 use spring::types::Float3;
@@ -32,14 +33,15 @@ pub fn ceg(name: &str) -> DefRef {
 }
 
 pub fn spawn_ceg(position: Float3, ceg: &DefRef) {
-    let _ = spring::generated::owned::effects_control::spawn_ceg(
+    spring::generated::owned::effects_control::spawn_ceg(
         ceg,
         position,
         Float3::default(),
         CEG_RADIUS,
         CEG_DAMAGE,
         0.0,
-    );
+    )
+    .log_err_once(&ceg.name);
 }
 
 pub fn play_sound(name: &str, unit_id: i32) {
@@ -50,5 +52,5 @@ pub fn play_sound(name: &str, unit_id: i32) {
 }
 
 pub fn play_sound_at(name: &str, position: Float3) {
-    let _ = spring::sound::play_sound_file(name, 1.0, position, Float3::default(), 0);
+    spring::sound::play_sound_file(name, 1.0, position, Float3::default(), 0).log_err_once(name);
 }

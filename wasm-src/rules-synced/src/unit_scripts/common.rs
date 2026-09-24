@@ -1,3 +1,4 @@
+use spring::ResultExt;
 use spring::UnitId;
 use spring::cus::{Angle, AngularSpeed, Axis, Piece, UnitCtx};
 
@@ -56,7 +57,8 @@ pub(super) fn face_direction(unit: UnitId, dx: f32, dz: f32) {
         return;
     }
     let angle = dz.atan2(dx) - core::f32::consts::FRAC_PI_2;
-    let _ = spring::set_unit_rotation(unit.0, spring::types::Float3::new(0.0, angle, 0.0));
+    spring::set_unit_rotation(unit.0, spring::types::Float3::new(0.0, angle, 0.0))
+        .log_err_once("facing a unit");
 }
 
 pub(super) fn face_target(unit: UnitId, target: i32) {
@@ -78,12 +80,12 @@ pub(super) fn face_target(unit: UnitId, target: i32) {
 
 pub(super) fn play_unit_sound(unit: UnitId, name: &str, volume: f32) {
     let position = spring::get_unit_position(unit.0, false, false).unwrap_or_default();
-    let _ =
-        spring::sound::play_sound_file(name, volume, position, spring::types::Float3::default(), 0);
+    spring::sound::play_sound_file(name, volume, position, spring::types::Float3::default(), 0)
+        .log_err_once(name);
 }
 
 pub(super) fn set_blocking(unit: UnitId, blocking: bool) {
-    let _ = spring::set_unit_blocking(
+    spring::set_unit_blocking(
         unit.0,
         spring::generated::owned::unit_control::SetUnitBlockingOptions {
             blocking,
@@ -94,15 +96,18 @@ pub(super) fn set_blocking(unit: UnitId, blocking: bool) {
             block_enemy_pushing: blocking,
             block_height_changes: blocking,
         },
-    );
+    )
+    .log_err(&alloc::format!("blocking of unit {}", unit.0));
 }
 
 pub(super) fn collision_volume(unit: UnitId, selection: bool) {
     let scales = spring::types::Float3::new(5.0, 5.0, 5.0);
     let offsets = spring::types::Float3::default();
     if selection {
-        let _ = spring::set_unit_selection_volume_data(unit.0, scales, offsets, -1, 1, 0);
+        spring::set_unit_selection_volume_data(unit.0, scales, offsets, -1, 1, 0)
+            .log_err(&alloc::format!("selection volume of unit {}", unit.0));
     } else {
-        let _ = spring::set_unit_collision_volume_data(unit.0, scales, offsets, 0, 1, 0);
+        spring::set_unit_collision_volume_data(unit.0, scales, offsets, 0, 1, 0)
+            .log_err(&alloc::format!("collision volume of unit {}", unit.0));
     }
 }

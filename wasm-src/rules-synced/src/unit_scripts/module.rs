@@ -37,18 +37,53 @@ pub fn attach(unit: i32, def: i32) {
     crate::with_cus_module_or_defer(move |host| host.unit_created(UnitId(unit), def));
 }
 
-/// Runs a named unit-script function, like Lua's `env.Function()`. Units
-/// without a script, and dead units, ignore it, as a Lua script without the
-/// function would.
+/// A function the rules call on a unit's script, like Lua's
+/// `env.script.Function(...)`.
+#[derive(Clone, Copy, Debug)]
+pub enum ScriptCall {
+    StopMoving,
+    /// Adrenaline's animation, for this many frames.
+    Buff {
+        frames: i32,
+    },
+    /// A stun's animation, for this many frames.
+    Stun {
+        frames: i32,
+    },
+    /// The blood mage's cast animation: level 1 to 3, and where it aims.
+    CastAnimation {
+        level: i32,
+        tx: f32,
+        tz: f32,
+    },
+    /// Where the blood mage aims while the player attacks, or `None` to hold
+    /// its fire.
+    FireTarget(Option<(f32, f32)>),
+}
+
+/// Calls a unit's script. Deferred while the CUS state is in use further up
+/// the stack. A dead unit's script ignores it; a unit without a script is
+/// logged, since every TTLD unit has one.
 ///
 /// The rules are compiled into this module, so they reach the scripts
 /// directly; going through `call_unit_script` would re-enter the module.
-pub fn call(unit: i32, function_name: &'static str, arguments: &[f32]) {
-    if unit < 0 {
-        return;
-    }
-    let arguments = arguments.to_vec();
+pub fn call(unit: i32, call: ScriptCall) {
     crate::with_cus_module_or_defer(move |host| {
-        host.call(UnitId(unit), function_name, &arguments, &mut []);
+        if host
+            .with_script(UnitId(unit), |ctx, script| script.handle(ctx, call))
+            .is_none()
+        {
+            spring::log_warning!("ttld-wasm", "{call:?} for unit {unit}: it has no script");
+        }
     });
+}
+
+/// The blood mage's fire target as its script holds it; `None` when the unit
+/// has no script or the module is busy.
+#[cfg(feature = "headless-integration")]
+pub fn fire_target(unit: i32) -> Option<Option<(f32, f32)>> {
+    crate::with_cus_module(|host| {
+        host.with_state(UnitId(unit), |script| script.state.borrow().fire_target)
+    })
+    .flatten()
 }

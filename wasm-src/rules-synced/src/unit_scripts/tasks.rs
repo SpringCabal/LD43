@@ -274,7 +274,7 @@ fn lower_arms(ctx: &UnitCtx, pieces: Pieces) {
 
 pub(super) async fn buff_task(state: Rc<RefCell<TtldState>>, ctx: UnitCtx) {
     ctx.set_signal_mask(SIG_BUFF);
-    let duration = state.borrow().cast_level.max(0) as u64;
+    let duration = state.borrow().effect_frames.max(0) as u64;
     {
         let mut state = state.borrow_mut();
         state.bob_scale = state.static_bob_scale * 2.0;
@@ -296,7 +296,7 @@ pub(super) async fn stun_task(state: Rc<RefCell<TtldState>>, ctx: UnitCtx) {
         state.bob_scale = state.static_bob_scale * 0.1;
         (
             state.pieces.torso,
-            state.cast_level.max(0) as u64,
+            state.effect_frames.max(0) as u64,
             direction,
             spin_speed,
         )

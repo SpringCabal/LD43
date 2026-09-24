@@ -8,10 +8,13 @@ mod module;
 mod state;
 mod tasks;
 
-pub use module::{TtldCusModule, attach, call};
+#[cfg(feature = "headless-integration")]
+pub use module::fire_target;
+pub use module::{ScriptCall, TtldCusModule, attach, call};
 
 use alloc::rc::Rc;
 use core::cell::RefCell;
+use spring::ResultExt;
 
 use spring::UnitId;
 use spring::cus::{Axis, Piece, TaskDefinition, UnitCtx, UnitScript, WeaponId, WreckLevel};
@@ -73,14 +76,14 @@ impl UnitScript for TtldUnitScript {
                     0.6,
                 );
                 set_unit_number(ctx.unit().0, "unorkable", 1.0);
-                let _ = spring::set_unit_max_range(ctx.unit().0, 80.0);
+                spring::set_unit_max_range(ctx.unit().0, 80.0).log_err("ork max range");
             }
             ScriptKind::OrkBig => {
                 self.init_shared(ctx, 2.0, 2.0, true, Some("sounds/bigorkdeathyell.wav"), 1.0);
                 set_unit_number(ctx.unit().0, "unorkable", 1.0);
                 self.state.borrow_mut().toss_radius = 120.0;
                 self.state.borrow_mut().toss_strength = 5.0;
-                let _ = spring::set_unit_max_range(ctx.unit().0, 120.0);
+                spring::set_unit_max_range(ctx.unit().0, 120.0).log_err("ork max range");
             }
             ScriptKind::OrkBoss => {
                 self.init_shared(ctx, 2.0, 2.0, true, Some("sounds/bossdeathyell.wav"), 1.0);
@@ -91,20 +94,10 @@ impl UnitScript for TtldUnitScript {
                     state.toss_strength = 10.0;
                     state.deunorkable = true;
                 }
-                let _ = spring::set_unit_max_range(ctx.unit().0, 200.0);
+                spring::set_unit_max_range(ctx.unit().0, 200.0).log_err("ork max range");
             }
             ScriptKind::House => {}
         }
-    }
-
-    fn call_named(
-        &mut self,
-        ctx: &UnitCtx,
-        name: &str,
-        arguments: &[f32],
-        _returns: &mut [f32],
-    ) -> Option<usize> {
-        self.named_call(ctx, name, arguments).then_some(0)
     }
 
     fn start_moving(&mut self, ctx: &UnitCtx, _reversing: bool) {
@@ -200,25 +193,20 @@ impl UnitScript for TtldUnitScript {
         match self.kind {
             Some(ScriptKind::Coward) => coward_block(ctx, target),
             Some(ScriptKind::Peasant | ScriptKind::Swordsman) if weapon.0 == 1 => {
-                let _ = spring::set_unit_weapon_state(
+                spring::set_unit_weapon_state(
                     unit.0,
                     weapon.0,
                     "reloadFrame",
                     spring::game::current_frame() as f32 + 300.0,
-                );
+                )
+                .log_err("villager eyes reload");
                 true
             }
             Some(ScriptKind::BloodMage) => {
-                let firing = spring::get_unit_rules_param_f32(unit.0, "firing").unwrap_or(0.0);
-                if firing <= 0.0 {
+                let Some((tx, tz)) = self.state.borrow().fire_target else {
                     return true;
-                }
-                if let (Some(tx), Some(tz)) = (
-                    spring::get_unit_rules_param_f32(unit.0, "fireTx").ok(),
-                    spring::get_unit_rules_param_f32(unit.0, "fireTz").ok(),
-                ) {
-                    face_from_position(unit, tx, tz);
-                }
+                };
+                face_from_position(unit, tx, tz);
                 false
             }
             Some(ScriptKind::OrkSmall | ScriptKind::OrkBig | ScriptKind::OrkBoss) => {
@@ -237,10 +225,8 @@ impl UnitScript for TtldUnitScript {
     fn fire_weapon(&mut self, ctx: &UnitCtx, weapon: WeaponId) {
         match self.kind {
             Some(ScriptKind::BloodMage) => {
-                if let (Some(tx), Some(tz)) = (
-                    spring::get_unit_rules_param_f32(ctx.unit().0, "fireTx").ok(),
-                    spring::get_unit_rules_param_f32(ctx.unit().0, "fireTz").ok(),
-                ) {
+                let target = self.state.borrow().fire_target;
+                if let Some((tx, tz)) = target {
                     face_from_position(ctx.unit(), tx, tz);
                 }
                 crate::engine::check(
@@ -320,7 +306,7 @@ impl UnitScript for TtldUnitScript {
             ScriptKind::House => {
                 collision_volume(ctx.unit(), false);
                 collision_volume(ctx.unit(), true);
-                let _ = spring::set_unit_neutral(ctx.unit().0, true);
+                spring::set_unit_neutral(ctx.unit().0, true).log_err("neutral when killed");
                 let state = Rc::clone(&self.state);
                 ctx.spawn(TaskDefinition::with_state(
                     "ttld-house-death",
@@ -337,7 +323,7 @@ impl UnitScript for TtldUnitScript {
                 }
                 collision_volume(ctx.unit(), false);
                 collision_volume(ctx.unit(), true);
-                let _ = spring::set_unit_neutral(ctx.unit().0, true);
+                spring::set_unit_neutral(ctx.unit().0, true).log_err("neutral when killed");
                 // Lua's Killed also transfers the unit to the neutral team
                 // here, but the engine refuses to transfer a dead unit
                 // (CUnit::ChangeTeam), so the unit stays on its team until
@@ -388,52 +374,53 @@ impl TtldUnitScript {
         state.death_sound_chance = chance;
     }
 
-    fn named_call(&mut self, ctx: &UnitCtx, name: &str, arguments: &[f32]) -> bool {
-        if self.state.borrow().dead {
-            return matches!(name, "StopMoving");
+    /// Runs one of the functions the rules call on their scripts.
+    pub(crate) fn handle(&mut self, ctx: &UnitCtx, call: ScriptCall) {
+        if let ScriptCall::FireTarget(target) = call {
+            self.state.borrow_mut().fire_target = target;
+            return;
         }
-        match name {
-            "StopMoving" => {
-                self.stop_moving(ctx);
-                true
-            }
-            "Buff" => {
+        if self.state.borrow().dead {
+            return;
+        }
+        match call {
+            ScriptCall::StopMoving => self.stop_moving(ctx),
+            ScriptCall::Buff { frames } => {
                 ctx.signal(SIG_BUFF);
-                self.state.borrow_mut().cast_level =
-                    arguments.first().copied().unwrap_or(0.0) as i32;
+                self.state.borrow_mut().effect_frames = frames;
                 ctx.spawn(TaskDefinition::with_state(
                     "ttld-buff",
                     Rc::clone(&self.state),
                     buff_task,
                 ));
-                true
             }
-            "Stun" => {
+            ScriptCall::Stun { frames } => {
                 ctx.signal(SIG_STUN);
-                self.state.borrow_mut().cast_level =
-                    arguments.first().copied().unwrap_or(0.0) as i32;
+                self.state.borrow_mut().effect_frames = frames;
                 ctx.spawn(TaskDefinition::with_state(
                     "ttld-stun",
                     Rc::clone(&self.state),
                     stun_task,
                 ));
-                true
             }
-            "CastAnimation" if self.kind == Some(ScriptKind::BloodMage) => {
-                let mut state = self.state.borrow_mut();
-                state.cast_level = (arguments.first().copied().unwrap_or(1.0) as i32).clamp(1, 3);
-                state.cast_tx = arguments.get(1).copied().unwrap_or(0.0);
-                state.cast_tz = arguments.get(2).copied().unwrap_or(0.0);
-                drop(state);
+            ScriptCall::CastAnimation { level, tx, tz } => {
+                if self.kind != Some(ScriptKind::BloodMage) {
+                    return;
+                }
+                {
+                    let mut state = self.state.borrow_mut();
+                    state.cast_level = level.clamp(1, 3);
+                    state.cast_tx = tx;
+                    state.cast_tz = tz;
+                }
                 ctx.signal(SIG_ATTACK);
                 ctx.spawn(TaskDefinition::with_state(
                     "ttld-cast",
                     Rc::clone(&self.state),
                     cast_task,
                 ));
-                true
             }
-            _ => false,
+            ScriptCall::FireTarget(_) => {}
         }
     }
 }

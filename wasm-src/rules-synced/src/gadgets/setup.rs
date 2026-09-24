@@ -1,3 +1,4 @@
+use spring::ResultExt;
 use spring_addons::AddonContext;
 use spring_addons::register_gadgets;
 use spring_addons::rules::{Gadget, GadgetHandler};
@@ -45,7 +46,8 @@ impl Gadget<Global> for SetupGadget {
         units::destroy_all();
         global.begin_round(frame);
         for ally_team in 0..ALLY_TEAMS {
-            let _ = spring::team_control::set_global_los(ally_team, true);
+            spring::team_control::set_global_los(ally_team, true)
+                .log_err(&alloc::format!("global LOS for ally team {ally_team}"));
         }
         terrain::initialize();
         spring::log_info!("ttld-wasm", "round {} setup started", global.round());

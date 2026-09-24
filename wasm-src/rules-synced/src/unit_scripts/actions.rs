@@ -2,6 +2,7 @@
 
 use alloc::rc::Rc;
 use core::cell::RefCell;
+use spring::ResultExt;
 
 use spring::UnitId;
 use spring::cmd;
@@ -59,12 +60,13 @@ pub(super) fn coward_block(ctx: &UnitCtx, target: UnitId) -> bool {
         "give_order_to_unit",
         ctx.unit(),
     );
-    let _ = spring::set_unit_weapon_state(
+    spring::set_unit_weapon_state(
         ctx.unit().0,
         0,
         "reloadFrame",
         spring::game::current_frame() as f32 + 180.0,
-    );
+    )
+    .log_err("coward reload");
     true
 }
 

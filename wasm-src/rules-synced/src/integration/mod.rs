@@ -109,10 +109,6 @@ fn ork_distance(world: &World) -> f32 {
     if counted == 0.0 { 0.0 } else { total / counted }
 }
 
-fn rules_param(unit_id: i32, name: &str) -> Option<f32> {
-    spring::get_unit_rules_param_f32(unit_id, name).ok()
-}
-
 fn ork_def_ids() -> Vec<i32> {
     [OrkKind::Small, OrkKind::Big, OrkKind::Boss]
         .into_iter()

@@ -3,7 +3,6 @@ use alloc::vec::Vec;
 use spring::types::Float3;
 
 use crate::defs::{UnitKind, defs};
-use crate::engine::set_unit_number;
 use crate::units;
 
 use super::spells::Spell;
@@ -312,17 +311,10 @@ impl Order {
     }
 }
 
-/// The blood mage's unit script decides whether to block its shot and which way
-/// to face from these params, as the Lua build did from its GG.fireTx/fireTz
-/// globals.
+/// The blood mage's unit script holds its fire without a target, and faces
+/// it when it fires, as the Lua build's script did from GG.fireTx/fireTz.
 fn publish_fire_target(unit_id: i32, target: Option<(f32, f32)>) {
-    let (firing, tx, tz) = match target {
-        Some((tx, tz)) => (1.0, tx, tz),
-        None => (0.0, 0.0, 0.0),
-    };
-    set_unit_number(unit_id, "firing", firing);
-    set_unit_number(unit_id, "fireTx", tx);
-    set_unit_number(unit_id, "fireTz", tz);
+    crate::unit_scripts::call(unit_id, crate::unit_scripts::ScriptCall::FireTarget(target));
 }
 
 fn clamp_to_map(x: f32, z: f32) -> (f32, f32) {

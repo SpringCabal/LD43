@@ -2,6 +2,7 @@ use alloc::vec::Vec;
 
 use crate::defs::{UnitKind, defs};
 use crate::state::Global;
+use crate::unit_scripts::ScriptCall;
 
 use super::attributes::{self, Effect, Modifier};
 
@@ -51,7 +52,7 @@ pub fn adrenaline(global: &Global, unit_id: i32, duration: i32, frame: i32) {
         }
     };
     attributes::add_effect(global, unit_id, Effect::Buff, modifier);
-    call_script(unit_id, "Buff", duration as f32);
+    crate::unit_scripts::call(unit_id, ScriptCall::Buff { frames: duration });
     global
         .statuses
         .access_mut()
@@ -73,7 +74,7 @@ pub fn stun(global: &Global, unit_id: i32, duration: i32, frame: i32) {
             reload_factor: 0.0,
         },
     );
-    call_script(unit_id, "Stun", duration as f32);
+    crate::unit_scripts::call(unit_id, ScriptCall::Stun { frames: duration });
     global
         .statuses
         .access_mut()
@@ -104,8 +105,4 @@ fn resists(unit_id: i32) -> bool {
         defs().kind(unit_def_id),
         Some(UnitKind::OrkBoss | UnitKind::BloodMage)
     )
-}
-
-fn call_script(unit_id: i32, function_name: &'static str, argument: f32) {
-    crate::unit_scripts::call(unit_id, function_name, &[argument]);
 }

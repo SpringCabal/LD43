@@ -1,5 +1,6 @@
 use alloc::vec::Vec;
 
+use spring::ResultExt;
 use spring::generated::owned::unit_control;
 use spring::types::Float3;
 
@@ -83,14 +84,15 @@ fn spawn_villager(area: &'static VillagerArea, kind: UnitKind, def_id: i32) -> O
     let facing = random::facing();
     let position = find_placement(area, def_id, facing);
     let unit_id = units::create_at(kind, position, PLAYER_TEAM, facing)?;
-    let _ = unit_control::set_unit_rotation(
+    unit_control::set_unit_rotation(
         unit_id,
         Float3 {
             x: 0.0,
             y: random::range(0.0, core::f32::consts::PI),
             z: 0.0,
         },
-    );
+    )
+    .log_err_once("villager rotation");
     Some(unit_id)
 }
 

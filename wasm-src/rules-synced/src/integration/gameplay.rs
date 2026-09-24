@@ -134,7 +134,7 @@ pub(super) fn player_attack_checks(tracker: &mut Tracker, world: &World) {
     };
     check(
         tracker,
-        rules_param(unit_id, "firing").unwrap_or(0.0) == 0.0,
+        crate::unit_scripts::fire_target(unit_id) == Some(None),
         "mage is not firing before an attack order",
     );
     let message = format!("attack|{}|{}", position.x + 200.0, position.z);
@@ -142,13 +142,13 @@ pub(super) fn player_attack_checks(tracker: &mut Tracker, world: &World) {
         world,
         crate::player::parse(message.as_bytes()).expect("attack message parses"),
     );
-    // The blood mage's unit script aims and fires from these params.
-    let firing = rules_param(unit_id, "firing").unwrap_or(0.0);
-    let fire_tx = rules_param(unit_id, "fireTx").unwrap_or(0.0);
+    // The blood mage's unit script aims and fires at this target.
+    let target = crate::unit_scripts::fire_target(unit_id).flatten();
+    let fire_tx = target.map_or(0.0, |(tx, _)| tx);
     check(
         tracker,
-        firing == 1.0,
-        "attack order publishes the firing flag the mage script needs",
+        target.is_some(),
+        "attack order gives the mage script its fire target",
     );
     check(
         tracker,
