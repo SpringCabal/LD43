@@ -87,6 +87,11 @@ impl Player {
         }
     }
 
+    /// Forgets the held move or attack without stopping what the unit does.
+    pub fn drop_held(&mut self) {
+        self.held = None;
+    }
+
     pub fn begin_cast(&mut self, frame: i32, frames: i32) {
         self.casting_until = frame + frames;
         self.cast_start_frame = frame;

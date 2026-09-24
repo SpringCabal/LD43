@@ -6,7 +6,7 @@ use spring_addons::rules::{Gadget, UnitDestroyedEvent};
 
 use crate::defs::defs;
 use crate::player::{self, Order};
-use crate::state::Global;
+use crate::state::{GameEnd, Global};
 
 /// The blood mage: takes the UI's commands, moves, attacks and casts.
 #[derive(Default)]
@@ -48,6 +48,10 @@ impl Gadget<Global> for PlayerGadget {
         }
         let orders = {
             let mut player = global.player.access_mut();
+            if global.game_end.get() == GameEnd::Victory {
+                // Lua's last movement message goes stale on its own.
+                player.drop_held();
+            }
             player.update(frame);
             player.take_orders()
         };
@@ -62,6 +66,10 @@ impl Gadget<Global> for PlayerGadget {
         _mode: i32,
         data: &[u8],
     ) {
+        // After victory the blood mage takes no more commands, as in Lua.
+        if ctx.global().game_end.get() == GameEnd::Victory {
+            return;
+        }
         if let Some(command) = player::parse(data) {
             ctx.global()
                 .player

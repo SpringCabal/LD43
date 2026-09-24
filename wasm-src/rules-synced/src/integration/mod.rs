@@ -34,7 +34,7 @@ use crate::units::{
 const TAG: &str = "[TTLD-Rust-Test]";
 const TITLE: &str = "TO THE LAST DROP INTEGRATION TESTS";
 /// Every check below; fewer means some were skipped.
-const CHECK_COUNT: u32 = 51;
+const CHECK_COUNT: u32 = 52;
 /// CSolidObject::PSTATE_BIT_FLYING.
 const PHYSICAL_STATE_FLYING: u32 = 1 << 7;
 
@@ -57,6 +57,7 @@ pub struct Tracker {
     /// Villagers drained before Transfusion, and Migraine's targets.
     drained_before_transfusion: i32,
     migraine_targets: Vec<i32>,
+    victory_attack_sent: bool,
     /// The ork Heartburn is aimed at, one farther out inside its blast, an
     /// ally inside it, and the ground height where it lands.
     heartburn_target: i32,
@@ -183,6 +184,8 @@ pub fn update(tracker: &RefCell<Tracker>, global: &Global, frame: i32) {
         330 => final_wave_checks(&world),
         331 => kill_boss_checks(&world),
         400 => victory_checks(&world),
+        VICTORY_ATTACK => attack_after_victory(&world),
+        VICTORY_ATTACK_CHECK => with_checks(&world, attack_after_victory_checks),
         429 => {
             with_checks(&world, retreat_persists_checks);
             with_checks(&world, record_round_end);

@@ -148,3 +148,34 @@ fn send_spell(index: i32, target: spring::types::Float3) -> bool {
         .finish();
     spring::send_lua_rules_msg(&message).unwrap_or(false)
 }
+
+pub(super) const VICTORY_ATTACK: i32 = 405;
+pub(super) const VICTORY_ATTACK_CHECK: i32 = 420;
+
+/// After victory the UI's attack is ignored, as Lua's player controller
+/// ignores every message then.
+pub(super) fn attack_after_victory(world: &World) {
+    let Some((_, position)) = mage(world) else {
+        return;
+    };
+    let message = Encoder::new("attack")
+        .field(position.x + 200.0)
+        .field(position.z)
+        .finish();
+    let sent = spring::send_lua_rules_msg(&message).unwrap_or(false);
+    world.track(|tracker| tracker.victory_attack_sent = sent);
+}
+
+pub(super) fn attack_after_victory_checks(tracker: &mut Tracker, world: &World) {
+    let target = world
+        .global
+        .player
+        .access()
+        .unit_id()
+        .and_then(crate::unit_scripts::fire_target);
+    check(
+        tracker,
+        tracker.victory_attack_sent && target == Some(None),
+        &format!("after victory the blood mage ignores an attack order (fire target {target:?})"),
+    );
+}
