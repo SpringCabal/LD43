@@ -69,6 +69,9 @@ struct Resources {
 #[derive(Default)]
 pub struct DeferredPass {
     resources: RefCell<Option<Resources>>,
+    /// The view size the shaders or targets could not be made for; not
+    /// retried until the view changes size.
+    failed_size: Cell<Option<(i32, i32)>>,
     reported: Cell<bool>,
 }
 
@@ -123,6 +126,7 @@ impl DeferredPass {
         if let Some(resources) = self.resources.borrow_mut().take() {
             destroy_resources(&resources);
         }
+        self.failed_size.set(None);
         self.reported.set(false);
     }
 
@@ -155,10 +159,20 @@ impl DeferredPass {
         {
             return true;
         }
+        if self.failed_size.get() == Some((width, height)) {
+            return false;
+        }
         if let Some(old) = slot.take() {
             destroy_resources(&old);
         }
         *slot = create_resources(width, height);
+        if slot.is_none() {
+            spring::log_warning!(
+                "ttld-ui",
+                "deferred lighting is off: its shaders or targets could not be made for {width}x{height}"
+            );
+            self.failed_size.set(Some((width, height)));
+        }
         slot.is_some()
     }
 }
