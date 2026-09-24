@@ -1,9 +1,8 @@
-use alloc::format;
 use alloc::string::String;
-use core::cell::Cell;
 
 use spring_addons::AddonContext;
 use spring_addons::rules::Gadget;
+use springcabal::message::{Encoder, SendOnChange};
 
 use crate::state::{GameEnd, Global};
 
@@ -11,7 +10,7 @@ use crate::state::{GameEnd, Global};
 /// `TTLD_STATUS|key=value|...` message.
 #[derive(Default)]
 pub struct StatusGadget {
-    sent: Cell<Option<Status>>,
+    sent: SendOnChange<Status>,
 }
 
 /// How often, in frames, the status is checked for changes.
@@ -41,10 +40,10 @@ impl Gadget<Global> for StatusGadget {
         if !global.running(frame) || frame % STATUS_PERIOD != 0 {
             return;
         }
-        let status = Status::read(global, frame);
-        if self.sent.replace(Some(status)) != Some(status) {
-            let _ = spring::send_to_unsynced(&status.message());
-        }
+        self.sent
+            .send_if_changed(Status::read(global, frame), |status| {
+                spring::send_to_unsynced(&status.message()).is_ok()
+            });
     }
 }
 
@@ -76,20 +75,19 @@ impl Status {
     }
 
     fn message(&self) -> String {
-        format!(
-            "TTLD_STATUS|health={}|maxHealth={}|villagersKilled={}|alliesDrained={}|orksKilled={}|gameEnd={}|playerAlive={}|casting={}|playerUnit={}|castStart={}|castAnimTime={}",
-            self.health,
-            self.max_health,
-            self.villagers_killed,
-            self.allies_drained,
-            self.orks_killed,
-            self.game_end.name(),
-            i32::from(self.player_unit >= 0),
-            i32::from(self.casting),
-            self.player_unit,
-            self.cast_start,
-            self.cast_animation_frames,
-        )
+        Encoder::new("TTLD_STATUS")
+            .kv("health", self.health)
+            .kv("maxHealth", self.max_health)
+            .kv("villagersKilled", self.villagers_killed)
+            .kv("alliesDrained", self.allies_drained)
+            .kv("orksKilled", self.orks_killed)
+            .kv("gameEnd", self.game_end.name())
+            .kv_flag("playerAlive", self.player_unit >= 0)
+            .kv_flag("casting", self.casting)
+            .kv("playerUnit", self.player_unit)
+            .kv("castStart", self.cast_start)
+            .kv("castAnimTime", self.cast_animation_frames)
+            .finish()
     }
 }
 

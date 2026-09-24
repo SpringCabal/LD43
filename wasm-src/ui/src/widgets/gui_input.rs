@@ -75,6 +75,6 @@ impl Widget<Global> for GuiInputWidget {
         ctx: &spring_addons::AddonContext<'_, Global>,
         event: &KeyEvent<'_>,
     ) -> EventResult {
-        input::key_press(ctx.global(), event.key_code, event.ctrl).into()
+        input::key_press(ctx.global(), event).into()
     }
 }

@@ -3,9 +3,15 @@ use spring::default_interface::{
 };
 use spring_addons::register_widgets;
 use spring_addons::ui::{HideDefaultInterface, WidgetHandler};
+use springcabal::music::MusicLoop;
 
 use super::*;
 use crate::state::Global;
+
+const MUSIC_FILE: &str = "sounds/music.ogg";
+const MUSIC_VOLUME: f32 = 0.20;
+/// The track's length, in case the engine can't report it.
+const MUSIC_SECONDS: f32 = 270.0;
 
 /// Registers the widgets in the order they update and draw.
 pub fn setup(handler: &mut WidgetHandler<Global>) {
@@ -21,7 +27,7 @@ pub fn setup(handler: &mut WidgetHandler<Global>) {
             GuiHudWidget::new(),
             GfxLightingWidget::new(),
             GuiCameraWidget::new(),
-            SndMusicWidget::new(),
+            MusicLoop::new(MUSIC_FILE, MUSIC_VOLUME).length_hint(MUSIC_SECONDS),
             GuiMinimapWidget::new(),
             GfxFireWidget::new(),
             GfxMapEdgeWidget::new(),

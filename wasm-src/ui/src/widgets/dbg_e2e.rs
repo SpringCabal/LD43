@@ -1,4 +1,6 @@
 use spring_addons::ui::Widget;
+use springcabal::message::Encoder;
+use springcabal::shots::screenshot;
 
 use crate::hud;
 use crate::state::Global;
@@ -47,15 +49,11 @@ impl Widget<Global> for DbgE2eWidget {
             // does not synthesize F12 or Pause.
             25 => send_spell(2, 1000.0),
             // Capture while the real projectile is in flight, before its
-            // synced impact path removes it. This is an engine screenshot
-            // command, not an F12 key event.
-            26 | 28 => {
-                let _ = spring::send_commands("screenshot", "");
-            }
+            // synced impact path removes it.
+            26 | 28 => screenshot(&tick_label(tick)),
             // Exercise hover-only target UI and the unit outline with a real
             // engine mouse move. This intentionally does not synthesize F12
-            // or Pause; screenshots continue to use the engine console
-            // command above.
+            // or Pause.
             35 => hover_fixture("orkboss", "orkboss"),
             37 => screenshot("hover_orkboss"),
             39 => hover_fixture("orkbig", "orkbig"),
@@ -82,38 +80,33 @@ impl Widget<Global> for DbgE2eWidget {
             }
             55 => {
                 self.remember_poultice_target();
-                let _ = spring::send_commands("screenshot", "");
+                screenshot(&tick_label(tick));
             }
             60 => send_spell(5, 0.0),
             70 => {
                 report_tracking("after_move");
                 self.report_poultice();
-                let _ = spring::send_commands("screenshot", "");
+                screenshot(&tick_label(tick));
             }
             240 => {
                 report_tracking("north_edge");
-                let _ = spring::send_commands("screenshot", "");
+                screenshot(&tick_label(tick));
             }
             330 => {
                 report_tracking("north_edge_late");
-                let _ = spring::send_commands("screenshot", "");
+                screenshot(&tick_label(tick));
             }
             65 => {
                 // Sample shortly after the delayed impulse, while the target
                 // is still expected to be queryable and airborne.
                 self.report_poultice();
-                let _ = spring::send_commands("screenshot", "");
+                screenshot(&tick_label(tick));
             }
             75 => {
                 self.report_poultice();
-                let _ = spring::send_commands("screenshot", "");
+                screenshot(&tick_label(tick));
             }
-            90 => {
-                let _ = spring::send_commands("screenshot", "");
-            }
-            30 | 120 => {
-                let _ = spring::send_commands("screenshot", "");
-            }
+            30 | 90 | 120 => screenshot(&tick_label(tick)),
             _ => {}
         }
     }
@@ -123,9 +116,8 @@ fn player_unit() -> i32 {
     crate::with_global(|global| global.status.access().player_unit)
 }
 
-fn screenshot(label: &str) {
-    let _ = spring::echo(&alloc::format!("TTLD E2E screenshot {label}"), "");
-    let _ = spring::send_commands("screenshot", "");
+fn tick_label(tick: u32) -> alloc::string::String {
+    alloc::format!("update_{tick}")
 }
 
 fn report_leader_fixture() {
@@ -187,12 +179,12 @@ fn send_spell(index: i32, z_offset: f32) {
             aim_pos: false,
         },
     ) {
-        let message = alloc::format!(
-            "spell|{index}|{}|{}|{}",
-            position.x,
-            position.y,
-            position.z + z_offset
-        );
+        let message = Encoder::new("spell")
+            .field(index)
+            .field(position.x)
+            .field(position.y)
+            .field(position.z + z_offset)
+            .finish();
         let accepted = spring::send_lua_rules_msg(&message).unwrap_or(false);
         let name = if index == 5 { "poultice" } else { "heartburn" };
         let _ = spring::echo(&alloc::format!("TTLD E2E {name} sent: {accepted}"), "");
@@ -215,11 +207,10 @@ fn move_player(x_offset: f32, z_offset: f32) {
     ) else {
         return;
     };
-    let message = alloc::format!(
-        "movement|{}|{}",
-        position.x + x_offset,
-        position.z + z_offset
-    );
+    let message = Encoder::new("movement")
+        .field(position.x + x_offset)
+        .field(position.z + z_offset)
+        .finish();
     let _ = spring::send_lua_rules_msg(&message);
 }
 

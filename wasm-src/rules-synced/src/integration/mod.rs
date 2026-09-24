@@ -13,9 +13,10 @@ use self::animation::animation_checks;
 use self::gameplay::*;
 use self::victory::*;
 
-use alloc::format;
 use alloc::vec::Vec;
 use core::cell::RefCell;
+
+use springcabal::check::Suite;
 
 use crate::defs::defs;
 use crate::state::Global;
@@ -24,6 +25,9 @@ use crate::units::{
 };
 
 const TAG: &str = "[TTLD-Rust-Test]";
+const TITLE: &str = "TO THE LAST DROP INTEGRATION TESTS";
+/// Every check below; fewer means some were skipped.
+const CHECK_COUNT: u32 = 31;
 /// CSolidObject::PSTATE_BIT_FLYING.
 const PHYSICAL_STATE_FLYING: u32 = 1 << 7;
 
@@ -38,9 +42,7 @@ pub struct Tracker {
     walk_heights: Vec<f32>,
     fire_poses: Vec<Vec<f32>>,
     shots: u32,
-    passed: u32,
-    failed: u32,
-    done: bool,
+    suite: Checks,
     ork_distance: f32,
     stunned_unit: i32,
     stunned_base: f32,
@@ -53,17 +55,16 @@ pub struct Tracker {
     poultice_origin_z: f32,
 }
 
-fn check(tracker: &mut Tracker, condition: bool, message: &str) {
-    if condition {
-        tracker.passed += 1;
-        let _ = spring::echo(
-            &format!("{TAG} ASSERTION PASSED ({}): {message}", tracker.passed),
-            "",
-        );
-    } else {
-        tracker.failed += 1;
-        let _ = spring::echo(&format!("{TAG} ASSERTION FAILED: {message}"), "");
+struct Checks(Suite);
+
+impl Default for Checks {
+    fn default() -> Self {
+        Self(Suite::new(TAG, TITLE).require_at_least(CHECK_COUNT))
     }
+}
+
+fn check(tracker: &mut Tracker, condition: bool, message: &str) {
+    tracker.suite.0.check(condition, message);
 }
 
 /// Mean distance of the living orks from the town centre they are ordered to
@@ -132,7 +133,7 @@ pub fn update(tracker: &RefCell<Tracker>, global: &Global, frame: i32) {
         global,
         frame,
     };
-    let done = world.track(|tracker| tracker.done);
+    let done = world.track(|tracker| tracker.suite.0.is_finished());
     if done {
         return;
     }
@@ -166,20 +167,5 @@ fn with_checks(world: &World, function: impl FnOnce(&mut Tracker, &World)) {
 }
 
 fn finish(tracker: &mut Tracker) {
-    let _ = spring::echo(
-        &if tracker.failed == 0 {
-            format!(
-                "{TAG} ALL TO THE LAST DROP INTEGRATION TESTS PASSED ({} assertions)",
-                tracker.passed
-            )
-        } else {
-            format!(
-                "{TAG} TO THE LAST DROP INTEGRATION TESTS FAILED ({} of {})",
-                tracker.failed,
-                tracker.passed + tracker.failed
-            )
-        },
-        "",
-    );
-    tracker.done = true;
+    tracker.suite.0.finish();
 }

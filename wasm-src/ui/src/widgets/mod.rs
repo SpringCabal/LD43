@@ -10,7 +10,6 @@ pub mod gui_hud;
 pub mod gui_input;
 pub mod gui_minimap;
 pub mod setup;
-pub mod snd_music;
 
 pub use api_sync::ApiSyncWidget;
 #[cfg(feature = "e2e")]
@@ -24,4 +23,3 @@ pub use gui_hud::GuiHudWidget;
 pub use gui_input::GuiInputWidget;
 pub use gui_minimap::GuiMinimapWidget;
 pub use setup::setup;
-pub use snd_music::SndMusicWidget;

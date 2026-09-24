@@ -1,5 +1,8 @@
-use alloc::format;
 use core::cell::Cell;
+
+use spring_addons::event::KeyEvent;
+use springcabal::menu;
+use springcabal::message::Encoder;
 
 use crate::state::Global;
 use crate::{cursor, hud};
@@ -109,7 +112,7 @@ fn send_held(held: &Cell<Option<Held>>, command: &'static str, ground: spring::t
     };
     if held.get().is_none_or(|last| last.differs(next)) {
         held.set(Some(next));
-        send_rules_msg(&format!("{command}|{}|{}", next.x, next.z));
+        send_rules_msg(&Encoder::new(command).field(next.x).field(next.z).finish());
     }
 }
 
@@ -129,11 +132,12 @@ pub fn sample_cursor(global: &Global) {
     });
 }
 
-pub fn key_press(global: &Global, key: i32, ctrl: bool) -> bool {
-    if ctrl && matches!(key, KEY_Q | KEY_Q_UPPER) {
-        hud::exit_to_menu();
+pub fn key_press(global: &Global, event: &KeyEvent<'_>) -> bool {
+    if menu::is_quit_to_menu(event) {
+        menu::quit_to_menu();
         return true;
     }
+    let key = event.key_code;
     let (intro_open, endgame_open) = {
         let hud = global.hud.access();
         (hud.intro_open, hud.endgame_open)
@@ -168,12 +172,11 @@ const MOVE: &str = "movement";
 const ATTACK: &str = "attack";
 const ATTACK_MOVE: &str = "attmove";
 const STOP: &str = "stop";
+const SPELL: &str = "spell";
 const KEY_RETURN: i32 = 13;
 const KEY_S: i32 = 115;
 const KEY_1: i32 = 49;
 const KEY_5: i32 = 53;
-const KEY_Q: i32 = 113;
-const KEY_Q_UPPER: i32 = 81;
 const KEY_R: i32 = 114;
 const KEY_R_UPPER: i32 = 82;
 
@@ -190,10 +193,14 @@ fn cast_spell(index: i32) {
     let Some(position) = ground_at(x, y) else {
         return;
     };
-    send_rules_msg(&format!(
-        "spell|{index}|{}|{}|{}",
-        position.x, position.y, position.z
-    ));
+    send_rules_msg(
+        &Encoder::new(SPELL)
+            .field(index)
+            .field(position.x)
+            .field(position.y)
+            .field(position.z)
+            .finish(),
+    );
 }
 
 fn cursor() -> Option<(i32, i32)> {

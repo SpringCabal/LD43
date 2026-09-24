@@ -1,7 +1,4 @@
-use alloc::format;
-
 use crate::defs::{UnitKind, defs};
-use crate::diagnostics;
 use crate::state::{GameEnd, Global};
 use crate::units::ENEMY_TEAM;
 
@@ -14,7 +11,7 @@ pub fn declare_if_won(global: &Global) -> bool {
         return false;
     }
     global.game_end.set(GameEnd::Victory);
-    diagnostics::info("victory");
+    spring::log_info!("ttld-wasm", "victory");
     let fleeing = {
         let mut orks = global.orks.access_mut();
         orks.start_fleeing();
@@ -23,7 +20,7 @@ pub fn declare_if_won(global: &Global) -> bool {
     for unit_id in &fleeing {
         orks::flee(global, *unit_id);
     }
-    diagnostics::info(&format!("{} orks fleeing", fleeing.len()));
+    spring::log_info!("ttld-wasm", "{} orks fleeing", fleeing.len());
     true
 }
 

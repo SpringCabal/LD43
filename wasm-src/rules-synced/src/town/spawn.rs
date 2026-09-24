@@ -1,4 +1,3 @@
-use alloc::format;
 use alloc::vec::Vec;
 
 use spring::generated::owned::unit_control;
@@ -6,7 +5,6 @@ use spring::types::Float3;
 
 use super::villagers::Villager;
 use crate::defs::{UnitKind, defs};
-use crate::diagnostics;
 use crate::random;
 use crate::units::{self, PLAYER_TEAM, VillagerKind};
 
@@ -32,11 +30,12 @@ pub fn populate() -> Vec<Villager> {
     spawn_houses();
     spawn_blood_mage();
     let villagers = fill_villager_areas();
-    diagnostics::info(&format!(
+    spring::log_info!(
+        "ttld-wasm",
         "town populated: {} houses, {} villagers",
         HOUSE_POSITIONS.len(),
-        villagers.len(),
-    ));
+        villagers.len()
+    );
     villagers
 }
 
@@ -76,7 +75,7 @@ fn spawn_blood_mage() {
     )
     .is_none()
     {
-        diagnostics::warning("blood mage failed to spawn");
+        spring::log_warning!("ttld-wasm", "blood mage failed to spawn");
     }
 }
 
@@ -86,7 +85,7 @@ fn fill_villager_areas() -> Vec<Villager> {
         for (kind, count) in area.units {
             let kind = kind.unit();
             let Some(def_id) = defs().id(kind) else {
-                diagnostics::warning(&format!("unknown villager def {}", kind.def_name()));
+                spring::log_warning!("ttld-wasm", "unknown villager def {}", kind.def_name());
                 continue;
             };
             for _ in 0..*count {

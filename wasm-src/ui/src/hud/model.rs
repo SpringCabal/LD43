@@ -7,9 +7,9 @@ pub fn create(context: u64) -> Option<HudBindings> {
     }
     let model = model.data_model_handle;
     bind_event(model, "introPlay", super::close_intro);
-    bind_event(model, "introExit", |_| exit_to_menu());
+    bind_event(model, "introExit", |_| springcabal::menu::quit_to_menu());
     bind_event(model, "endgameRestart", restart);
-    bind_event(model, "endgameExit", |_| exit_to_menu());
+    bind_event(model, "endgameExit", |_| springcabal::menu::quit_to_menu());
     Some(HudBindings {
         health: bind_int(model, "health", 0)?,
         health_percent: bind_percent(model, "healthPercent", 100.0)?,
@@ -62,11 +62,6 @@ fn bind_event(model: u64, name: &str, handler: impl FnMut(&Global) + 'static) {
     if !bound {
         crate::unregister_callback(callback);
     }
-}
-
-/// Leaves the game for the menu, like the Lua build's exit buttons.
-pub fn exit_to_menu() {
-    let _ = spring::send_commands("reloadforce", "");
 }
 
 /// Restarts the game by reloading the rules.

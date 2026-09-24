@@ -1,7 +1,6 @@
 use alloc::format;
 use core::cell::Cell;
 
-use crate::diagnostics;
 use crate::state::{GameStatus, Global};
 
 use super::model;
@@ -25,10 +24,11 @@ impl Document {
             Ok(true) => {}
             Ok(false) => return,
             Err(error) => {
-                diagnostics::warning(&format!(
+                spring::log_warning!(
+                    "ttld-ui",
                     "RmlUi readiness query failed (error code {})",
                     error.code
-                ));
+                );
                 return;
             }
         }
@@ -36,7 +36,7 @@ impl Document {
             return;
         };
         let Some(bindings) = model::create(context) else {
-            diagnostics::warning("RmlUi data-model creation failed");
+            spring::log_warning!("ttld-ui", "RmlUi data-model creation failed");
             return;
         };
         if !load_document(context) {
@@ -44,7 +44,7 @@ impl Document {
         }
         self.context.set(context);
         global.hud.access_mut().bindings = Some(bindings);
-        diagnostics::info("To the Last Drop RmlUi HUD initialized");
+        spring::log_info!("ttld-ui", "To the Last Drop RmlUi HUD initialized");
     }
 
     /// Replaces the engine's key bindings with the few the game keeps, and
@@ -62,7 +62,7 @@ impl Document {
             "unbindaction chat",
         ] {
             if let Err(error) = spring::send_commands(command, "") {
-                diagnostics::warning(&format!("key binding `{command}` failed: {error:?}"));
+                spring::log_warning!("ttld-ui", "key binding `{command}` failed: {error:?}");
             }
         }
     }
@@ -104,15 +104,16 @@ fn create_context() -> Option<u64> {
     let context = match spring::create_rml_context("ttld-wasm") {
         Ok(context) => context,
         Err(error) => {
-            diagnostics::warning(&format!(
+            spring::log_warning!(
+                "ttld-ui",
                 "RmlUi context creation failed (error code {})",
                 error.code
-            ));
+            );
             return None;
         }
     };
     if !context.success || context.context_handle == 0 {
-        diagnostics::warning("RmlUi context creation returned no context");
+        spring::log_warning!("ttld-ui", "RmlUi context creation returned no context");
         return None;
     }
     Some(context.context_handle)
@@ -122,28 +123,30 @@ fn load_document(context: u64) -> bool {
     let document = match spring::load_rml_document(context, "LuaUI/wasm/ttld.rml") {
         Ok(document) => document,
         Err(error) => {
-            diagnostics::warning(&format!(
+            spring::log_warning!(
+                "ttld-ui",
                 "RmlUi document load failed (error code {})",
                 error.code
-            ));
+            );
             return false;
         }
     };
     if !document.success || document.document_handle == 0 {
-        diagnostics::warning("RmlUi document load returned no document");
+        spring::log_warning!("ttld-ui", "RmlUi document load returned no document");
         return false;
     }
     match spring::show_rml_document(document.document_handle) {
         Ok(true) => true,
         Ok(false) => {
-            diagnostics::warning("RmlUi document show returned false");
+            spring::log_warning!("ttld-ui", "RmlUi document show returned false");
             false
         }
         Err(error) => {
-            diagnostics::warning(&format!(
+            spring::log_warning!(
+                "ttld-ui",
                 "RmlUi document show failed (error code {})",
                 error.code
-            ));
+            );
             false
         }
     }

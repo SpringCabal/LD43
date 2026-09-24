@@ -1,6 +1,3 @@
-use alloc::format;
-
-use crate::diagnostics;
 use crate::random;
 use crate::state::GameEnd;
 use crate::units::{self, ENEMY_TEAM, OrkKind};
@@ -154,7 +151,7 @@ const WAVES: [Wave; 13] = [
 ];
 
 pub fn spawn_wave(wave: &Wave) {
-    diagnostics::info(&format!("wave: {}", wave.name));
+    spring::log_info!("ttld-wasm", "wave: {}", wave.name);
     for (kind, count) in wave.units {
         for _ in 0..*count {
             let (x, z) = ring_position();

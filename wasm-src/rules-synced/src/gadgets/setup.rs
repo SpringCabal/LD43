@@ -5,7 +5,7 @@ use spring_addons::rules::{Gadget, GadgetHandler};
 #[cfg(feature = "pose-probe")]
 use crate::pose_probe::PoseProbeGadget;
 use crate::state::{Global, Phase};
-use crate::{diagnostics, terrain};
+use crate::terrain;
 
 use super::combat::CombatGadget;
 #[cfg(feature = "headless-integration")]
@@ -41,7 +41,7 @@ impl Gadget<Global> for SetupGadget {
             let _ = spring::team_control::set_global_los(ally_team, true);
         }
         terrain::initialize();
-        diagnostics::info("world setup started");
+        spring::log_info!("ttld-wasm", "world setup started");
     }
 }
 

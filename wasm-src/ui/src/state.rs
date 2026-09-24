@@ -76,13 +76,10 @@ impl Default for GameStatus {
 }
 
 impl GameStatus {
-    /// Applies the fields of a `TTLD_STATUS|key=value|...` message.
-    pub fn apply_message(&mut self, message: &str) {
+    /// Applies the `key=value` fields of a `TTLD_STATUS` message.
+    pub fn apply<'a>(&mut self, fields: impl Iterator<Item = (&'a str, &'a str)>) {
         let (mut health, mut max_health) = (0, 1000);
-        for field in message.split('|').skip(1) {
-            let Some((key, value)) = field.split_once('=') else {
-                continue;
-            };
+        for (key, value) in fields {
             match key {
                 "health" => health = value.parse().unwrap_or(0),
                 "maxHealth" => max_health = value.parse().unwrap_or(1000),

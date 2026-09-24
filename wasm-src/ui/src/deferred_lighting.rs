@@ -1,11 +1,10 @@
-use alloc::format;
 use alloc::string::String;
 use core::cell::{Cell, RefCell};
 
 use spring::{gfx, gl};
 
 use crate::lights::{Lights, PointLight};
-use crate::{diagnostics, game, gl_uniforms};
+use crate::{game, gl_uniforms};
 
 const VERTEX: &str = r#"
 void main(void)
@@ -133,7 +132,8 @@ impl DeferredPass {
             return;
         }
         let (staff, mouse, projectiles) = lights.summary();
-        diagnostics::info(&format!(
+        spring::log_info!(
+            "ttld-ui",
             "deferred light pass active: {} lights at game frame {}, player={}, staff={}, mouse={}, projectiles={}",
             lights.len(),
             frame,
@@ -141,7 +141,7 @@ impl DeferredPass {
             staff,
             mouse,
             projectiles
-        ));
+        );
         self.reported.set(true);
     }
 

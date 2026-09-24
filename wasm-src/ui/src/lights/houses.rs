@@ -1,7 +1,4 @@
-use alloc::format;
 use alloc::vec::Vec;
-
-use crate::diagnostics;
 
 use super::PointLight;
 
@@ -43,7 +40,7 @@ pub fn place() -> Option<Vec<PointLight>> {
             }
         }
     }
-    diagnostics::info(&format!("{placed} house lights placed"));
+    spring::log_info!("ttld-ui", "{placed} house lights placed");
     Some(deferred_lights)
 }
 

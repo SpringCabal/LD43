@@ -1,8 +1,9 @@
 use spring_addons::ui::Widget;
+use springcabal::message::key_values;
 
 use crate::state::Global;
 
-const STATUS_PREFIX: &str = "TTLD_STATUS|";
+const STATUS_PREFIX: &str = "TTLD_STATUS";
 
 /// Receives the rules' status messages.
 #[derive(Default)]
@@ -23,8 +24,8 @@ impl Widget<Global> for ApiSyncWidget {
         let Ok(text) = core::str::from_utf8(message) else {
             return;
         };
-        if text.starts_with(STATUS_PREFIX) {
-            ctx.global().status.access_mut().apply_message(text);
+        if let Some(fields) = key_values(text, STATUS_PREFIX) {
+            ctx.global().status.access_mut().apply(fields);
         }
     }
 }

@@ -1,40 +1,28 @@
+use springcabal::message::fields;
+
 use super::control::PlayerCommand;
 use super::spells::Spell;
 
+/// The UI's input messages: `movement|x|z`, `attack|x|z`, `attmove|x|z`,
+/// `stop` and `spell|index|x|y|z`.
 pub fn parse(data: &[u8]) -> Option<PlayerCommand> {
     let message = core::str::from_utf8(data).ok()?;
-    let mut fields = message.split('|');
-    match fields.next()? {
-        "movement" => Some(PlayerCommand::Move(position(&mut fields)?)),
-        "attack" => Some(PlayerCommand::Attack {
-            target: position(&mut fields)?,
-            move_to: false,
-        }),
-        "attmove" => Some(PlayerCommand::Attack {
-            target: position(&mut fields)?,
-            move_to: true,
-        }),
-        "stop" => Some(PlayerCommand::Stop),
-        "spell" => {
-            let spell = Spell::from_index(number(&mut fields)? as i32)?;
-            let x = number(&mut fields)?;
-            let _y = number(&mut fields)?;
-            let z = number(&mut fields)?;
-            Some(PlayerCommand::Cast { spell, x, z })
-        }
-        _ => None,
+    if let Some(mut fields) = fields(message, "movement") {
+        return Some(PlayerCommand::Move(fields.xz()?));
     }
-}
-
-fn position<'a>(fields: &mut impl Iterator<Item = &'a str>) -> Option<(f32, f32)> {
-    let x = number(fields)?;
-    let z = number(fields)?;
-    Some((x, z))
-}
-
-fn number<'a>(fields: &mut impl Iterator<Item = &'a str>) -> Option<f32> {
-    fields
-        .next()
-        .and_then(|value| value.parse::<f32>().ok())
-        .filter(|value| value.is_finite())
+    for (prefix, move_to) in [("attack", false), ("attmove", true)] {
+        if let Some(mut fields) = fields(message, prefix) {
+            return Some(PlayerCommand::Attack {
+                target: fields.xz()?,
+                move_to,
+            });
+        }
+    }
+    if fields(message, "stop").is_some() {
+        return Some(PlayerCommand::Stop);
+    }
+    let mut fields = fields(message, "spell")?;
+    let spell = Spell::from_index(fields.i32()?)?;
+    let (x, _y, z) = fields.xyz()?;
+    Some(PlayerCommand::Cast { spell, x, z })
 }
