@@ -4,7 +4,8 @@ use spring_addons::rules::Gadget;
 use crate::state::Global;
 use crate::unit_scripts;
 
-/// Gives every unit its script as soon as it exists.
+/// Gives every unit its script as soon as it exists, and wakes the scripts'
+/// sleeping tasks each frame.
 #[derive(Default)]
 pub struct UnitScriptsGadget;
 
@@ -13,9 +14,18 @@ impl Gadget<Global> for UnitScriptsGadget {
         "UnitScripts"
     }
 
-    /// Units that already exist when the rules load (after a rules reload).
+    /// Units that already exist when the rules load. None do when a game
+    /// starts; after a rules reload they all do.
     fn init(&self, _ctx: &AddonContext<'_, Global>) {
         crate::with_cus_module_or_defer(|host| host.attach_existing());
+    }
+
+    /// Lua wakes sleeping unit-script tasks in GameFrame, before the units
+    /// update and aim; without this they would wake in the engine's CUS tick,
+    /// after the unit update. This gadget runs after the others, as Lua's
+    /// unit_script.lua runs after most of the game's gadgets.
+    fn game_frame(&self, _ctx: &AddonContext<'_, Global>, frame: i32) {
+        crate::with_cus_module_or_defer(move |host| host.game_frame(frame));
     }
 
     fn unit_created(
