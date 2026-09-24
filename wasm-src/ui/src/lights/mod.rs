@@ -21,8 +21,8 @@ pub struct PointLight {
 /// Every light in the scene.
 #[derive(Default)]
 pub struct Lights {
-    /// Window lights, placed once the houses exist.
-    houses: Option<Vec<PointLight>>,
+    /// Window lights of the living houses.
+    houses: houses::HouseLights,
     staff: Option<PointLight>,
     /// Multiplies the staff light while the blood mage casts.
     staff_boost: staff::Boost,
@@ -31,8 +31,7 @@ pub struct Lights {
     /// The light each weapon def's projectiles carry.
     projectile_defs: BTreeMap<i32, Option<projectiles::DefLight>>,
     /// Keeps the staff light's flicker at its starting phase instead of
-    /// following real time, and lights the same house windows every run, so
-    /// captures repeat.
+    /// following real time, so captures repeat.
     still: bool,
 }
 
@@ -41,9 +40,23 @@ impl Lights {
     /// `still`.
     pub fn new(still: bool) -> Self {
         Self {
+            houses: houses::HouseLights::new(still),
             still,
             ..Self::default()
         }
+    }
+
+    /// Lights the houses that already exist.
+    pub fn init(&mut self) {
+        self.houses.init();
+    }
+
+    pub fn unit_created(&mut self, unit_id: i32, def_id: i32) {
+        self.houses.created(unit_id, def_id);
+    }
+
+    pub fn unit_destroyed(&mut self, unit_id: i32) {
+        self.houses.destroyed(unit_id);
     }
 
     /// Where the staff light's flicker is, in seconds.
@@ -56,9 +69,6 @@ impl Lights {
     }
 
     pub fn update(&mut self, global: &Global) {
-        if self.houses.is_none() {
-            self.houses = houses::place(self.still);
-        }
         let status = *global.status.access();
         let seconds = self.flicker_seconds();
         self.staff = staff::light(&status, &mut self.staff_boost, seconds);
@@ -71,7 +81,6 @@ impl Lights {
     pub fn iter(&self) -> impl Iterator<Item = &PointLight> {
         self.houses
             .iter()
-            .flatten()
             .chain(&self.staff)
             .chain(&self.mouse)
             .chain(&self.projectiles)

@@ -33,6 +33,29 @@ impl Widget<Global> for GfxLightingWidget {
         "GfxLighting"
     }
 
+    fn init(&self, _ctx: &spring_addons::AddonContext<'_, Global>) {
+        self.lights.borrow_mut().init();
+    }
+
+    fn unit_created(
+        &self,
+        _ctx: &spring_addons::AddonContext<'_, Global>,
+        unit_id: i32,
+        unit_def_id: i32,
+        _unit_team: i32,
+        _builder_id: i32,
+    ) {
+        self.lights.borrow_mut().unit_created(unit_id, unit_def_id);
+    }
+
+    fn unit_destroyed(
+        &self,
+        _ctx: &spring_addons::AddonContext<'_, Global>,
+        event: &spring_addons::UnitDestroyedEvent,
+    ) {
+        self.lights.borrow_mut().unit_destroyed(event.unit_id);
+    }
+
     fn update(&self, ctx: &spring_addons::AddonContext<'_, Global>, _dt: f32) {
         lighting::apply(&self.sun_applied);
         self.lights.borrow_mut().update(ctx.global());
