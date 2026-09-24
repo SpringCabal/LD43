@@ -1,3 +1,5 @@
+use spring::ResultExt;
+
 use crate::state::{Global, HudBindings};
 
 pub fn create(context: u64) -> Option<HudBindings> {
@@ -64,9 +66,11 @@ fn bind_event(model: u64, name: &str, handler: impl FnMut(&Global) + 'static) {
     }
 }
 
-/// Restarts the game by reloading the rules.
+/// Restarts the game by reloading the rules (`luarules reload`), as
+/// `ui_endgame.lua` does. The engine reloads only LuaRules with it, not the
+/// Wasm rules modules, so the rules keep their state.
 pub fn restart(global: &Global) {
-    springcabal::restart::reload_rules();
+    spring::reload_rules().log_err("restart: luarules reload");
     super::endgame::close_endgame(global);
 }
 

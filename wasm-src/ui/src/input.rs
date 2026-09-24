@@ -122,19 +122,19 @@ pub fn key_press(global: &Global, event: &KeyEvent<'_>) -> bool {
         (hud.intro_open, hud.endgame_open)
     };
     if intro_open {
-        if key == KEY_RETURN {
+        if event.matches("enter") {
             hud::close_intro(global);
             return true;
         }
         return false;
     }
     if endgame_open {
-        if matches!(key, KEY_RETURN | KEY_R | KEY_R_UPPER) {
+        if event.matches("enter") || event.matches("r") {
             hud::restart(global);
         }
         return true;
     }
-    if key == KEY_S {
+    if event.matches("s") {
         send_rules_msg(STOP);
         return true;
     }
@@ -151,12 +151,8 @@ const MOVE: &str = "movement";
 const ATTACK: &str = "attack";
 const STOP: &str = "stop";
 const SPELL: &str = "spell";
-const KEY_RETURN: i32 = 13;
-const KEY_S: i32 = 115;
 const KEY_1: i32 = 49;
 const KEY_5: i32 = 53;
-const KEY_R: i32 = 114;
-const KEY_R_UPPER: i32 = 82;
 
 fn send_rules_msg(message: &str) {
     if let Err(error) = spring::send_lua_rules_msg(message) {

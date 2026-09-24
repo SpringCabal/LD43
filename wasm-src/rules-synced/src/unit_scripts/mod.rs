@@ -18,7 +18,7 @@ use spring::cus::{
     Axis, InitCtx, Piece, TaskDefinition, UnitCtx, UnitScript, WeaponId, WreckLevel,
 };
 
-use crate::engine::{self, set_unit_number};
+use crate::engine::set_unit_number;
 use crate::{combat, random};
 
 use self::actions::{coward_block, face_from_position, issue_patrol_orders, ork_toss};
@@ -211,7 +211,7 @@ impl UnitScript for TtldUnitScript {
                     unit.0,
                     weapon.0,
                     "reloadFrame",
-                    engine::frame() as f32 + 300.0,
+                    spring::game::current_frame() as f32 + 300.0,
                 );
                 true
             }

@@ -12,8 +12,6 @@ use crate::state::Global;
 
 const MUSIC_FILE: &str = "sounds/music.ogg";
 const MUSIC_VOLUME: f32 = 0.20;
-/// The track's length, in case the engine can't report it.
-const MUSIC_SECONDS: f32 = 270.0;
 
 /// The minimap stays: the minimap widget draws the engine's.
 pub const HIDDEN_INTERFACE: u32 =
@@ -34,7 +32,7 @@ pub fn setup(handler: &mut WidgetHandler<Global>) {
             GuiHudWidget::new(),
             GfxLightingWidget::new(),
             GuiCameraWidget::new(),
-            MusicLoop::new(MUSIC_FILE, MUSIC_VOLUME).length_hint(MUSIC_SECONDS),
+            MusicLoop::new(MUSIC_FILE, MUSIC_VOLUME),
             GuiMinimapWidget::new(),
             GfxFireWidget::new(),
             GfxMapEdgeWidget::new(),

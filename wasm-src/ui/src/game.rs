@@ -4,14 +4,9 @@
 /// checks for burning houses.
 const STATUS_PERIOD: i32 = 6;
 
-/// The current game frame.
-pub fn frame() -> i32 {
-    spring::game::frame().unwrap_or_default() as i32
-}
-
 /// The frame of the last status check: the current frame rounded down to the
 /// status period.
 pub fn status_frame() -> i32 {
-    let frame = frame();
+    let frame = spring::game::current_frame();
     frame - frame % STATUS_PERIOD
 }

@@ -12,7 +12,6 @@ use spring::cus::{CusHandle, CusInstance, CusRegistry, UnitScriptCall};
 
 #[cfg(feature = "pose-probe")]
 use crate::defs::{UnitKind, defs};
-use crate::engine;
 
 use super::TtldUnitScript;
 use super::common::EnginePieces;
@@ -103,7 +102,7 @@ impl TtldCusModule {
     }
 
     fn sync_instance_frame(&mut self, handle: CusHandle) {
-        let frame = engine::frame() as u64;
+        let frame = spring::game::current_frame() as u64;
         let _ = self.registry.with(handle, |instance| instance.tick(frame));
     }
 

@@ -2,11 +2,6 @@
 
 use spring::rules_params::los;
 
-/// The current game frame.
-pub fn frame() -> i32 {
-    spring::game::frame().unwrap_or_default() as i32
-}
-
 /// Publishes a unit number every reader can see.
 pub fn set_unit_number(unit_id: i32, name: &str, value: f32) {
     let _ = spring::set_unit_rules_param_f32(unit_id, name, value, los::PUBLIC);

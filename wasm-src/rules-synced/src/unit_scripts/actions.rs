@@ -7,7 +7,6 @@ use spring::UnitId;
 use spring::cmd;
 use spring::cus::UnitCtx;
 
-use crate::engine;
 use crate::random::unit_float;
 
 use super::TtldState;
@@ -64,7 +63,7 @@ pub(super) fn coward_block(ctx: &UnitCtx, target: UnitId) -> bool {
         ctx.unit().0,
         0,
         "reloadFrame",
-        engine::frame() as f32 + 180.0,
+        spring::game::current_frame() as f32 + 180.0,
     );
     true
 }
