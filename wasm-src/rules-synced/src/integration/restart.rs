@@ -4,6 +4,7 @@
 //! its setup.
 
 use alloc::format;
+use alloc::vec::Vec;
 
 use spring::cmd;
 
@@ -35,9 +36,9 @@ pub(super) const RESTART_DEADLINE: i32 = 600;
 pub(super) fn record_round_start(tracker: &mut Tracker, world: &World) {
     tracker.first_round = Some(RoundStart {
         after_setup: world.frame - world.global.setup_frame().unwrap_or(0),
-        units: units::all_units().len(),
-        villagers: villager_count(),
-        enemies: enemy_unit_count(),
+        units: living_units().len(),
+        villagers: living_villagers(),
+        enemies: living_enemies(),
     });
 }
 
@@ -92,7 +93,7 @@ pub(super) fn restart_checks(tracker: &mut Tracker, world: &World) {
             won.orks_killed
         ),
     );
-    let (units, villagers) = (units::all_units().len(), villager_count());
+    let (units, villagers) = (living_units().len(), living_villagers());
     check(
         tracker,
         units == first.units && villagers == first.villagers,
@@ -125,7 +126,7 @@ pub(super) fn restart_checks(tracker: &mut Tracker, world: &World) {
                 .is_some_and(|command| command.cmd_id == cmd::FIGHT)
         })
         .count();
-    let enemies = enemy_unit_count();
+    let enemies = living_enemies();
     check(
         tracker,
         enemies == first.enemies && orks.len() as i32 == enemies && attacking == orks.len(),
@@ -139,3 +140,36 @@ pub(super) fn restart_checks(tracker: &mut Tracker, world: &World) {
 /// Where the town handler puts the blood mage.
 const MAGE_X: f32 = 5580.0;
 const MAGE_Z: f32 = 7100.0;
+
+/// The units that aren't dying. A unit killed just before the restart plays
+/// out its death after it, as in Lua.
+fn living_units() -> Vec<i32> {
+    units::all_units()
+        .into_iter()
+        .filter(|unit| units::health(*unit).is_some_and(|health| health.current > 0.0))
+        .collect()
+}
+
+fn living_enemies() -> i32 {
+    living_units()
+        .into_iter()
+        .filter(|unit| spring::units_info::get_unit_team(*unit).ok() == Some(ENEMY_TEAM))
+        .count() as i32
+}
+
+fn living_villagers() -> i32 {
+    let villager_defs = [
+        crate::units::VillagerKind::Swordsman,
+        crate::units::VillagerKind::Crossbowman,
+        crate::units::VillagerKind::Coward,
+        crate::units::VillagerKind::Peasant,
+    ]
+    .map(|kind| crate::defs::defs().id(kind.unit()));
+    living_units()
+        .into_iter()
+        .filter(|unit| {
+            spring::units_info::get_unit_team(*unit).ok() == Some(PLAYER_TEAM)
+                && villager_defs.contains(&units::def_of(*unit))
+        })
+        .count() as i32
+}
