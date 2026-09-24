@@ -65,7 +65,7 @@ pub fn setup(handler: &mut GadgetHandler<Global>) {
         ]
     );
     #[cfg(feature = "headless-integration")]
-    register_gadgets!(handler, [IntegrationGadget]);
+    register_gadgets!(handler, [IntegrationGadget::default()]);
     #[cfg(feature = "pose-probe")]
     register_gadgets!(handler, [PoseProbeGadget::new()]);
     #[cfg(feature = "e2e")]
