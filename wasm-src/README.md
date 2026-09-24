@@ -40,7 +40,8 @@ touches the installed ones.
 ## Differences from the Lua version
 
 - A boss that fails to spawn is spawned again before victory becomes possible; Lua would declare victory as soon as the final wave arrived.
-- The fireball uses a round `fireball_rot` sprite (`texture1`, `size` in its weapon def) and adds the `fireball_impact` CEG where it explodes, instead of the Cannon's default plasma sprite.
+- The fireball uses a round `fireball_rot` sprite (`texture1`, `size` in its weapon def) and adds the `fireball_impact` CEG where it explodes, instead of the Cannon's default plasma sprite. Its `fireball_ball` trail is orange and longer-lived to match.
+- A drain that can't pay for a spell gives the villagers it had picked back to the player. Lua leaves them on the neutral team for the rest of the round, where they can't be drained or used again, which looks like a bug.
 - A new house fire shows within about 1.4 s instead of 0.2 s: 16 unburnt houses are checked per 6-frame period, rather than every unit every period.
 - The rules still accept `attmove`, as Lua's did, but neither UI sends it.
-- The e2e build (visual suite only) pins the staff light's flicker so its screenshots repeat.
+- The e2e build (visual suite only) pins the staff light's flicker and the lit house windows so its screenshots repeat.
