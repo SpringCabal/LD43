@@ -27,7 +27,7 @@ use crate::units::{
 const TAG: &str = "[TTLD-Rust-Test]";
 const TITLE: &str = "TO THE LAST DROP INTEGRATION TESTS";
 /// Every check below; fewer means some were skipped.
-const CHECK_COUNT: u32 = 31;
+const CHECK_COUNT: u32 = 35;
 /// CSolidObject::PSTATE_BIT_FLYING.
 const PHYSICAL_STATE_FLYING: u32 = 1 << 7;
 
@@ -46,8 +46,15 @@ pub struct Tracker {
     ork_distance: f32,
     stunned_unit: i32,
     stunned_base: f32,
+    /// The ork Heartburn is aimed at, one farther out inside its blast, an
+    /// ally inside it, and the ground height where it lands.
     heartburn_target: i32,
-    heartburn_health: f32,
+    heartburn_edge: i32,
+    heartburn_ally: i32,
+    heartburn_ground: (f32, f32, f32),
+    /// Damage the fireball's explosion dealt, per unit, as the engine
+    /// reported it in UnitPreDamaged.
+    fireball_hits: Vec<(i32, f32)>,
     poultice_target: i32,
     poultice_x: f32,
     poultice_z: f32,
@@ -145,7 +152,7 @@ pub fn update(tracker: &RefCell<Tracker>, global: &Global, frame: i32) {
         // The UI would send this when the mouse button comes up.
         62 => command_player(&world, crate::player::PlayerCommand::Stop),
         120 => spell_checks(&world),
-        150 => with_checks(&world, heartburn_checks),
+        150 => with_checks(&world, spells_landed_checks),
         200 => with_checks(&world, stun_a_target),
         230 => with_checks(&world, stun_landed_checks),
         300 => with_checks(&world, ork_advance_checks),
@@ -154,6 +161,11 @@ pub fn update(tracker: &RefCell<Tracker>, global: &Global, frame: i32) {
         360 => world.track(finish),
         _ => {}
     }
+}
+
+/// Records the fireball's damage; called from UnitPreDamaged.
+pub fn fireball_hit(tracker: &mut Tracker, unit_id: i32, damage: f32) {
+    tracker.fireball_hits.push((unit_id, damage));
 }
 
 impl World<'_> {

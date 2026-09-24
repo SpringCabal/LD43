@@ -210,30 +210,35 @@ pub(super) fn spell_checks(world: &World) {
         );
     });
 
-    let target = units::create(
+    // Heartburn lands on the first ork; the second stands inside the blast
+    // but away from its centre.
+    let (tx, tz) = (position.x + 100.0, position.z);
+    let target = units::create(UnitKind::OrkSmall, tx, tz, ENEMY_TEAM, 0);
+    let edge = units::create(
         UnitKind::OrkSmall,
-        position.x + 100.0,
-        position.z,
+        tx,
+        tz + HEARTBURN_EDGE_OFFSET,
         ENEMY_TEAM,
         0,
     );
-    let target_health = target
-        .and_then(|unit_id| spring::units_info::get_unit_health(unit_id).ok())
-        .map(|health| health.health)
-        .unwrap_or(0.0);
-    let outcome = target.zip(crate::player::cast(
+    let ground = (tx, tz, units::ground_height(tx, tz));
+    let cast = crate::player::cast(
         global,
         unit_id,
         crate::player::Spell::Heartburn,
-        position.x + 100.0,
-        position.z,
+        tx,
+        tz,
         frame,
-    ));
+    );
     world.track(|tracker| {
-        if let Some((target, _)) = outcome {
-            tracker.heartburn_target = target;
-            tracker.heartburn_health = target_health;
-        }
+        check(
+            tracker,
+            target.is_some() && edge.is_some() && cast.is_some(),
+            "heartburn cast is accepted with its targets in place",
+        );
+        tracker.heartburn_target = target.unwrap_or(-1);
+        tracker.heartburn_edge = edge.unwrap_or(-1);
+        tracker.heartburn_ground = ground;
     });
 
     // Keep this target outside Heartburn's 250-unit damage radius. This is a
@@ -266,19 +271,57 @@ pub(super) fn spell_checks(world: &World) {
             tracker.poultice_origin_z = position.z;
         });
     }
+
+    // Created after the casts, so their blood magic can't drain it.
+    let ally = units::create(
+        UnitKind::Peasant,
+        tx,
+        tz - HEARTBURN_EDGE_OFFSET,
+        crate::units::PLAYER_TEAM,
+        0,
+    );
+    world.track(|tracker| tracker.heartburn_ally = ally.unwrap_or(-1));
 }
 
-pub(super) fn heartburn_checks(tracker: &mut Tracker, _world: &World) {
-    let target = tracker.heartburn_target;
-    let health = spring::units_info::get_unit_health(target)
-        .map(|health| health.health)
-        .unwrap_or(0.0);
+/// How far from the fireball's target the other units in its blast stand.
+/// Its area of effect is 500, so its radius is 250.
+const HEARTBURN_EDGE_OFFSET: f32 = 170.0;
+
+pub(super) fn spells_landed_checks(tracker: &mut Tracker, _world: &World) {
+    let damage_to = |unit_id: i32| {
+        tracker
+            .fireball_hits
+            .iter()
+            .filter(|(hit, _)| *hit == unit_id && unit_id >= 0)
+            .map(|(_, damage)| *damage)
+            .fold(0.0, f32::max)
+    };
+    let centre = damage_to(tracker.heartburn_target);
+    let edge = damage_to(tracker.heartburn_edge);
+    let ally = damage_to(tracker.heartburn_ally);
     check(
         tracker,
-        target >= 0
-            && (health < tracker.heartburn_health
-                || !spring::valid_unit_id(target).unwrap_or(false)),
-        "heartburn applies fireball damage at its destination",
+        centre > 0.0,
+        &format!("heartburn's fireball explodes on its target ({centre:.0} damage)"),
+    );
+    check(
+        tracker,
+        edge > 0.0 && edge < centre,
+        &format!(
+            "the fireball's damage falls off away from the blast centre ({edge:.0} < {centre:.0})"
+        ),
+    );
+    check(
+        tracker,
+        ally > 0.0,
+        &format!("the fireball also hurts the player's own units ({ally:.0} damage)"),
+    );
+    let (x, z, before) = tracker.heartburn_ground;
+    let after = units::ground_height(x, z);
+    check(
+        tracker,
+        after < before - 1.0,
+        &format!("the fireball leaves a crater (ground {before:.1} -> {after:.1})"),
     );
 
     let target = tracker.poultice_target;

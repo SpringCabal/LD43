@@ -1,8 +1,10 @@
 use core::cell::Cell;
 
+use spring::types::Float3;
 use spring_addons::AddonContext;
 use spring_addons::rules::{Gadget, UnitDestroyedEvent};
 
+use crate::defs::defs;
 use crate::player::{self, Order};
 use crate::state::Global;
 
@@ -79,5 +81,24 @@ impl Gadget<Global> for PlayerGadget {
 
     fn unit_destroyed(&self, ctx: &AddonContext<'_, Global>, event: &UnitDestroyedEvent) {
         ctx.global().player.access_mut().release(event.unit_id);
+    }
+
+    fn explosion(
+        &self,
+        _ctx: &AddonContext<'_, Global>,
+        weapon_def_id: i32,
+        pos: (f32, f32, f32),
+        _owner_id: i32,
+        _projectile_id: i32,
+    ) -> bool {
+        if defs().fireball == Some(weapon_def_id) {
+            player::fireball_exploded(Float3 {
+                x: pos.0,
+                y: pos.1,
+                z: pos.2,
+            });
+        }
+        // Keep the engine's own explosion graphics.
+        false
     }
 }

@@ -103,7 +103,7 @@ pub fn cast(
     })
 }
 
-/// Resolves the spell effects, impulses and fireball impacts that are due.
+/// Resolves the spell effects and impulses that are due.
 pub fn resolve_pending(global: &Global, frame: i32) {
     let due = take_due(&mut global.spells.access_mut().effects, frame, |effect| {
         effect.frame
@@ -112,7 +112,15 @@ pub fn resolve_pending(global: &Global, frame: i32) {
         resolve(global, effect, frame);
     }
     resolve_impulses(global, frame);
-    resolve_fireball_impacts(global, frame);
+}
+
+/// The Heartburn fireball went off: the engine applies its weapon def's
+/// damage, impulse and crater; this adds the impact sound and flames.
+pub fn fireball_exploded(position: Float3) {
+    // The weapon def's `soundHit` is not a key this engine reads (it wants
+    // soundHitDry/soundHitWet), so the hit sound is played here.
+    play_sound_at("sounds/fireballhit.wav", position);
+    spawn_effect_at(position, CEG_FIREBALL_IMPACT);
 }
 
 const FIREBALL_COST: f32 = 1350.0;
@@ -127,8 +135,6 @@ const LONG_CAST_DELAY: i32 = 14;
 const ADRENALINE_RADIUS: f32 = 450.0;
 const MIGRAINE_RADIUS: f32 = 450.0;
 const POULTICE_RADIUS: f32 = 720.0;
-const FIREBALL_RADIUS: f32 = 250.0;
-const FIREBALL_DAMAGE: f32 = 1600.0;
 const FIREBALL_GRAVITY: f32 = 0.18;
 /// The fireball leaves this far above the mage and aims this far above the
 /// ground at its target.
@@ -181,14 +187,6 @@ struct DelayedImpulse {
     frame: i32,
 }
 
-#[derive(Clone, Copy)]
-struct FireballImpact {
-    unit_id: i32,
-    x: f32,
-    z: f32,
-    frame: i32,
-}
-
 /// Spells cast but not resolved yet.
 #[derive(Default)]
 pub struct Spellbook {
@@ -196,8 +194,6 @@ pub struct Spellbook {
     effects: Vec<PendingEffect>,
     /// Migraine stuns and Poultice throws, delayed by their wave's travel.
     impulses: Vec<DelayedImpulse>,
-    /// Heartburn fireballs, which hit when their flight time is up.
-    fireball_impacts: Vec<FireballImpact>,
 }
 
 /// Removes and returns the entries due at `frame`.
@@ -217,7 +213,7 @@ fn resolve(global: &Global, effect: PendingEffect, frame: i32) {
     }
     match effect.spell {
         Spell::Transfusion => resolve_transfusion(effect.unit_id, effect.shortfall),
-        Spell::Heartburn => resolve_heartburn(global, effect.unit_id, effect.tx, effect.tz, frame),
+        Spell::Heartburn => resolve_heartburn(effect.unit_id, effect.tx, effect.tz),
         Spell::Adrenaline => resolve_adrenaline(global, effect.unit_id, frame),
         Spell::Migraine => resolve_migraine(global, effect.tx, effect.tz, frame),
         Spell::Poultice => resolve_poultice(global, effect.unit_id, frame),
@@ -238,7 +234,11 @@ fn resolve_transfusion(unit_id: i32, shortfall: Option<f32>) {
     spawn_effect(unit_id, CEG_HEALTH);
 }
 
-fn resolve_heartburn(global: &Global, unit_id: i32, tx: f32, tz: f32, frame: i32) {
+/// Launches the fireball. It is the weapon def's own projectile, as in Lua:
+/// it explodes where it lands or when its flight time runs out, and the
+/// engine applies the weapon's area damage, impulse and crater to every team,
+/// whether or not the mage is still alive by then.
+fn resolve_heartburn(unit_id: i32, tx: f32, tz: f32) {
     let Some(origin) = units::position(unit_id) else {
         return;
     };
@@ -277,21 +277,12 @@ fn resolve_heartburn(global: &Global, unit_id: i32, tx: f32, tz: f32, frame: i32
             ..Default::default()
         },
     );
-    if let Ok(projectile) = projectile {
-        let _ = spring::projectile_control::set_projectile_gravity(projectile, -FIREBALL_GRAVITY);
-        // The visual projectile is deliberately damage-free.  Its TTL is not
-        // a reliable impact callback in every WASM renderer, so the synced
-        // impact below applies the spell damage at the requested destination
-        // exactly once.
-        let _ = spring::projectile_control::set_projectile_damages(projectile, 0, "default", 0.0);
+    let gravity = projectile.and_then(|projectile| {
+        spring::projectile_control::set_projectile_gravity(projectile, -FIREBALL_GRAVITY)
+    });
+    if let Err(error) = gravity {
+        spring::log_warning!("ttld-wasm", "heartburn fireball failed: {error:?}");
     }
-    let impact = FireballImpact {
-        unit_id,
-        x: tx,
-        z: tz,
-        frame: frame + fly_time as i32,
-    };
-    global.spells.access_mut().fireball_impacts.push(impact);
 }
 
 fn resolve_adrenaline(global: &Global, unit_id: i32, frame: i32) {
@@ -401,44 +392,6 @@ fn resolve_impulses(global: &Global, frame: i32) {
                 spring::add_unit_impulse(entry.unit_id, entry.impulse, 0.0),
                 "add_unit_impulse",
                 entry.unit_id,
-            );
-        }
-    }
-}
-
-fn resolve_fireball_impacts(global: &Global, frame: i32) {
-    let due = take_due(
-        &mut global.spells.access_mut().fireball_impacts,
-        frame,
-        |impact| impact.frame,
-    );
-    let Some(weapon_def_id) = defs().fireball else {
-        return;
-    };
-    for impact in due {
-        if !valid(impact.unit_id) {
-            continue;
-        }
-        let y = units::ground_height(impact.x, impact.z) + FIREBALL_TARGET_HEIGHT;
-        let position = Float3 {
-            x: impact.x,
-            y,
-            z: impact.z,
-        };
-        play_sound_at("sounds/fireballhit.wav", position);
-        spawn_effect_at(position, CEG_FIREBALL_IMPACT);
-        for target in units_in_cylinder(impact.x, impact.z, FIREBALL_RADIUS, ENEMY_TEAM) {
-            crate::engine::check(
-                spring::add_unit_damage(
-                    target,
-                    FIREBALL_DAMAGE,
-                    0.0,
-                    weapon_def_id,
-                    impact.unit_id,
-                    Float3::default(),
-                ),
-                "add_unit_damage",
-                target,
             );
         }
     }
