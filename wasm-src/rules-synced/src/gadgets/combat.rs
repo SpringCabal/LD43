@@ -5,8 +5,8 @@ use crate::combat::{self, Effect, Modifier};
 use crate::state::Global;
 use crate::units::PLAYER_TEAM;
 
-/// Unit attribute effects: the town's permanent half speed, and the timed
-/// effects of spells wearing off.
+/// Unit attribute effects: the town's permanent half speed, turning without
+/// inertia, paused weapons, and the timed effects of spells wearing off.
 #[derive(Default)]
 pub struct CombatGadget;
 
@@ -16,6 +16,7 @@ impl Gadget<Global> for CombatGadget {
     }
 
     fn game_frame(&self, ctx: &AddonContext<'_, Global>, frame: i32) {
+        combat::update_paused(ctx.global(), frame);
         if ctx.global().running(frame) {
             combat::update_statuses(ctx.global(), frame);
         }
@@ -44,6 +45,7 @@ impl Gadget<Global> for CombatGadget {
                 },
             );
         }
+        combat::remove_turn_inertia(unit);
     }
 
     fn unit_destroyed(&self, ctx: &AddonContext<'_, Global>, event: &UnitDestroyedEvent) {

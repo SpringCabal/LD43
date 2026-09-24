@@ -57,10 +57,21 @@ impl UnitKind {
 /// Values of one unit def that the rules read per unit.
 #[derive(Clone, Copy)]
 pub struct DefInfo {
-    pub speed: Option<f32>,
-    pub turn_rate: f32,
+    /// The def's movement, for mobile units only.
+    pub movement: Option<Movement>,
     /// Footprint size in elmos, for immobile units only.
     pub footprint: Option<(f32, f32)>,
+}
+
+/// A mobile unit def's unmodified movement, which the attribute effects
+/// scale (Lua's `origUnitSpeed`).
+#[derive(Clone, Copy)]
+pub struct Movement {
+    pub speed: f32,
+    pub reverse_speed: f32,
+    pub turn_rate: f32,
+    pub max_acc: f32,
+    pub max_dec: f32,
 }
 
 pub struct Defs {
@@ -123,12 +134,25 @@ impl DefInfo {
         let footprint = immobile
             .then(|| Some((footprint(def_id, "xsize")?, footprint(def_id, "zsize")?)))
             .flatten();
-        Self {
+        let movement = speed.filter(|speed| *speed > 0.0).map(|speed| Movement {
             speed,
-            turn_rate: spring::get_unit_def_param_float(def_id, "turnRate").unwrap_or(0.0),
+            reverse_speed: param(def_id, "rSpeed"),
+            turn_rate: param(def_id, "turnRate"),
+            max_acc: param(def_id, "maxAcc"),
+            max_dec: param(def_id, "maxDec"),
+        });
+        Self {
+            movement,
             footprint,
         }
     }
+}
+
+fn param(def_id: i32, key: &str) -> f32 {
+    use spring::ResultExt;
+    spring::get_unit_def_param_float(def_id, key)
+        .log_err(&alloc::format!("unit def {def_id} {key}"))
+        .unwrap_or(0.0)
 }
 
 /// A footprint dimension in elmos.

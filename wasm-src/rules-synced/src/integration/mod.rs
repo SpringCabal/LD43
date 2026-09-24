@@ -8,11 +8,14 @@
 mod animation;
 mod gameplay;
 mod restart;
+mod stun;
 mod victory;
 
 use self::animation::animation_checks;
 use self::gameplay::*;
 use self::restart::*;
+pub use self::stun::Bite;
+use self::stun::*;
 use self::victory::*;
 
 use alloc::vec::Vec;
@@ -29,7 +32,7 @@ use crate::units::{
 const TAG: &str = "[TTLD-Rust-Test]";
 const TITLE: &str = "TO THE LAST DROP INTEGRATION TESTS";
 /// Every check below; fewer means some were skipped.
-const CHECK_COUNT: u32 = 42;
+const CHECK_COUNT: u32 = 46;
 /// CSolidObject::PSTATE_BIT_FLYING.
 const PHYSICAL_STATE_FLYING: u32 = 1 << 7;
 
@@ -46,8 +49,9 @@ pub struct Tracker {
     shots: u32,
     suite: Checks,
     ork_distance: f32,
-    stunned_unit: i32,
-    stunned_base: f32,
+    /// The ork the stun checks stun, and every bite of a small ork.
+    stun_ork: i32,
+    bites: Vec<Bite>,
     /// The ork Heartburn is aimed at, one farther out inside its blast, an
     /// ally inside it, and the ground height where it lands.
     heartburn_target: i32,
@@ -164,8 +168,10 @@ pub fn update(tracker: &RefCell<Tracker>, global: &Global, frame: i32) {
         62 => command_player(&world, crate::player::PlayerCommand::Stop),
         120 => spell_checks(&world),
         150 => with_checks(&world, spells_landed_checks),
-        200 => with_checks(&world, stun_a_target),
-        230 => with_checks(&world, stun_landed_checks),
+        STUN_SETUP => with_checks(&world, stun_fixture),
+        STUN_START => with_checks(&world, stun_the_ork),
+        STUN_PAUSED_CHECK => with_checks(&world, stunned_checks),
+        STUN_OVER_CHECK => with_checks(&world, stun_over_checks),
         300 => with_checks(&world, ork_advance_checks),
         330 => final_wave_checks(&world),
         331 => kill_boss_checks(&world),
@@ -190,6 +196,11 @@ pub fn update(tracker: &RefCell<Tracker>, global: &Global, frame: i32) {
 /// Records the fireball's damage; called from UnitPreDamaged.
 pub fn fireball_hit(tracker: &mut Tracker, unit_id: i32, damage: f32) {
     tracker.fireball_hits.push((unit_id, damage));
+}
+
+/// Records a small ork's bite; called from UnitPreDamaged.
+pub fn bite(tracker: &mut Tracker, bite: Bite) {
+    tracker.bites.push(bite);
 }
 
 impl World<'_> {

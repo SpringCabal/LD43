@@ -1,6 +1,5 @@
 use alloc::format;
 
-use crate::combat;
 use crate::defs::{UnitKind, defs};
 use crate::state::Phase;
 use crate::units::{self, ENEMY_TEAM};
@@ -354,50 +353,6 @@ pub(super) fn spells_landed_checks(tracker: &mut Tracker, _world: &World) {
         tracker,
         target >= 0 && airborne,
         "poultice target is airborne after the impulse",
-    );
-}
-
-/// Stunning scales the weapon's reload; make sure the weapon state really
-/// changes and that reading it back reports the live value.
-pub(super) fn stun_a_target(tracker: &mut Tracker, world: &World) {
-    // The mage rather than an ork: orks die and their ids get recycled, which
-    // would make the follow-up read meaningless.
-    let Some(unit_id) = world.global.player.access().unit_id() else {
-        check(
-            tracker,
-            false,
-            "the player unit is available for the stun test",
-        );
-        return;
-    };
-    tracker.stunned_unit = unit_id;
-    tracker.stunned_base = live_reload(unit_id);
-    combat::stun(world.global, unit_id, 300, world.frame);
-}
-
-pub(super) fn stun_landed_checks(tracker: &mut Tracker, _world: &World) {
-    let unit_id = tracker.stunned_unit;
-    // A mage that is gone reads as a 0 reload and fails the check.
-    let now = if unit_id > 0 && units::valid(unit_id) {
-        live_reload(unit_id)
-    } else {
-        0.0
-    };
-    check(
-        tracker,
-        tracker.stunned_base > 0.0,
-        &format!(
-            "the base reload was readable ({:.2}s)",
-            tracker.stunned_base
-        ),
-    );
-    check(
-        tracker,
-        now > tracker.stunned_base,
-        &format!(
-            "a stun lengthens the weapon's live reload ({:.2}s -> {now:.0}s)",
-            tracker.stunned_base
-        ),
     );
 }
 
