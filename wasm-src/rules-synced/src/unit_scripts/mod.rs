@@ -350,19 +350,10 @@ impl UnitScript for TtldUnitScript {
                 collision_volume(ctx.unit(), false);
                 collision_volume(ctx.unit(), true);
                 let _ = spring::set_unit_neutral(ctx.unit().0, true);
-                // The transfer raises UnitTaken and UnitGiven right here, inside
-                // this unit script. No gadget handles them, and gadgets never
-                // hold shared state across the engine calls that kill units, so
-                // the attributes are free for the death paralysis below.
-                if let Err(error) =
-                    spring::transfer_unit(ctx.unit().0, crate::units::NEUTRAL_TEAM, false, false)
-                {
-                    spring::log_warning!(
-                        "ttld-wasm",
-                        "dying unit {} not made neutral: {error:?}",
-                        ctx.unit().0
-                    );
-                }
+                // Lua's Killed also transfers the unit to the neutral team
+                // here, but the engine refuses to transfer a dead unit
+                // (CUnit::ChangeTeam), so the unit stays on its team until
+                // its death sequence ends, in both builds.
                 crate::with_global(|global| {
                     combat::add_effect(
                         global,
