@@ -48,8 +48,10 @@ impl Story {
 }
 
 const GAME_FRAMES_PER_SECOND: i32 = 33;
-const RING_CENTER_X: f32 = 5650.0;
-const RING_CENTER_Z: f32 = 5700.0;
+/// Waves spawn on a ring around this point, which game_storyteller.lua puts
+/// 20 elmos north of the town centre the orks attack.
+const RING_CENTER_X: f32 = units::TOWN_CENTRE_X;
+const RING_CENTER_Z: f32 = units::TOWN_CENTRE_Z - 20.0;
 const RING_RADIUS: f32 = 3000.0;
 const RING_RADIUS_JITTER: f32 = 200.0;
 const ANGLE_SPAN: f32 = 320.0;
