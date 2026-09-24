@@ -14,9 +14,7 @@ use alloc::rc::Rc;
 use core::cell::RefCell;
 
 use spring::UnitId;
-use spring::cus::{
-    Axis, InitCtx, Piece, TaskDefinition, UnitCtx, UnitScript, WeaponId, WreckLevel,
-};
+use spring::cus::{Axis, Piece, TaskDefinition, UnitCtx, UnitScript, WeaponId, WreckLevel};
 
 use crate::engine::set_unit_number;
 use crate::{combat, random};
@@ -41,13 +39,6 @@ pub struct TtldUnitScript {
 }
 
 impl UnitScript for TtldUnitScript {
-    fn new(ctx: &mut InitCtx<'_>) -> Self {
-        Self {
-            kind: None,
-            state: Rc::new(RefCell::new(TtldState::new(ctx))),
-        }
-    }
-
     fn create(&mut self, ctx: &UnitCtx) {
         let Some(kind) = self.kind else {
             return;
@@ -379,11 +370,6 @@ impl UnitScript for TtldUnitScript {
 }
 
 impl TtldUnitScript {
-    fn set_kind(&mut self, kind: ScriptKind) {
-        self.kind = Some(kind);
-        self.state.borrow_mut().kind = Some(kind);
-    }
-
     fn init_shared(
         &mut self,
         _ctx: &UnitCtx,

@@ -1,12 +1,16 @@
 //! The Core-CUS module: the engine's `CusHost` attaches the scripts and
 //! dispatches the engine's and the rules' calls to them.
 
+use alloc::rc::Rc;
+use core::cell::RefCell;
 use spring::UnitId;
 use spring::cus::host::{CusHost, UnitDefScript};
-use spring::cus::{InitCtx, ScriptCapabilities, UnitScript};
+
+use spring::cus::{InitCtx, ScriptCapabilities};
 
 use super::TtldUnitScript;
 use super::kinds::{capabilities, script_kind_for_def};
+use super::state::TtldState;
 
 /// The module exported to the engine.
 pub type TtldCusModule = CusHost<TtldUnitScript>;
@@ -16,12 +20,14 @@ impl UnitDefScript for TtldUnitScript {
         script_kind_for_def(def).map(capabilities)
     }
 
-    fn for_def(def: i32, ctx: &mut InitCtx<'_>) -> Self {
-        let mut script = Self::new(ctx);
-        if let Some(kind) = script_kind_for_def(def) {
-            script.set_kind(kind);
+    fn for_def(def: i32, ctx: &mut InitCtx<'_>, _: &mut ()) -> Self {
+        let kind = script_kind_for_def(def);
+        let mut state = TtldState::new(ctx);
+        state.kind = kind;
+        Self {
+            kind,
+            state: Rc::new(RefCell::new(state)),
         }
-        script
     }
 }
 

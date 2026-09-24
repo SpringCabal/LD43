@@ -99,5 +99,5 @@ pub fn setup(handler: &mut GadgetHandler<Global>) {
     register_gadgets!(handler, [PoseProbeGadget::new()]);
     #[cfg(feature = "e2e")]
     register_gadgets!(handler, [RenderTestGadget::default()]);
-    register_gadgets!(handler, [UnitScriptsGadget::default()]);
+    register_gadgets!(handler, [UnitScriptsGadget]);
 }
