@@ -8,7 +8,7 @@ mod module;
 mod state;
 mod tasks;
 
-pub use module::{TtldCusModule, call};
+pub use module::{TtldCusModule, attach, call};
 
 use alloc::rc::Rc;
 use core::cell::RefCell;
@@ -104,14 +104,16 @@ impl UnitScript for TtldUnitScript {
             }
             ScriptKind::House => {}
         }
-        // A unit can be moving before its script exists (one attached a frame
-        // late, see UnitScriptsGadget), and then its StartMoving went nowhere.
-        if kind != ScriptKind::House
-            && let Ok(velocity) = spring::get_unit_velocity(ctx.unit().0)
-            && velocity.x * velocity.x + velocity.z * velocity.z > 0.0001
-        {
-            self.start_moving(ctx, false);
-        }
+    }
+
+    fn call_named(
+        &mut self,
+        ctx: &UnitCtx,
+        name: &str,
+        arguments: &[f32],
+        _returns: &mut [f32],
+    ) -> Option<usize> {
+        self.named_call(ctx, name, arguments).then_some(0)
     }
 
     fn start_moving(&mut self, ctx: &UnitCtx, _reversing: bool) {

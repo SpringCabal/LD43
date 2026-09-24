@@ -1,26 +1,11 @@
-use alloc::vec::Vec;
-
 use spring::UnitId;
-use spring::cus::{Angle, AngularSpeed, Axis, Piece, PieceResolver, UnitCtx};
+use spring::cus::{Angle, AngularSpeed, Axis, Piece, UnitCtx};
 
 pub(super) const SIG_MOVE: spring::cus::SignalMask = spring::cus::SignalMask::new(1);
 pub(super) const SIG_BUFF: spring::cus::SignalMask = spring::cus::SignalMask::new(2);
 pub(super) const SIG_STUN: spring::cus::SignalMask = spring::cus::SignalMask::new(4);
 pub(super) const SIG_ATTACK: spring::cus::SignalMask = spring::cus::SignalMask::new(8);
 pub(super) const SIG_DEATH: spring::cus::SignalMask = spring::cus::SignalMask::new(16);
-
-pub(super) struct EnginePieces {
-    pub(super) map: Vec<spring::owned::units_pieces::PieceMapEntry>,
-}
-
-impl PieceResolver for EnginePieces {
-    fn piece(&self, name: &str) -> Piece {
-        self.map
-            .iter()
-            .find(|entry| entry.name == name)
-            .map_or(Piece::INVALID, |entry| Piece(entry.piece_num - 1))
-    }
-}
 
 pub(super) fn turn(ctx: &UnitCtx, piece: Piece, axis: Axis, target: f32, speed: f32) {
     if piece == Piece::INVALID {

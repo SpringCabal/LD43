@@ -106,6 +106,6 @@ fn resists(unit_id: i32) -> bool {
     )
 }
 
-fn call_script(unit_id: i32, function_name: &str, argument: f32) {
+fn call_script(unit_id: i32, function_name: &'static str, argument: f32) {
     crate::unit_scripts::call(unit_id, function_name, &[argument]);
 }

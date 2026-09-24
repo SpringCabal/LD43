@@ -9,6 +9,7 @@ use alloc::format;
 use alloc::string::String;
 use core::cell::Cell;
 
+use spring::UnitId;
 use spring_addons::rules::Gadget;
 
 use crate::state::Global;
@@ -22,14 +23,6 @@ const SAMPLE_FRAMES: &[i32] = &[
     120, 130, 146, 148, 150, 155, 160, 163, 168, 173, 180, 190, 195,
 ];
 const POSE_PIECES: &[&str] = &["Torso", "Hand_Right", "Hand_Left"];
-
-/// The CastAnimation level the probe triggers at `frame`, if any.
-pub fn cast_level_at(frame: i32) -> Option<i32> {
-    let index = TRIGGER_FRAMES
-        .iter()
-        .position(|trigger| *trigger == frame)?;
-    Some(index as i32 + 1)
-}
 
 #[derive(Default)]
 pub struct PoseProbeGadget {
@@ -143,7 +136,23 @@ impl PoseProbeGadget {
         );
     }
 
-    fn report_trigger(&self, frame: i32) {
+    /// Starts CastAnimation on the target, as the Lua probe does from its
+    /// GameFrame: level 1 at the first trigger frame, 2 and 3 at the others.
+    fn trigger(&self, frame: i32, unit: i32, level: i32) {
+        let arguments = if level == 1 {
+            [level as f32, 0.0, 0.0]
+        } else {
+            [level as f32, 6000.0, 6000.0]
+        };
+        let handled = crate::with_cus_module(|host| {
+            host.call(UnitId(unit), "CastAnimation", &arguments, &mut [])
+                .is_some()
+        })
+        .unwrap_or(false);
+        let _ = spring::echo(
+            &format!("[UnitScriptProbe] cus trigger unit={unit} level={level} handled={handled}"),
+            "",
+        );
         let _ = spring::echo(
             &format!("[UnitScriptProbe] trigger frame={frame} cast=true"),
             "",
@@ -174,8 +183,8 @@ impl Gadget<Global> for PoseProbeGadget {
         };
 
         self.emit_skeleton(unit);
-        if TRIGGER_FRAMES.contains(&frame) {
-            self.report_trigger(frame);
+        if let Some(index) = TRIGGER_FRAMES.iter().position(|trigger| *trigger == frame) {
+            self.trigger(frame, unit, index as i32 + 1);
         }
         if SAMPLE_FRAMES.contains(&frame) {
             self.sample(frame, unit);
