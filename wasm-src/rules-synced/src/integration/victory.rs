@@ -3,17 +3,66 @@ use alloc::format;
 use spring::cmd;
 
 use crate::combat::{self, Story};
+use crate::defs::{UnitKind, defs};
 use crate::state::GameEnd;
 
 use super::*;
 
-/// Runs the production victory path: the boss only appears in the last wave,
-/// so the schedule is short-circuited to it. Declaring victory sends every ork
-/// fleeing, which gives orders, so nothing is borrowed across it.
+/// Brings on the final wave the way the story does, since it only comes
+/// after several minutes. Spawning and the gate open with nothing borrowed:
+/// both re-enter the module through UnitCreated.
+pub(super) fn final_wave_checks(world: &World) {
+    let global = world.global;
+    combat::spawn_wave(Story::final_wave());
+    let opened = combat::open_victory(global);
+    let game_end = global.game_end.get();
+    let bosses = boss_ids();
+    world.track(|tracker| {
+        check(
+            tracker,
+            opened && game_end == GameEnd::VictoryPossible && !bosses.is_empty(),
+            &format!(
+                "the final wave brings its boss and makes victory possible ({} boss)",
+                bosses.len()
+            ),
+        );
+        tracker.bosses = bosses;
+    });
+}
+
+/// A frame later the victory gadget has run: the living boss still stands in
+/// the way. Then the boss is killed through the engine, which runs its Killed
+/// script. It stays on the enemy team until its death sequence ends.
+pub(super) fn kill_boss_checks(world: &World) {
+    let game_end = world.global.game_end.get();
+    let bosses = world.track(|tracker| {
+        check(
+            tracker,
+            game_end == GameEnd::VictoryPossible,
+            "no victory while the boss lives",
+        );
+        core::mem::take(&mut tracker.bosses)
+    });
+    for boss in bosses {
+        let killed = spring::destroy_unit(
+            boss,
+            spring::effects_control::DestroyUnitOptions {
+                selfd: false,
+                recycle_id: false,
+                reclaimed: false,
+                attacker_id: -1,
+            },
+        );
+        if let Err(error) = killed {
+            spring::log_warning!("ttld-wasm", "boss {boss} not killed: {error:?}");
+        }
+    }
+}
+
+/// The victory gadget declared victory by itself once the boss's death
+/// sequence (about 1.7 s) ended.
 pub(super) fn victory_checks(world: &World) {
     let global = world.global;
-    global.game_end.set(GameEnd::VictoryPossible);
-    let declared = combat::declare_if_won(global);
     let game_end = global.game_end.get();
     let batch_empty = global.orks.access_mut().next_batch().is_empty();
     let orks = global.orks.access().units().to_vec();
@@ -25,11 +74,12 @@ pub(super) fn victory_checks(world: &World) {
         && Story::at_the_loop()
             .take_due_wave(world.frame, game_end)
             .is_none();
+    let bosses_left = boss_ids().len();
     world.track(|tracker| {
         check(
             tracker,
-            declared && game_end == GameEnd::Victory,
-            "victory is declared once the boss is gone",
+            bosses_left == 0 && game_end == GameEnd::Victory,
+            &format!("victory is declared once the boss is gone ({bosses_left} left)"),
         );
         check(tracker, batch_empty, "victory disables attack AI batches");
         check(
@@ -46,6 +96,20 @@ pub(super) fn victory_checks(world: &World) {
             "The Loop does not spawn another wave after victory",
         );
     });
+}
+
+/// The bosses on the enemy team.
+fn boss_ids() -> Vec<i32> {
+    let Some(boss) = defs().id(UnitKind::OrkBoss) else {
+        return Vec::new();
+    };
+    units::all_units()
+        .into_iter()
+        .filter(|unit_id| {
+            units::def_of(*unit_id) == Some(boss)
+                && spring::units_info::get_unit_team(*unit_id).ok() == Some(ENEMY_TEAM)
+        })
+        .collect()
 }
 
 /// Whether the unit's first order is a move to a point on the map.

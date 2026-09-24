@@ -27,7 +27,7 @@ use crate::units::{
 const TAG: &str = "[TTLD-Rust-Test]";
 const TITLE: &str = "TO THE LAST DROP INTEGRATION TESTS";
 /// Every check below; fewer means some were skipped.
-const CHECK_COUNT: u32 = 35;
+const CHECK_COUNT: u32 = 37;
 /// CSolidObject::PSTATE_BIT_FLYING.
 const PHYSICAL_STATE_FLYING: u32 = 1 << 7;
 
@@ -55,6 +55,8 @@ pub struct Tracker {
     /// Damage the fireball's explosion dealt, per unit, as the engine
     /// reported it in UnitPreDamaged.
     fireball_hits: Vec<(i32, f32)>,
+    /// The final wave's bosses, killed by the victory checks.
+    bosses: Vec<i32>,
     poultice_target: i32,
     poultice_x: f32,
     poultice_z: f32,
@@ -156,9 +158,11 @@ pub fn update(tracker: &RefCell<Tracker>, global: &Global, frame: i32) {
         200 => with_checks(&world, stun_a_target),
         230 => with_checks(&world, stun_landed_checks),
         300 => with_checks(&world, ork_advance_checks),
-        330 => victory_checks(&world),
-        359 => with_checks(&world, retreat_persists_checks),
-        360 => world.track(finish),
+        330 => final_wave_checks(&world),
+        331 => kill_boss_checks(&world),
+        400 => victory_checks(&world),
+        429 => with_checks(&world, retreat_persists_checks),
+        430 => world.track(finish),
         _ => {}
     }
 }

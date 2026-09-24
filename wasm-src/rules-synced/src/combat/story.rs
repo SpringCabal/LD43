@@ -42,6 +42,15 @@ impl Story {
             next_frame: 0,
         }
     }
+
+    /// The wave that brings the boss.
+    #[cfg(feature = "headless-integration")]
+    pub fn final_wave() -> &'static Wave {
+        WAVES
+            .iter()
+            .find(|wave| wave.able_to_win)
+            .expect("the story has a final wave")
+    }
 }
 
 const GAME_FRAMES_PER_SECOND: i32 = 33;
@@ -154,10 +163,19 @@ pub fn spawn_wave(wave: &Wave) {
     spring::log_info!("ttld-wasm", "wave: {}", wave.name);
     for (kind, count) in wave.units {
         for _ in 0..*count {
-            let (x, z) = ring_position();
-            units::create(kind.unit(), x, z, ENEMY_TEAM, 0);
+            spawn(*kind);
         }
     }
+}
+
+/// Spawns one more boss on the ring.
+pub fn spawn_boss() {
+    spawn(OrkKind::Boss);
+}
+
+fn spawn(kind: OrkKind) {
+    let (x, z) = ring_position();
+    units::create(kind.unit(), x, z, ENEMY_TEAM, 0);
 }
 
 fn ring_position() -> (f32, f32) {

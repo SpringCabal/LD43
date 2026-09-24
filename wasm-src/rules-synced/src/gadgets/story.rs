@@ -1,15 +1,18 @@
-use core::cell::RefCell;
+use core::cell::{Cell, RefCell};
 
 use spring_addons::AddonContext;
 use spring_addons::rules::Gadget;
 
 use crate::combat::{self, Story};
-use crate::state::{GameEnd, Global};
+use crate::state::Global;
 
 /// Sends the ork waves on schedule until the town is saved.
 #[derive(Default)]
 pub struct StoryGadget {
     story: RefCell<Story>,
+    /// The final wave has come, but victory isn't possible until its boss is
+    /// on the map.
+    boss_due: Cell<bool>,
 }
 
 impl Gadget<Global> for StoryGadget {
@@ -27,10 +30,11 @@ impl Gadget<Global> for StoryGadget {
             .borrow_mut()
             .take_due_wave(frame, global.game_end.get());
         if let Some(wave) = wave {
-            if wave.able_to_win {
-                global.game_end.set(GameEnd::VictoryPossible);
-            }
             combat::spawn_wave(wave);
+            self.boss_due.set(self.boss_due.get() || wave.able_to_win);
+        }
+        if self.boss_due.get() && combat::open_victory(global) {
+            self.boss_due.set(false);
         }
     }
 }
