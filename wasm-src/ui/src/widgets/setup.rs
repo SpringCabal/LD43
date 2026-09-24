@@ -4,6 +4,8 @@ use spring::default_interface::{
 use spring_addons::register_widgets;
 use spring_addons::ui::{HideDefaultInterface, WidgetHandler};
 use springcabal::music::MusicLoop;
+#[cfg(feature = "e2e")]
+use springcabal::shots::{Clock, Screenshots};
 
 use super::*;
 use crate::state::Global;
@@ -40,5 +42,11 @@ pub fn setup(handler: &mut WidgetHandler<Global>) {
         ]
     );
     #[cfg(feature = "e2e")]
-    register_widgets!(handler, [DbgE2eWidget::new()]);
+    register_widgets!(
+        handler,
+        [
+            DbgE2eWidget::new(),
+            Screenshots::new(Clock::Update, &dbg_e2e::SCREENSHOTS),
+        ]
+    );
 }

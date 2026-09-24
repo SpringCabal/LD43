@@ -1,9 +1,23 @@
 use spring_addons::ui::Widget;
 use springcabal::message::Encoder;
-use springcabal::shots::screenshot;
 
 use crate::hud;
 use crate::state::Global;
+
+/// The updates the visual suite takes its screenshots on, with
+/// [`springcabal::shots::Screenshots`] counting the same updates as this
+/// widget. The suite's goldens are the first three; the first two also
+/// feed its leader-render comparison.
+/// - 11, 22: the leader-render baseline, then with its fixture spawned (at
+///   12; SetUnitLuaDraw needs an update to switch to the legacy drawer);
+/// - 26, 28, 30: Heartburn's fireball in flight;
+/// - 37, 42: hovering the ork leader, then a big ork;
+/// - 44: after the engine selection was cleared;
+/// - 55, 65, 70, 75: the Poultice throw;
+/// - 90, 120, 240, 330: the camera following the mage to the map edge.
+pub const SCREENSHOTS: [u32; 16] = [
+    11, 22, 26, 28, 30, 37, 42, 44, 55, 65, 70, 75, 90, 120, 240, 330,
+];
 
 #[derive(Default)]
 pub struct DbgE2eWidget {
@@ -29,7 +43,6 @@ impl Widget<Global> for DbgE2eWidget {
         self.ticks.set(tick + 1);
         match tick {
             10 => hud::close_intro(ctx.global()),
-            11 => screenshot("leader_render_baseline"),
             12 => {
                 // Spawn a stationary boss/normal-ork pair for the pixel-level
                 // render regression. This uses the regular synced Lua message
@@ -39,25 +52,15 @@ impl Widget<Global> for DbgE2eWidget {
             20 => {
                 report_leader_fixture();
             }
-            // SetUnitLuaDraw requests the legacy unit drawer. Give the engine
-            // one update/render cycle to switch before taking the comparison
-            // image; the intermediate spell screenshots must not become the
-            // fixture image.
-            22 => screenshot("leader_render_fixture"),
             // Exercise the real synced spell path in the visual run. This
             // uses the same rules message as the key/mouse input path and
             // does not synthesize F12 or Pause.
             25 => send_spell(2, 1000.0),
-            // Capture while the real projectile is in flight, before its
-            // synced impact path removes it.
-            26 | 28 => screenshot(&tick_label(tick)),
             // Exercise hover-only target UI and the unit outline with a real
             // engine mouse move. This intentionally does not synthesize F12
             // or Pause.
             35 => hover_fixture("orkboss", "orkboss"),
-            37 => screenshot("hover_orkboss"),
             39 => hover_fixture("orkbig", "orkbig"),
-            42 => screenshot("hover_orkbig"),
             // Force a real engine selection, then let the normal input widget
             // clear it on the next update (no test-only clearing).
             43 => {
@@ -68,7 +71,6 @@ impl Widget<Global> for DbgE2eWidget {
             44 => {
                 let count = spring::selection::get_selected_units_count(0).unwrap_or(u32::MAX);
                 let _ = spring::echo(&alloc::format!("TTLD E2E selection cleared={count}"), "");
-                screenshot("no_engine_selection");
             }
             45 => report_wheel_capture(),
             50 => {
@@ -78,35 +80,17 @@ impl Widget<Global> for DbgE2eWidget {
                 // testing the centered portion of the viewport.
                 move_player(500.0, -7000.0);
             }
-            55 => {
-                self.remember_poultice_target();
-                screenshot(&tick_label(tick));
-            }
+            55 => self.remember_poultice_target(),
             60 => send_spell(5, 0.0),
+            // Sample shortly after the delayed impulse, while the target is
+            // still expected to be queryable and airborne.
+            65 | 75 => self.report_poultice(),
             70 => {
                 report_tracking("after_move");
                 self.report_poultice();
-                screenshot(&tick_label(tick));
             }
-            240 => {
-                report_tracking("north_edge");
-                screenshot(&tick_label(tick));
-            }
-            330 => {
-                report_tracking("north_edge_late");
-                screenshot(&tick_label(tick));
-            }
-            65 => {
-                // Sample shortly after the delayed impulse, while the target
-                // is still expected to be queryable and airborne.
-                self.report_poultice();
-                screenshot(&tick_label(tick));
-            }
-            75 => {
-                self.report_poultice();
-                screenshot(&tick_label(tick));
-            }
-            30 | 90 | 120 => screenshot(&tick_label(tick)),
+            240 => report_tracking("north_edge"),
+            330 => report_tracking("north_edge_late"),
             _ => {}
         }
     }
@@ -114,10 +98,6 @@ impl Widget<Global> for DbgE2eWidget {
 
 fn player_unit() -> i32 {
     crate::with_global(|global| global.status.access().player_unit)
-}
-
-fn tick_label(tick: u32) -> alloc::string::String {
-    alloc::format!("update_{tick}")
 }
 
 fn report_leader_fixture() {
