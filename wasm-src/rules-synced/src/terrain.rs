@@ -1,9 +1,10 @@
+use spring::consts::SQUARE_SIZE_F as SQUARE;
+
 use crate::defs::defs;
 use crate::units;
 
 const IMPASSIBLE_TERRAIN: i32 = 137;
 const PLAYER_FUDGE: f32 = 16.0;
-const SQUARE: f32 = 8.0;
 
 pub fn initialize() {
     let _ = spring::set_terrain_type_data(IMPASSIBLE_TERRAIN, 0.0, 0.0, 0.0, 0.0, 0.0, false, "");

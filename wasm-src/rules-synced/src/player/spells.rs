@@ -1,5 +1,6 @@
 use alloc::vec::Vec;
 
+use spring::consts::GAME_SPEED;
 use spring::types::Float3;
 
 use crate::combat;
@@ -159,7 +160,8 @@ const POULTICE_JITTER: f32 = 20.0;
 // engine's unit impulse uses +Y as up, so the launch velocity needs the
 // positive value here; the ground move type applies downward gravity after
 // the impulse. A negative value points Poultice into the ground.
-const DEFAULT_UNIT_GRAVITY: f32 = 115.0 / 30.0 / 30.0;
+const FPS: f32 = GAME_SPEED as f32;
+const DEFAULT_UNIT_GRAVITY: f32 = 115.0 / FPS / FPS;
 const CEG_HEALTH: &str = "feature_slurp_spawner";
 const CEG_MIGRAINE: &str = "migraine_pulse_spawner";
 const CEG_ADRENALINE: &str = "adrenaline_sparkles";
@@ -340,7 +342,7 @@ fn resolve_poultice(global: &Global, unit_id: i32, frame: i32) {
         return;
     };
     let unit_gravity = spring::game::get_game_map_info(0)
-        .map(|map| map.gravity / 30.0 / 30.0)
+        .map(|map| map.gravity / FPS / FPS)
         .unwrap_or(DEFAULT_UNIT_GRAVITY);
     play_sound("sounds/throw_spell.wav", unit_id);
     for target in units_in_cylinder(origin.x, origin.z, POULTICE_RADIUS, ENEMY_TEAM) {

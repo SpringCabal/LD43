@@ -1,3 +1,4 @@
+use spring::mouse;
 use spring_addons::event::KeyEvent;
 use springcabal::menu;
 use springcabal::message::Encoder;
@@ -18,8 +19,8 @@ pub fn mouse_press(global: &Global, held: &Held, x: i32, y: i32, button: i32) ->
         return true;
     }
     let command = match button {
-        BUTTON_LEFT => MOVE,
-        BUTTON_RIGHT => ATTACK,
+        mouse::LEFT => MOVE,
+        mouse::RIGHT => ATTACK,
         _ => return false,
     };
     if let Some(ground) = ground_at(x, y) {
@@ -31,13 +32,13 @@ pub fn mouse_press(global: &Global, held: &Held, x: i32, y: i32, button: i32) ->
 /// Drags with a steering button held are the game's, not the engine's
 /// selection box.
 pub fn mouse_move(button: i32) -> bool {
-    matches!(button, BUTTON_LEFT | BUTTON_RIGHT)
+    matches!(button, mouse::LEFT | mouse::RIGHT)
 }
 
 /// Letting go of a steering button stops the blood mage, as in the Lua build.
 pub fn mouse_release(held: &Held, button: i32) -> bool {
     clear_selection();
-    if !matches!(button, BUTTON_LEFT | BUTTON_RIGHT) {
+    if !matches!(button, mouse::LEFT | mouse::RIGHT) {
         return false;
     }
     release(held);
@@ -145,8 +146,6 @@ pub fn key_press(global: &Global, event: &KeyEvent<'_>) -> bool {
     false
 }
 
-const BUTTON_LEFT: i32 = 1;
-const BUTTON_RIGHT: i32 = 3;
 const MOVE: &str = "movement";
 const ATTACK: &str = "attack";
 const STOP: &str = "stop";

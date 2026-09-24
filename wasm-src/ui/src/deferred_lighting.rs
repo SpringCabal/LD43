@@ -102,7 +102,7 @@ impl DeferredPass {
             let Ok(camera) = spring::camera::get_camera_position(0) else {
                 return;
             };
-            let Some(view_projection_inverse) = view_projection_inverse() else {
+            let Ok(view_projection_inverse) = gfx::get_view_projection_matrix_inverse() else {
                 return;
             };
             let screen_ratio = height as f32 / width as f32;
@@ -481,9 +481,4 @@ fn draw_bloom(resources: &Resources) {
     let _ = gfx::bind_texture(&resources.screen_hdr, 0, false);
     let _ = gfx::bind_texture(&resources.bright_texture, 1, false);
     let _ = gfx::use_shader(0);
-}
-
-fn view_projection_inverse() -> Option<[f32; 16]> {
-    let matrix = gfx::get_matrix_data(0x10000).ok()?;
-    Some(matrix)
 }
