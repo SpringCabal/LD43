@@ -83,8 +83,13 @@ pub fn flee(unit_id: i32) {
     let dx = position.x - AIM_X;
     let dz = position.z - AIM_Z;
     let distance = (dx * dx + dz * dz).sqrt().max(0.1);
-    let cx = position.x + FLEE_DISTANCE * dx / distance;
-    let cz = position.z + FLEE_DISTANCE * dz / distance;
+    let Ok(map) = spring::game::get_game_map_info(0) else {
+        return;
+    };
+    // Lua uses GiveClampedOrderToUnit: an off-map destination is not a
+    // valid retreat goal. Keep the same one-elmo margin as ClampPosition.
+    let cx = (position.x + FLEE_DISTANCE * dx / distance).clamp(1.0, map.map_size_x as f32 - 1.0);
+    let cz = (position.z + FLEE_DISTANCE * dz / distance).clamp(1.0, map.map_size_z as f32 - 1.0);
     let cy = units::ground_height(cx, cz);
     let _ = spring::give_order_to_unit(unit_id, cmd::FIRE_STATE, &[0.0], 0, 0);
     attributes::add_effect(

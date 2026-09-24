@@ -21,4 +21,12 @@ end
 
 for _, wd in pairs(WeaponDefs) do
 	StripFunctions(wd, {})
+	-- The guest WeaponDefInfo API omits visual size/color. Preserve the
+	-- definition inputs as custom params for the Lua-equivalent light pass.
+	wd.customparams = wd.customparams or {}
+	local cp = wd.customparams
+	cp.projectile_rgb = wd.rgbcolor or "1 0.5 0"
+	if wd.size then
+		cp.projectile_size = wd.size
+	end
 end

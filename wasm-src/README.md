@@ -1,36 +1,38 @@
 # To the Last Drop — Core-WASM guest modules
 
-Two guest crates, both compiled to `wasm32-unknown-unknown` and loaded through
+Three guest crates compile to `wasm32-unknown-unknown` and load through
 `LuaRules/wasm/manifest.txt` and `LuaUI/wasm/manifest.txt`:
 
-| crate          | environment    | ships as                      |
-| -------------- | -------------- | ----------------------------- |
-| `rules-synced` | `rules-synced` | `LuaRules/wasm/ttld-rules.wasm` |
-| `ui`           | `ui`           | `LuaUI/wasm/ttld-ui.wasm`       |
+| Crate | Environment | Installed artifact |
+| --- | --- | --- |
+| `rules-synced` | rules-synced | `LuaRules/wasm/ttld-rules.wasm` |
+| `rules-unsynced` | rules-unsynced | `LuaRules/wasm/ttld-rules-unsynced.wasm` |
+| `ui` | ui | `LuaUI/wasm/ttld-ui.wasm` |
 
-The Lua that remains is deliberate: `scripts/*.lua` are the unit scripts, and
-`LuaRules/Gadgets/api_unit_script_support.lua` covers the two things a guest
-cannot do (cross-boundary sound, and the `GG.Attributes` entry point the unit
-scripts call).
+- `rules-synced`: the game rules as spring-addons gadgets (`src/gadgets/`),
+  and the unit scripts as a Rust Core-CUS module (`src/unit_scripts/`).
+- `rules-unsynced`: draws units at the scale their def's `hscale`/`vscale`
+  custom params ask for, like the Lua build's `unit_enlarger.lua`.
+- `ui`: the HUD (RmlUi), camera, input, lighting, fire and minimap widgets.
 
-## Commands
+Lua remains only for game definitions and assets; the original Lua game is the
+separate `ToTheLastDrop.sdd` checkout. `GameData/weapondefs_post.lua` copies
+each weapon's `rgbcolor` and `size` into the custom params `projectile_rgb` and
+`projectile_size`, because the weapon def info has no visual size or colour,
+and the projectile lights need them.
 
-    just fmt      # cargo fmt --all
-    just clippy   # clippy over the workspace, warnings denied
-    just build    # fmt + clippy, then a release build
-    just copy     # build, then install both .wasm files into the game
+Run `just copy` here to format, lint, build, and install the release modules.
+The game loads the installed artifacts, not the files under `target/`.
 
-`just copy` is the one to run after editing; the game loads the copied
-artifacts, not the ones under `target/`.
+From the SpringCabal workspace root:
 
-## Validation
+```sh
+just verify ttld headless     # gameplay assertions
+just verify ttld visual       # screenshots against goldens, boss size, hover, selection
+just verify ttld lua-visual   # the Lua build's boss size and hover, for reference
+just verify ttld pose-parity  # Lua/Rust spell piece transforms
+./run-wasm.sh --game ttld
+```
 
-    ../../../../wasm-test/verify-ttld.sh headless   # 20 gameplay assertions
-    ../../../../wasm-test/verify-ttld.sh visual     # renders and captures screenshots
-
-Both rebuild the modules themselves, with the `headless-integration` and `e2e`
-cargo features respectively.
-
-## Running
-
-    ../../../../run-wasm.sh --game ttld
+Verification builds its own feature-enabled modules into its cache and never
+touches the installed ones.

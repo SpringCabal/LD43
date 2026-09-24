@@ -17,8 +17,24 @@ pub fn mouse_press(global: &Global, x: i32, y: i32, button: i32) -> bool {
     true
 }
 
-pub fn mouse_move(_x: i32, _y: i32) -> bool {
-    false
+/// Drags with a steering button held are the game's, not the engine's
+/// selection box.
+pub fn mouse_move(button: i32) -> bool {
+    matches!(button, BUTTON_LEFT | BUTTON_RIGHT)
+}
+
+pub fn mouse_release(button: i32) -> bool {
+    clear_selection();
+    matches!(button, BUTTON_LEFT | BUTTON_RIGHT)
+}
+
+/// Like the Lua build's RPG controller, which empties the selection in
+/// SelectionChanged: units are hover targets, never an RTS selection. Checked
+/// every update, which also covers selecting through the minimap or keys.
+pub fn clear_selection() {
+    if spring::selection::get_selected_units_count(0).unwrap_or(0) > 0 {
+        let _ = spring::selection::select_unit_array(&[], false);
+    }
 }
 
 pub fn mouse_wheel(_up: bool, _value: f32) -> bool {

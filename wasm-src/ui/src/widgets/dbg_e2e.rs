@@ -60,6 +60,18 @@ impl Widget<Global> for DbgE2eWidget {
             37 => screenshot("hover_orkboss"),
             39 => hover_fixture("orkbig", "orkbig"),
             42 => screenshot("hover_orkbig"),
+            // Force a real engine selection, then let the normal input widget
+            // clear it on the next update (no test-only clearing).
+            43 => {
+                let _ = spring::selection::select_unit_array(&[player_unit()], false);
+                let count = spring::selection::get_selected_units_count(0).unwrap_or(0);
+                let _ = spring::echo(&alloc::format!("TTLD E2E selection seeded={count}"), "");
+            }
+            44 => {
+                let count = spring::selection::get_selected_units_count(0).unwrap_or(u32::MAX);
+                let _ = spring::echo(&alloc::format!("TTLD E2E selection cleared={count}"), "");
+                screenshot("no_engine_selection");
+            }
             45 => report_wheel_capture(),
             50 => {
                 report_tracking("before_move");

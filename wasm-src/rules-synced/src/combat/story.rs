@@ -2,6 +2,7 @@ use alloc::format;
 
 use crate::diagnostics;
 use crate::random;
+use crate::state::GameEnd;
 use crate::units::{self, ENEMY_TEAM, OrkKind};
 
 /// The wave schedule.
@@ -20,11 +21,12 @@ pub struct Wave {
 }
 
 impl Story {
-    /// Picks the wave that is due, if any, and advances the schedule.  Spawning
-    /// is deliberately left to the caller: creating a unit re-enters the module
-    /// through UnitCreated, which must find the story unborrowed.
-    pub fn take_due_wave(&mut self, frame: i32) -> Option<&'static Wave> {
-        if self.step >= WAVES.len() || frame < self.next_frame {
+    /// Picks the wave that is due, if any, and advances the schedule. Once the
+    /// town is saved, nothing is due. Spawning is deliberately left to the
+    /// caller: creating a unit re-enters the module through UnitCreated, which
+    /// must find the story unborrowed.
+    pub fn take_due_wave(&mut self, frame: i32, game_end: GameEnd) -> Option<&'static Wave> {
+        if game_end == GameEnd::Victory || self.step >= WAVES.len() || frame < self.next_frame {
             return None;
         }
         let wave = &WAVES[self.step];
@@ -33,6 +35,15 @@ impl Story {
         }
         self.next_frame = frame + wave.seconds * GAME_FRAMES_PER_SECOND;
         Some(wave)
+    }
+
+    /// A story at The Loop, with its wave due.
+    #[cfg(feature = "headless-integration")]
+    pub fn at_the_loop() -> Self {
+        Self {
+            step: WAVES.len() - 1,
+            next_frame: 0,
+        }
     }
 }
 

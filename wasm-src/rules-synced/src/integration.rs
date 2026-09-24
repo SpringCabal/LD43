@@ -9,7 +9,9 @@ use alloc::format;
 use alloc::vec::Vec;
 use core::cell::RefCell;
 
-use crate::combat;
+use spring::cmd;
+
+use crate::combat::{self, Story};
 use crate::defs::{UnitKind, defs};
 use crate::state::{GameEnd, Global, Phase};
 use crate::units::{
@@ -22,6 +24,14 @@ const PHYSICAL_STATE_FLYING: u32 = 1 << 7;
 
 #[derive(Default)]
 struct Tracker {
+    /// A crossbowman walked and then ordered to fire, for the animation checks.
+    animation_unit: Option<i32>,
+    /// An ork of the first wave that is on the move.
+    walking_ork: Option<i32>,
+    ork_heights: Vec<f32>,
+    walk_heights: Vec<f32>,
+    fire_poses: Vec<Vec<f32>>,
+    shots: u32,
     passed: u32,
     failed: u32,
     done: bool,
@@ -119,6 +129,7 @@ pub fn update(global: &Global, frame: i32) {
     if done {
         return;
     }
+    animation_checks(&world);
     match frame {
         10 => with_checks(&world, setup_checks),
         40 => with_checks(&world, ork_spawn_checks),
@@ -128,7 +139,8 @@ pub fn update(global: &Global, frame: i32) {
         200 => with_checks(&world, stun_a_target),
         230 => with_checks(&world, stun_landed_checks),
         300 => with_checks(&world, ork_advance_checks),
-        330 => with_checks(&world, victory_checks),
+        330 => victory_checks(&world),
+        359 => with_checks(&world, retreat_persists_checks),
         360 => TRACKER.with_borrow_mut(finish),
         _ => {}
     }
@@ -512,20 +524,86 @@ fn ork_advance_checks(tracker: &mut Tracker, world: &World) {
     );
 }
 
-fn victory_checks(tracker: &mut Tracker, world: &World) {
-    // The boss only appears in the last wave; short-circuit the schedule so the
-    // victory path is exercised without playing the whole match.
-    let game_end = &world.global.game_end;
-    game_end.set(GameEnd::VictoryPossible);
-    let possible = game_end.get() == GameEnd::VictoryPossible;
-    let declared = combat::declare_if_won(world.global);
-    check(tracker, possible, "story can report the win condition");
+/// Runs the production victory path: the boss only appears in the last wave,
+/// so the schedule is short-circuited to it. Declaring victory sends every ork
+/// fleeing, which gives orders, so nothing is borrowed across it.
+fn victory_checks(world: &World) {
+    let global = world.global;
+    global.game_end.set(GameEnd::VictoryPossible);
+    let declared = combat::declare_if_won(global);
+    let game_end = global.game_end.get();
+    let batch_empty = global.orks.access_mut().next_batch().is_empty();
+    let orks = global.orks.access().units().to_vec();
+    let retreating = orks.iter().filter(|unit| retreats_in_map(**unit)).count();
+    // The Loop repeats forever; once the town is saved it sends nothing.
+    let loop_stops = Story::at_the_loop()
+        .take_due_wave(world.frame, GameEnd::VictoryPossible)
+        .is_some()
+        && Story::at_the_loop()
+            .take_due_wave(world.frame, game_end)
+            .is_none();
+    TRACKER.with_borrow_mut(|tracker| {
+        check(
+            tracker,
+            declared && game_end == GameEnd::Victory,
+            "victory is declared once the boss is gone",
+        );
+        check(tracker, batch_empty, "victory disables attack AI batches");
+        check(
+            tracker,
+            !orks.is_empty() && retreating == orks.len(),
+            &format!(
+                "surviving orks receive in-map retreat orders ({retreating}/{})",
+                orks.len()
+            ),
+        );
+        check(
+            tracker,
+            loop_stops,
+            "The Loop does not spawn another wave after victory",
+        );
+    });
+}
+
+/// Whether the unit's first order is a move to a point on the map.
+fn retreats_in_map(unit_id: i32) -> bool {
+    let Ok(map) = spring::game::get_game_map_info(0) else {
+        return false;
+    };
+    let (max_x, max_z) = (map.map_size_x as f32 - 1.0, map.map_size_z as f32 - 1.0);
+    spring::units_commands::get_command_queue(unit_id, 1)
+        .ok()
+        .and_then(|queue| queue.into_iter().next())
+        .is_some_and(|command| {
+            command.cmd_id == cmd::MOVE
+                && command.params.len() >= 3
+                && (1.0..=max_x).contains(&command.params[0])
+                && (1.0..=max_z).contains(&command.params[2])
+        })
+}
+
+fn retreat_persists_checks(tracker: &mut Tracker, world: &World) {
+    let orks = world.global.orks.access().units().to_vec();
+    let peaceful = orks.iter().all(|unit| {
+        let no_attack = spring::units_commands::get_command_queue(*unit, u32::MAX)
+            .map(|queue| {
+                queue
+                    .iter()
+                    .all(|command| command.cmd_id != cmd::FIGHT && command.cmd_id != cmd::ATTACK)
+            })
+            .unwrap_or(false);
+        no_attack && live_reload(*unit) >= FLEEING_RELOAD
+    });
     check(
         tracker,
-        declared && game_end.get() == GameEnd::Victory,
-        "victory is declared once the boss is gone",
+        peaceful,
+        "retreating orks stay disarmed and receive no new attack orders",
     );
 }
+
+/// A fleeing ork's reload factor is 0, which stretches its reload to at least
+/// this many seconds.
+const FLEEING_RELOAD: f32 = 100_000.0;
 
 fn finish(tracker: &mut Tracker) {
     let _ = spring::echo(
@@ -544,4 +622,159 @@ fn finish(tracker: &mut Tracker) {
         "",
     );
     tracker.done = true;
+}
+
+/// Frames of the animation checks: a crossbowman walks, stops, then fires at
+/// the ground, and an ork of the first wave walks to the town. They exercise
+/// the real movement and weapon callins, not direct script calls.
+const ANIMATION_SPAWN: i32 = 15;
+const ANIMATION_WALK: i32 = 20;
+const ANIMATION_STOP: i32 = 75;
+const ANIMATION_FIRE: i32 = 85;
+const ANIMATION_CHECK: i32 = 195;
+const ORK_PICKED: i32 = 40;
+
+fn animation_checks(world: &World) {
+    let frame = world.frame;
+    if frame == ORK_PICKED {
+        let ork = world
+            .global
+            .orks
+            .access()
+            .units()
+            .iter()
+            .copied()
+            .find(|unit| {
+                spring::get_unit_velocity(*unit)
+                    .map(|v| v.x * v.x + v.z * v.z > 0.01)
+                    .unwrap_or(false)
+            });
+        TRACKER.with_borrow_mut(|tracker| tracker.walking_ork = ork);
+    }
+    if (ORK_PICKED + 1..100).contains(&frame)
+        && let Some(ork) = TRACKER.with_borrow(|tracker| tracker.walking_ork)
+        && let Some(matrix) = piece_matrix(ork, "Torso")
+    {
+        TRACKER.with_borrow_mut(|tracker| tracker.ork_heights.push(matrix[13]));
+    }
+    if frame == ANIMATION_SPAWN {
+        let unit = units::create(UnitKind::Crossbowman, 5580.0, 7700.0, PLAYER_TEAM, 0);
+        TRACKER.with_borrow_mut(|tracker| tracker.animation_unit = unit);
+    }
+    let Some(unit) = TRACKER.with_borrow(|tracker| tracker.animation_unit) else {
+        if frame == ANIMATION_CHECK {
+            TRACKER.with_borrow_mut(|tracker| {
+                check(tracker, false, "crossbow animation fixture spawned")
+            });
+        }
+        return;
+    };
+    match frame {
+        ANIMATION_WALK => {
+            let (x, z) = (5980.0, 7700.0);
+            let _ = spring::give_order_to_unit(
+                unit,
+                cmd::MOVE,
+                &[x, units::ground_height(x, z), z],
+                0,
+                0,
+            );
+        }
+        ANIMATION_STOP => {
+            let _ = spring::give_order_to_unit(unit, cmd::STOP, &[], 0, 0);
+        }
+        ANIMATION_FIRE => {
+            if let Some(position) = units::position(unit) {
+                let (x, z) = (position.x, position.z + 350.0);
+                let _ = spring::give_order_to_unit(
+                    unit,
+                    cmd::ATTACK,
+                    &[x, units::ground_height(x, z), z],
+                    0,
+                    0,
+                );
+            }
+        }
+        _ => {}
+    }
+    let walking = (ANIMATION_WALK + 1..70).contains(&frame);
+    if walking || (ANIMATION_FIRE + 1..190).contains(&frame) {
+        record_crossbowman(unit, walking);
+    }
+    if frame == ANIMATION_CHECK {
+        TRACKER.with_borrow_mut(report_animation);
+        let _ = spring::destroy_unit(
+            unit,
+            spring::effects_control::DestroyUnitOptions {
+                selfd: false,
+                recycle_id: false,
+                reclaimed: true,
+                attacker_id: -1,
+            },
+        );
+    }
+}
+
+/// Records the crossbowman's torso while it walks, its weapon hand while it
+/// fires, and its projectiles in flight.
+fn record_crossbowman(unit: i32, walking: bool) {
+    let piece = if walking { "Torso" } else { "Hand_Right" };
+    let matrix = piece_matrix(unit, piece);
+    let shots =
+        spring::projectiles::get_all_projectiles(spring::projectiles::GetAllProjectilesOptions {
+            exclude_weapon_projectiles: false,
+            exclude_piece_projectiles: true,
+        })
+        .unwrap_or_default()
+        .into_iter()
+        .filter(|projectile| {
+            spring::projectiles::get_projectile_owner_id(*projectile).ok() == Some(unit)
+        })
+        .count() as u32;
+    TRACKER.with_borrow_mut(|tracker| {
+        tracker.shots += shots;
+        match (matrix, walking) {
+            (Some(matrix), true) => tracker.walk_heights.push(matrix[13]),
+            (Some(matrix), false) => tracker.fire_poses.push(matrix),
+            (None, _) => {}
+        }
+    });
+}
+
+fn report_animation(tracker: &mut Tracker) {
+    let changes = |values: &[f32]| values.windows(2).any(|v| (v[0] - v[1]).abs() > 0.01);
+    let ork_walking = changes(&tracker.ork_heights);
+    check(
+        tracker,
+        ork_walking,
+        "newly spawned advancing orks bob while walking",
+    );
+    let walking = changes(&tracker.walk_heights);
+    check(
+        tracker,
+        walking,
+        "walking changes the crossbowman's torso pose",
+    );
+    check(
+        tracker,
+        tracker.shots > 0,
+        "crossbowman launches real weapon projectiles",
+    );
+    let firing = tracker
+        .fire_poses
+        .windows(2)
+        .any(|v| v[0].iter().zip(&v[1]).any(|(a, b)| (a - b).abs() > 0.01));
+    check(
+        tracker,
+        firing,
+        "firing animates the crossbowman's weapon hand",
+    );
+}
+
+fn piece_matrix(unit: i32, name: &str) -> Option<Vec<f32>> {
+    let map = spring::get_unit_piece_map(unit).ok()?;
+    let piece = map.iter().find(|piece| piece.name == name)?;
+    spring::owned::units_pieces::get_unit_piece_matrix(unit, piece.piece_num)
+        .ok()
+        .map(|matrix| matrix.m)
 }

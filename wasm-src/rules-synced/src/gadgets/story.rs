@@ -19,10 +19,13 @@ impl Gadget<Global> for StoryGadget {
 
     fn game_frame(&self, ctx: &AddonContext<'_, Global>, frame: i32) {
         let global = ctx.global();
-        if !global.running(frame) || global.game_end.get() == GameEnd::Victory {
+        if !global.running(frame) {
             return;
         }
-        let wave = self.story.borrow_mut().take_due_wave(frame);
+        let wave = self
+            .story
+            .borrow_mut()
+            .take_due_wave(frame, global.game_end.get());
         if let Some(wave) = wave {
             if wave.able_to_win {
                 global.game_end.set(GameEnd::VictoryPossible);

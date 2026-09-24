@@ -28,7 +28,7 @@ use self::common::{
 use self::kinds::ScriptKind;
 use self::tasks::{
     attack_bob_task, attack_task, bob_task, boss_position_task, buff_task, cast_task, death_task,
-    house_death_task, stun_task,
+    house_death_task, melee_attack_task, stun_task,
 };
 
 const COB_INBUILDSTANCE: i32 = 5;
@@ -172,6 +172,15 @@ impl UnitScript for TtldUnitScript {
             }
             ScriptKind::House => {}
         }
+        // CUS attaches after UnitCreated. A wave's initial movement order can
+        // already have called StartMoving on the previous (empty) script.
+        // Recover that state instead of waiting for another movement order.
+        if kind != ScriptKind::House
+            && let Ok(velocity) = spring::get_unit_velocity(ctx.unit().0)
+            && velocity.x * velocity.x + velocity.z * velocity.z > 0.0001
+        {
+            self.start_moving(ctx, false);
+        }
     }
 
     fn start_moving(&mut self, ctx: &UnitCtx, _reversing: bool) {
@@ -266,7 +275,7 @@ impl UnitScript for TtldUnitScript {
         let unit = ctx.unit();
         match self.kind {
             Some(ScriptKind::Coward) => coward_block(ctx, target),
-            Some(ScriptKind::Swordsman) if weapon.0 == 1 => {
+            Some(ScriptKind::Peasant | ScriptKind::Swordsman) if weapon.0 == 1 => {
                 let _ = spring::set_unit_weapon_state(
                     unit.0,
                     weapon.0,
@@ -293,7 +302,7 @@ impl UnitScript for TtldUnitScript {
                 ork_toss(unit, target.0, &self.state);
                 false
             }
-            Some(ScriptKind::Crossbowman | ScriptKind::Peasant | ScriptKind::Swordsman) => {
+            Some(ScriptKind::Peasant | ScriptKind::Swordsman) => {
                 face_target(unit, target.0);
                 false
             }
@@ -328,7 +337,15 @@ impl UnitScript for TtldUnitScript {
                     attack_bob_task,
                 ));
             }
-            Some(ScriptKind::Crossbowman | ScriptKind::Peasant | ScriptKind::Swordsman) => {
+            Some(ScriptKind::Peasant | ScriptKind::Swordsman) => {
+                ctx.signal(SIG_ATTACK);
+                ctx.spawn(TaskDefinition::with_state(
+                    "ttld-melee-attack",
+                    Rc::clone(&self.state),
+                    melee_attack_task,
+                ));
+            }
+            Some(ScriptKind::Crossbowman) => {
                 let _ = spring::clear_unit_goal(ctx.unit().0, true);
                 ctx.signal(SIG_ATTACK);
                 ctx.spawn(TaskDefinition::with_state(

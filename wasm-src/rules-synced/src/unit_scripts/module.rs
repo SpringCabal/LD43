@@ -171,12 +171,10 @@ impl CoreCusModule for TtldCusModule {
         let Some(call) = UnitScriptCall::from_u32(call) else {
             return false;
         };
-        if matches!(
-            call,
-            UnitScriptCall::RawCall | UnitScriptCall::StartMoving | UnitScriptCall::StopMoving
-        ) {
-            self.sync_instance_frame(handle);
-        }
+        // Tasks begin synchronously, so every callback must use the current
+        // frame. Idle instances can otherwise start a firing/death sleep
+        // against an old clock and skip straight to the recovery pose.
+        self.sync_instance_frame(handle);
         let mut call_result = spring::cus::UnitScriptCallResult::default();
         let handled = self
             .registry

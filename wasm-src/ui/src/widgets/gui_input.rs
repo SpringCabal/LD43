@@ -25,19 +25,20 @@ impl Widget<Global> for GuiInputWidget {
 
     fn update(&self, ctx: &spring_addons::AddonContext<'_, Global>, _dt: f32) {
         input::sample_cursor(ctx.global());
+        input::clear_selection();
         input::hold_mouse(ctx.global(), &self.held_frame);
     }
 
     fn mouse_move(
         &self,
         _ctx: &spring_addons::AddonContext<'_, Global>,
-        x: i32,
-        y: i32,
+        _x: i32,
+        _y: i32,
         _dx: i32,
         _dy: i32,
-        _button: i32,
+        button: i32,
     ) -> EventResult {
-        input::mouse_move(x, y).into()
+        input::mouse_move(button).into()
     }
 
     fn mouse_wheel(
@@ -57,6 +58,16 @@ impl Widget<Global> for GuiInputWidget {
         button: i32,
     ) -> EventResult {
         input::mouse_press(ctx.global(), x, y, button).into()
+    }
+
+    fn mouse_release(
+        &self,
+        _ctx: &spring_addons::AddonContext<'_, Global>,
+        _x: i32,
+        _y: i32,
+        button: i32,
+    ) -> EventResult {
+        input::mouse_release(button).into()
     }
 
     fn key_press(

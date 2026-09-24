@@ -90,6 +90,16 @@ pub(super) async fn attack_bob_task(state: Rc<RefCell<TtldState>>, ctx: UnitCtx)
     turn(&ctx, piece, Axis::Y, 0.0, 120.0_f32.to_radians());
 }
 
+/// swordsman.lua's FireWeapon: finish the attack bob, then only a swordsman
+/// (not a peasant) swings its hand.
+pub(super) async fn melee_attack_task(state: Rc<RefCell<TtldState>>, ctx: UnitCtx) {
+    attack_bob_task(Rc::clone(&state), ctx.clone()).await;
+    let is_sword = state.borrow().kind == Some(ScriptKind::Swordsman);
+    if is_sword {
+        attack_task(state, ctx).await;
+    }
+}
+
 pub(super) async fn attack_task(state: Rc<RefCell<TtldState>>, ctx: UnitCtx) {
     ctx.set_signal_mask(SIG_ATTACK);
     let (pieces, kind, dead) = {
