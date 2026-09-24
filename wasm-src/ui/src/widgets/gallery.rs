@@ -20,7 +20,8 @@ pub fn active() -> bool {
 }
 
 /// The lighting pass (sun, house, staff, cursor and projectile lights, bloom),
-/// burning houses, the map edge and the hover highlight.
+/// burning houses, the map edge and the hover highlight. The staff light's
+/// flicker stays still: it follows real time, which differs between runs.
 pub fn setup(handler: &mut WidgetHandler<Global>) {
     register_widgets!(
         handler,
@@ -28,7 +29,7 @@ pub fn setup(handler: &mut WidgetHandler<Global>) {
             HideDefaultInterface::new(setup::HIDDEN_INTERFACE),
             GalleryPointerWidget,
             ApiSyncWidget::new(),
-            GfxLightingWidget::new(),
+            GfxLightingWidget::new(true),
             GfxFireWidget::new(),
             GfxMapEdgeWidget::new(),
             GfxHighlightWidget::new(),

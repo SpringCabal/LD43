@@ -17,8 +17,13 @@ pub struct GfxLightingWidget {
 }
 
 impl GfxLightingWidget {
-    pub fn new() -> Self {
-        Self::default()
+    /// With `still` lights, time doesn't vary them (the staff flicker), so
+    /// captures repeat: the visual suite and the galleries.
+    pub fn new(still: bool) -> Self {
+        Self {
+            lights: RefCell::new(Lights::new(still)),
+            ..Self::default()
+        }
     }
 }
 

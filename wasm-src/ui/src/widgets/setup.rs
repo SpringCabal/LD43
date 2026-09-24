@@ -30,7 +30,7 @@ pub fn setup(handler: &mut WidgetHandler<Global>) {
             GuiInputWidget::new(),
             ApiSyncWidget::new(),
             GuiHudWidget::new(),
-            GfxLightingWidget::new(),
+            GfxLightingWidget::new(cfg!(feature = "e2e")),
             GuiCameraWidget::new(),
             MusicLoop::new(MUSIC_FILE, MUSIC_VOLUME),
             GuiMinimapWidget::new(),

@@ -30,27 +30,37 @@ pub struct Lights {
     projectiles: Vec<PointLight>,
     /// The light each weapon def's projectiles carry.
     projectile_defs: BTreeMap<i32, Option<projectiles::DefLight>>,
-}
-
-/// Where the staff light's flicker is, in seconds. The visual suite keeps it
-/// at its starting phase so its screenshots repeat.
-#[cfg(feature = "e2e")]
-fn flicker_seconds() -> f32 {
-    0.0
-}
-
-#[cfg(not(feature = "e2e"))]
-fn flicker_seconds() -> f32 {
-    staff::clock_seconds()
+    /// Keeps the staff light's flicker at its starting phase instead of
+    /// following real time, so captures repeat.
+    still: bool,
 }
 
 impl Lights {
+    /// Lights whose flicker follows real time, as in the game, or stays
+    /// `still`.
+    pub fn new(still: bool) -> Self {
+        Self {
+            still,
+            ..Self::default()
+        }
+    }
+
+    /// Where the staff light's flicker is, in seconds.
+    fn flicker_seconds(&self) -> f32 {
+        if self.still {
+            0.0
+        } else {
+            staff::clock_seconds()
+        }
+    }
+
     pub fn update(&mut self, global: &Global) {
         if self.houses.is_none() {
             self.houses = houses::place();
         }
         let status = *global.status.access();
-        self.staff = staff::light(&status, &mut self.staff_boost, flicker_seconds());
+        let seconds = self.flicker_seconds();
+        self.staff = staff::light(&status, &mut self.staff_boost, seconds);
         if let Some(ground) = global.cursor.get().ground {
             self.mouse = Some(mouse::light(ground));
         }
