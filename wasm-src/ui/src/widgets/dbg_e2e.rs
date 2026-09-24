@@ -1,35 +1,199 @@
+use core::cell::Cell;
+
+use spring::ResultExt;
 use spring_addons::ui::Widget;
 use springcabal::message::Encoder;
+use springcabal::shots::screenshot;
 
 use crate::hud;
 use crate::state::Global;
 
-/// The updates the visual suite takes its screenshots on, with
-/// [`springcabal::shots::Screenshots`] counting the same updates as this
-/// widget. The suite's goldens are the first three; the first two also
-/// feed its leader-render comparison.
-/// - 11, 22: the leader-render baseline, then with its fixture spawned (at
-///   12; SetUnitLuaDraw needs an update to switch to the legacy drawer);
-/// - 26, 28, 30: Heartburn's fireball in flight;
-/// - 37, 42: hovering the ork leader, then a big ork;
-/// - 44: after the engine selection was cleared;
-/// - 55, 65, 70, 75: the Poultice throw;
-/// - 90, 120, 240, 330: the camera following the mage to the map edge.
-pub const SCREENSHOTS: [u32; 16] = [
-    11, 22, 26, 28, 30, 37, 42, 44, 55, 65, 70, 75, 90, 120, 240, 330,
+/// Logged after the last step; the visual suite quits on it.
+pub const DONE_MARKER: &str = "TTLD E2E done";
+
+/// What the visual run does, by game frame. The suite's goldens are the
+/// first three screenshots, which are taken with the game paused on their
+/// frame (`pauseatframe`), so they show the same frame every run; the first
+/// two also feed its leader-render comparison.
+const STEPS: &[(i32, When, Step)] = &[
+    (40, When::Running, Step::CloseIntro),
+    (73, When::Paused, Step::Shot("leader-render baseline")),
+    // Spawns the stationary boss/normal-ork pair for the pixel-level render
+    // comparison, through the regular synced message path. The rules
+    // messages up to the fireball shot are sent while paused, so the rules
+    // take them on the same frame every run.
+    (78, When::Paused, Step::LeaderFixture),
+    (121, When::Running, Step::ReportLeaderFixture),
+    (132, When::Paused, Step::Shot("leader-render fixture")),
+    // Heartburn through the same rules message as the key/mouse input.
+    (150, When::Paused, Step::Heartburn),
+    (167, When::Paused, Step::Shot("heartburn fireball")),
+    (189, When::Running, Step::Shot("heartburn landing")),
+    // Hover-only target UI and the unit outline, with real engine mouse
+    // moves.
+    (227, When::Running, Step::Hover("orkboss")),
+    (233, When::Running, Step::CheckHover("orkboss")),
+    (240, When::Running, Step::Shot("hovering the ork leader")),
+    (254, When::Running, Step::Hover("orkbig")),
+    (260, When::Running, Step::CheckHover("orkbig")),
+    (274, When::Running, Step::Shot("hovering a big ork")),
+    // A real engine selection, which the input widget clears on its next
+    // update.
+    (281, When::Running, Step::SeedSelection),
+    (288, When::Running, Step::CheckSelection),
+    (288, When::Running, Step::Shot("selection cleared")),
+    (303, When::Running, Step::MouseWheel),
+    // Drive the player toward the north map edge as well as east, which
+    // exercises the minimap's edge behaviour.
+    (339, When::Running, Step::MovePlayer),
+    (376, When::Running, Step::RememberPoultice),
+    (376, When::Running, Step::Shot("before poultice")),
+    (418, When::Running, Step::Poultice),
+    (458, When::Running, Step::ReportPoultice),
+    (458, When::Running, Step::Shot("poultice throw")),
+    (498, When::Running, Step::Track("after_move")),
+    (498, When::Running, Step::ReportPoultice),
+    (498, When::Running, Step::Shot("poultice flight")),
+    (538, When::Running, Step::ReportPoultice),
+    (538, When::Running, Step::Shot("poultice landing")),
+    (661, When::Running, Step::Shot("setting off north")),
+    (900, When::Running, Step::Track("walking_north")),
+    (900, When::Running, Step::Shot("walking north")),
+    (1200, When::Running, Step::Track("late")),
+    (1200, When::Running, Step::Shot("late")),
+    (1200, When::Running, Step::Done),
 ];
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum When {
+    Running,
+    /// With the game paused on the step's frame.
+    Paused,
+}
+
+#[derive(Clone, Copy)]
+enum Step {
+    CloseIntro,
+    LeaderFixture,
+    ReportLeaderFixture,
+    Heartburn,
+    Hover(&'static str),
+    CheckHover(&'static str),
+    SeedSelection,
+    CheckSelection,
+    MouseWheel,
+    MovePlayer,
+    RememberPoultice,
+    Poultice,
+    ReportPoultice,
+    Track(&'static str),
+    Shot(&'static str),
+    Done,
+}
+
+/// Updates to stay paused after a paused step, so its screenshot is drawn
+/// and its rules message handled before the game goes on.
+const PAUSED_UPDATES: u32 = 10;
+/// Updates to wait in a pause before running a paused step.
+const SETTLE_UPDATES: u32 = 2;
 
 #[derive(Default)]
 pub struct DbgE2eWidget {
-    ticks: core::cell::Cell<u32>,
-    poultice_target: core::cell::Cell<i32>,
-    poultice_x: core::cell::Cell<f32>,
-    poultice_z: core::cell::Cell<f32>,
+    /// The next step to run.
+    next: Cell<usize>,
+    /// Whether the pause frames have been requested.
+    pauses_requested: Cell<bool>,
+    /// Updates left before the game resumes after a paused step.
+    resume_in: Cell<Option<u32>>,
+    /// Updates seen so far in the current pause.
+    paused_updates: Cell<u32>,
+    shots: Cell<u32>,
+    hovered: Cell<Option<i32>>,
+    poultice_target: Cell<i32>,
+    poultice_x: Cell<f32>,
+    poultice_z: Cell<f32>,
 }
 
 impl DbgE2eWidget {
     pub fn new() -> Self {
         Self::default()
+    }
+
+    fn request_pauses(&self) {
+        if self.pauses_requested.replace(true) {
+            return;
+        }
+        for (frame, when, _) in STEPS {
+            if *when == When::Paused {
+                command(&alloc::format!("pauseatframe {frame}"));
+            }
+        }
+    }
+
+    /// Whether the game has been paused for a few updates. The first draw
+    /// after the pause arrives can still interpolate towards the next frame,
+    /// which moves fast things such as the fireball.
+    fn settled_in_pause(&self) -> bool {
+        if !paused() {
+            self.paused_updates.set(0);
+            return false;
+        }
+        let updates = self.paused_updates.get() + 1;
+        self.paused_updates.set(updates);
+        updates > SETTLE_UPDATES
+    }
+
+    fn resume_when_due(&self) -> bool {
+        let Some(updates) = self.resume_in.get() else {
+            return false;
+        };
+        if updates > 0 {
+            self.resume_in.set(Some(updates - 1));
+        } else {
+            self.resume_in.set(None);
+            self.paused_updates.set(0);
+            command("pause 0");
+        }
+        true
+    }
+
+    fn run(&self, ctx: &spring_addons::AddonContext<'_, Global>, step: Step) {
+        match step {
+            Step::CloseIntro => hud::close_intro(ctx.global()),
+            Step::LeaderFixture => {
+                spring::send_lua_rules_msg("e2e|leader-render").log_err("leader fixture");
+            }
+            Step::ReportLeaderFixture => report_leader_fixture(),
+            Step::Heartburn => send_spell(2, 1000.0),
+            Step::Hover(def_name) => self.hovered.set(hover_fixture(def_name)),
+            Step::CheckHover(def_name) => report_hover(ctx.global(), def_name, self.hovered.get()),
+            Step::SeedSelection => {
+                let _ = spring::selection::select_unit_array(&[player_unit()], false);
+                let count = spring::selection::get_selected_units_count(0).unwrap_or(0);
+                echo(&alloc::format!("TTLD E2E selection seeded={count}"));
+            }
+            Step::CheckSelection => {
+                let count = spring::selection::get_selected_units_count(0).unwrap_or(u32::MAX);
+                echo(&alloc::format!("TTLD E2E selection cleared={count}"));
+            }
+            Step::MouseWheel => report_wheel_capture(),
+            Step::MovePlayer => {
+                report_tracking("before_move");
+                move_player(500.0, -7000.0);
+            }
+            Step::RememberPoultice => self.remember_poultice_target(),
+            Step::Poultice => send_spell(5, 0.0),
+            Step::ReportPoultice => self.report_poultice(),
+            Step::Track(label) => report_tracking(label),
+            Step::Shot(label) => {
+                let shot = self.shots.get() + 1;
+                self.shots.set(shot);
+                let frame = spring::game::current_frame();
+                screenshot(&alloc::format!("{shot} ({label}) at frame {frame}"));
+                report_projectiles();
+            }
+            Step::Done => echo(DONE_MARKER),
+        }
     }
 }
 
@@ -39,61 +203,82 @@ impl Widget<Global> for DbgE2eWidget {
     }
 
     fn update(&self, ctx: &spring_addons::AddonContext<'_, Global>, _dt: f32) {
-        let tick = self.ticks.get();
-        self.ticks.set(tick + 1);
-        match tick {
-            10 => hud::close_intro(ctx.global()),
-            12 => {
-                // Spawn a stationary boss/normal-ork pair for the pixel-level
-                // render regression. This uses the regular synced Lua message
-                // path and never synthesizes F12 or Pause.
-                let _ = spring::send_lua_rules_msg("e2e|leader-render");
+        let frame = spring::game::current_frame();
+        if frame < 0 {
+            return;
+        }
+        self.request_pauses();
+        if self.resume_when_due() {
+            return;
+        }
+        // Steps of one frame run together; a later frame's steps wait for
+        // the next update, so each sees what the previous ones did.
+        let mut running = None;
+        while let Some(&(due, when, step)) = STEPS.get(self.next.get()) {
+            if frame < due || running.is_some_and(|running| running != due) {
+                return;
             }
-            20 => {
-                report_leader_fixture();
+            running = Some(due);
+            if when == When::Paused {
+                if frame == due && !self.settled_in_pause() {
+                    return;
+                }
+                if frame > due {
+                    echo(&alloc::format!(
+                        "TTLD E2E missed the pause at frame {due} (now {frame})"
+                    ));
+                } else {
+                    self.resume_in.set(Some(PAUSED_UPDATES));
+                }
             }
-            // Exercise the real synced spell path in the visual run. This
-            // uses the same rules message as the key/mouse input path and
-            // does not synthesize F12 or Pause.
-            25 => send_spell(2, 1000.0),
-            // Exercise hover-only target UI and the unit outline with a real
-            // engine mouse move. This intentionally does not synthesize F12
-            // or Pause.
-            35 => hover_fixture("orkboss", "orkboss"),
-            39 => hover_fixture("orkbig", "orkbig"),
-            // Force a real engine selection, then let the normal input widget
-            // clear it on the next update (no test-only clearing).
-            43 => {
-                let _ = spring::selection::select_unit_array(&[player_unit()], false);
-                let count = spring::selection::get_selected_units_count(0).unwrap_or(0);
-                let _ = spring::echo(&alloc::format!("TTLD E2E selection seeded={count}"), "");
-            }
-            44 => {
-                let count = spring::selection::get_selected_units_count(0).unwrap_or(u32::MAX);
-                let _ = spring::echo(&alloc::format!("TTLD E2E selection cleared={count}"), "");
-            }
-            45 => report_wheel_capture(),
-            50 => {
-                report_tracking("before_move");
-                // Drive the player toward the north map edge as well as east.
-                // This exercises the minimap's edge behavior instead of only
-                // testing the centered portion of the viewport.
-                move_player(500.0, -7000.0);
-            }
-            55 => self.remember_poultice_target(),
-            60 => send_spell(5, 0.0),
-            // Sample shortly after the delayed impulse, while the target is
-            // still expected to be queryable and airborne.
-            65 | 75 => self.report_poultice(),
-            70 => {
-                report_tracking("after_move");
-                self.report_poultice();
-            }
-            240 => report_tracking("north_edge"),
-            330 => report_tracking("north_edge_late"),
-            _ => {}
+            self.run(ctx, step);
+            self.next.set(self.next.get() + 1);
         }
     }
+}
+
+fn report_projectiles() {
+    let projectiles =
+        spring::projectiles::get_all_projectiles(spring::projectiles::GetAllProjectilesOptions {
+            exclude_weapon_projectiles: false,
+            exclude_piece_projectiles: true,
+        })
+        .unwrap_or_default();
+    for projectile in projectiles {
+        if let Ok(position) = spring::projectiles::get_projectile_position(projectile) {
+            echo(&alloc::format!(
+                "TTLD E2E projectile {projectile} at ({:.1},{:.1},{:.1})",
+                position.x,
+                position.y,
+                position.z
+            ));
+        }
+    }
+}
+
+fn paused() -> bool {
+    spring::display::get_game_speed(0).is_ok_and(|speed| speed.paused)
+}
+
+fn command(command: &str) {
+    spring::send_commands(command, "").log_err(command);
+}
+
+fn echo(line: &str) {
+    spring::echo(line, "").log_err("e2e report");
+}
+
+/// Logs whether the HUD shows the unit the mouse was moved onto as its
+/// target, as the hover highlight and target panel do.
+fn report_hover(global: &Global, def_name: &str, unit: Option<i32>) {
+    let target = global.hud.access().target.map(|(unit, _)| unit);
+    let cursor = global.cursor.get().unit;
+    echo(&alloc::format!(
+        "TTLD E2E hover check fixture={def_name} unit={} hud_target={} cursor={}",
+        unit.unwrap_or(-1),
+        target.unwrap_or(-1),
+        cursor.unwrap_or(-1),
+    ));
 }
 
 fn player_unit() -> i32 {
@@ -340,20 +525,16 @@ impl DbgE2eWidget {
     }
 }
 
-fn hover_fixture(label: &str, def_name: &str) {
+fn hover_fixture(def_name: &str) -> Option<i32> {
+    let label = def_name;
     let Some(def_id) = spring::get_unit_def_id_by_name(def_name).ok() else {
         let _ = spring::echo(
             &alloc::format!("TTLD E2E hover fixture={label} skipped: no def"),
             "",
         );
-        return;
+        return None;
     };
-    let Some(player) = Some(player_unit()).filter(|unit_id| *unit_id >= 0) else {
-        return;
-    };
-    let Some(player_position) = unit_position(player) else {
-        return;
-    };
+    let player_position = unit_position(player_unit())?;
     let mut target = None;
     for unit_id in spring::get_all_units().unwrap_or_default() {
         if spring::units_info::get_unit_def_id(unit_id).ok() != Some(def_id) {
@@ -373,7 +554,7 @@ fn hover_fixture(label: &str, def_name: &str) {
             &alloc::format!("TTLD E2E hover fixture={label} skipped: no unit"),
             "",
         );
-        return;
+        return None;
     };
     let position = spring::types::Float3 {
         x: position.x,
@@ -381,11 +562,11 @@ fn hover_fixture(label: &str, def_name: &str) {
         z: position.z,
     };
     let Ok(screen) = spring::camera::world_to_screen_coords(position) else {
-        return;
+        return None;
     };
     let height = crate::with_global(|global| global.view.get().1);
     if height <= 1 {
-        return;
+        return None;
     }
     let x = screen.screen_pos.x.round() as i32;
     let bottom_y = screen.screen_pos.y.round() as i32;
@@ -403,7 +584,7 @@ fn hover_fixture(label: &str, def_name: &str) {
             &alloc::format!("TTLD E2E hover fixture={label} unit={unit_id} skipped: trace miss"),
             "",
         );
-        return;
+        return None;
     };
     let hover_top_y = height - 1 - hover_bottom_y;
     let result = spring::debug_input::emulate_mouse_move(hover_x, hover_top_y);
@@ -415,6 +596,7 @@ fn hover_fixture(label: &str, def_name: &str) {
         ),
         "",
     );
+    Some(unit_id)
 }
 
 fn trace_unit(x: i32, y: i32) -> Option<i32> {

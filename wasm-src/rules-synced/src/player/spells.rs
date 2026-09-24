@@ -13,7 +13,7 @@ use super::drain::{drain, drain_for_transfusion};
 use crate::units::{self, ENEMY_TEAM, PLAYER_TEAM};
 use crate::units::{def_of, health, health_value, units_in_cylinder, valid};
 
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Spell {
     Transfusion,
     Heartburn,

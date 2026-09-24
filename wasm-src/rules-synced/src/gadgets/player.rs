@@ -39,6 +39,8 @@ impl Gadget<Global> for PlayerGadget {
         if let Some((unit_id, spell, x, z)) = cast
             && let Some(outcome) = player::cast(global, unit_id, spell, x, z, frame)
         {
+            #[cfg(feature = "e2e")]
+            spring::log_info!("ttld-wasm", "TTLD E2E cast {spell:?} on frame {frame}");
             global
                 .player
                 .access_mut()
