@@ -115,11 +115,8 @@ pub fn resolve_pending(global: &Global, frame: i32) {
 }
 
 /// The Heartburn fireball went off: the engine applies its weapon def's
-/// damage, impulse and crater; this adds the impact sound and flames.
+/// damage, impulse and crater and plays its hit sound; this adds flames.
 pub fn fireball_exploded(position: Float3) {
-    // The weapon def's `soundHit` is not a key this engine reads (it wants
-    // soundHitDry/soundHitWet), so the hit sound is played here.
-    play_sound_at("sounds/fireballhit.wav", position);
     spawn_effect_at(position, CEG_FIREBALL_IMPACT);
 }
 
