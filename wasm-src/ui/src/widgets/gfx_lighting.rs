@@ -17,8 +17,9 @@ pub struct GfxLightingWidget {
 }
 
 impl GfxLightingWidget {
-    /// With `still` lights, time doesn't vary them (the staff flicker), so
-    /// captures repeat: the visual suite and the galleries.
+    /// With `still` lights, neither time (the staff flicker) nor the RNG (the
+    /// lit house windows) varies them, so captures repeat: the visual suite
+    /// and the galleries.
     pub fn new(still: bool) -> Self {
         Self {
             lights: RefCell::new(Lights::new(still)),

@@ -31,7 +31,8 @@ pub struct Lights {
     /// The light each weapon def's projectiles carry.
     projectile_defs: BTreeMap<i32, Option<projectiles::DefLight>>,
     /// Keeps the staff light's flicker at its starting phase instead of
-    /// following real time, so captures repeat.
+    /// following real time, and lights the same house windows every run, so
+    /// captures repeat.
     still: bool,
 }
 
@@ -56,7 +57,7 @@ impl Lights {
 
     pub fn update(&mut self, global: &Global) {
         if self.houses.is_none() {
-            self.houses = houses::place();
+            self.houses = houses::place(self.still);
         }
         let status = *global.status.access();
         let seconds = self.flicker_seconds();
