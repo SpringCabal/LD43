@@ -32,16 +32,25 @@ pub struct Lights {
     projectile_defs: BTreeMap<i32, Option<projectiles::DefLight>>,
 }
 
+/// Where the staff light's flicker is, in seconds. The visual suite keeps it
+/// at its starting phase so its screenshots repeat.
+#[cfg(feature = "e2e")]
+fn flicker_seconds() -> f32 {
+    0.0
+}
+
+#[cfg(not(feature = "e2e"))]
+fn flicker_seconds() -> f32 {
+    staff::clock_seconds()
+}
+
 impl Lights {
     pub fn update(&mut self, global: &Global) {
         if self.houses.is_none() {
             self.houses = houses::place();
         }
         let status = *global.status.access();
-        // The Lua widget flickers the staff light with os.clock(), which would
-        // make every screenshot different, so the flicker stays at its
-        // starting phase.
-        self.staff = staff::light(&status, &mut self.staff_boost, 0.0);
+        self.staff = staff::light(&status, &mut self.staff_boost, flicker_seconds());
         if let Some(ground) = global.cursor.get().ground {
             self.mouse = Some(mouse::light(ground));
         }

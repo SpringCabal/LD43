@@ -19,6 +19,15 @@ pub fn light(status: &GameStatus, boost: &mut Boost, seconds: f32) -> Option<Poi
     })
 }
 
+/// Real time in seconds, like the Lua widget's os.clock(), wrapped to one
+/// flicker cycle so it stays precise as an f32.
+#[cfg(not(feature = "e2e"))]
+pub fn clock_seconds() -> f32 {
+    let cycle = f64::from(core::f32::consts::TAU / FLICKER_RATE);
+    let micros = spring::get_timer_micros().unwrap_or(0);
+    ((micros as f64 / 1_000_000.0) % cycle) as f32
+}
+
 /// The staff light multiplier: it rises during a cast and decays back to 1.
 pub struct Boost(f32);
 
