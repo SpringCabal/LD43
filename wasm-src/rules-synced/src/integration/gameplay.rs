@@ -334,10 +334,12 @@ pub(super) fn stun_a_target(tracker: &mut Tracker, world: &World) {
 
 pub(super) fn stun_landed_checks(tracker: &mut Tracker, _world: &World) {
     let unit_id = tracker.stunned_unit;
-    if unit_id <= 0 || !spring::valid_unit_id(unit_id).unwrap_or(false) {
-        return;
-    }
-    let now = live_reload(unit_id);
+    // A mage that is gone reads as a 0 reload and fails the check.
+    let now = if unit_id > 0 && units::valid(unit_id) {
+        live_reload(unit_id)
+    } else {
+        0.0
+    };
     check(
         tracker,
         tracker.stunned_base > 0.0,
