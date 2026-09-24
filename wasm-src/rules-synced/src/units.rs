@@ -120,6 +120,24 @@ pub fn destroy_all() {
     }
 }
 
+/// Removes a unit without a death sequence.
+#[cfg(feature = "headless-integration")]
+pub fn destroy(unit_id: i32) {
+    crate::engine::check(
+        unit_control::destroy_unit(
+            unit_id,
+            unit_control::DestroyUnitOptions {
+                selfd: false,
+                reclaimed: true,
+                attacker_id: -1,
+                recycle_id: false,
+            },
+        ),
+        "destroy_unit",
+        unit_id,
+    );
+}
+
 /// Whether the unit has anything queued.
 pub fn has_orders(unit_id: i32) -> bool {
     // Ask for one command: a limit of zero returns an empty queue for every

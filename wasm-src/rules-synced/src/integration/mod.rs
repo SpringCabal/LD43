@@ -8,12 +8,14 @@
 mod animation;
 mod gameplay;
 mod restart;
+mod spells;
 mod stun;
 mod victory;
 
 use self::animation::animation_checks;
 use self::gameplay::*;
 use self::restart::*;
+use self::spells::*;
 pub use self::stun::Bite;
 use self::stun::*;
 use self::victory::*;
@@ -32,7 +34,7 @@ use crate::units::{
 const TAG: &str = "[TTLD-Rust-Test]";
 const TITLE: &str = "TO THE LAST DROP INTEGRATION TESTS";
 /// Every check below; fewer means some were skipped.
-const CHECK_COUNT: u32 = 46;
+const CHECK_COUNT: u32 = 51;
 /// CSolidObject::PSTATE_BIT_FLYING.
 const PHYSICAL_STATE_FLYING: u32 = 1 << 7;
 
@@ -52,6 +54,9 @@ pub struct Tracker {
     /// The ork the stun checks stun, and every bite of a small ork.
     stun_ork: i32,
     bites: Vec<Bite>,
+    /// Villagers drained before Transfusion, and Migraine's targets.
+    drained_before_transfusion: i32,
+    migraine_targets: Vec<i32>,
     /// The ork Heartburn is aimed at, one farther out inside its blast, an
     /// ally inside it, and the ground height where it lands.
     heartburn_target: i32,
@@ -172,6 +177,12 @@ pub fn update(tracker: &RefCell<Tracker>, global: &Global, frame: i32) {
         STUN_START => with_checks(&world, stun_the_ork),
         STUN_PAUSED_CHECK => with_checks(&world, stunned_checks),
         STUN_OVER_CHECK => with_checks(&world, stun_over_checks),
+        TRANSFUSION_CAST => cast_transfusion(&world),
+        TRANSFUSION_CHECK => {
+            with_checks(&world, transfusion_checks);
+            cast_migraine(&world);
+        }
+        MIGRAINE_CHECK => migraine_checks(&world),
         300 => with_checks(&world, ork_advance_checks),
         330 => final_wave_checks(&world),
         331 => kill_boss_checks(&world),
