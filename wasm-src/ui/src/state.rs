@@ -43,6 +43,9 @@ impl GameEnd {
 pub struct GameStatus {
     /// Bumped whenever a message arrives, so readers can tell it changed.
     pub revision: u32,
+    /// The rules' round: 1, then one more per restart; 0 before the first
+    /// status.
+    pub round: u32,
     pub player_unit: i32,
     pub player_alive: bool,
     pub health: i32,
@@ -60,6 +63,7 @@ impl Default for GameStatus {
     fn default() -> Self {
         Self {
             revision: 0,
+            round: 0,
             player_unit: -1,
             player_alive: true,
             health: 0,
@@ -81,6 +85,7 @@ impl GameStatus {
         let (mut health, mut max_health) = (0, 1000);
         for (key, value) in fields {
             match key {
+                "round" => self.round = value.parse().unwrap_or(0),
                 "health" => health = value.parse().unwrap_or(0),
                 "maxHealth" => max_health = value.parse().unwrap_or(1000),
                 "villagersKilled" => parse_into(value, &mut self.villagers_killed),
@@ -134,6 +139,8 @@ pub struct Hud {
     pub bindings: Option<HudBindings>,
     pub intro_open: bool,
     pub endgame_open: bool,
+    /// A restart was sent and its round hasn't started yet.
+    pub restart_requested: bool,
     /// The hovered unit and health percentage the target panel shows.
     pub target: Option<(i32, i32)>,
 }
@@ -144,6 +151,7 @@ impl Default for Hud {
             bindings: None,
             intro_open: true,
             endgame_open: false,
+            restart_requested: false,
             target: None,
         }
     }

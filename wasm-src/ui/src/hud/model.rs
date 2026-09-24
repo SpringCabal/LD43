@@ -1,5 +1,3 @@
-use spring::ResultExt;
-
 use crate::state::{Global, HudBindings};
 
 pub fn create(context: u64) -> Option<HudBindings> {
@@ -66,13 +64,23 @@ fn bind_event(model: u64, name: &str, handler: impl FnMut(&Global) + 'static) {
     }
 }
 
-/// Restarts the game by reloading the rules (`luarules reload`), as
-/// `ui_endgame.lua` does. The engine reloads only LuaRules with it, not the
-/// Wasm rules modules, so the rules keep their state.
+/// Asks the rules for a new round (`ui_endgame.lua` reloads the Lua rules,
+/// which doesn't reload the Wasm rules module). The end screen stays up
+/// until the new round's first status arrives; see
+/// [`start_round`](super::endgame::start_round).
 pub fn restart(global: &Global) {
-    spring::reload_rules().log_err("restart: luarules reload");
-    super::endgame::close_endgame(global);
+    if global.hud.access().restart_requested {
+        return;
+    }
+    if let Err(error) = spring::send_lua_rules_msg(RESTART) {
+        spring::log_warning!("ttld-ui", "restart not sent: {error:?}");
+        return;
+    }
+    global.hud.access_mut().restart_requested = true;
 }
+
+/// The rules' restart message (`rules-synced/src/gadgets/setup.rs`).
+const RESTART: &str = "restart";
 
 fn bind_int(model: u64, name: &str, initial: i32) -> Option<u64> {
     let binding = spring::data_model_bind_int(model, name, initial).ok()?;

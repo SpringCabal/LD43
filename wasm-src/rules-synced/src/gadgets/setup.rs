@@ -6,6 +6,7 @@ use spring_addons::rules::{Gadget, GadgetHandler};
 use crate::pose_probe::PoseProbeGadget;
 use crate::state::{Global, Phase};
 use crate::terrain;
+use crate::units;
 
 use super::combat::CombatGadget;
 #[cfg(feature = "headless-integration")]
@@ -21,9 +22,11 @@ use super::town::TownGadget;
 use super::unit_scripts::UnitScriptsGadget;
 use super::victory::VictoryGadget;
 
-/// Starts the world on the first game frame: opens the map to every ally team
-/// and prepares the terrain types. The town itself is built by the town
-/// gadget in the same frame; see [`Phase`].
+/// Starts a round, on the first game frame and on the first frame after the
+/// player asks for a restart: removes every unit, forgets the previous
+/// round, opens the map to every ally team and prepares the terrain types.
+/// The town itself is built by the town gadget in the same frame; see
+/// [`Phase`].
 #[derive(Default)]
 struct SetupGadget;
 
@@ -33,19 +36,45 @@ impl Gadget<Global> for SetupGadget {
     }
 
     fn game_frame(&self, ctx: &AddonContext<'_, Global>, frame: i32) {
-        if ctx.global().phase(frame) != Phase::Loading {
+        let global = ctx.global();
+        if global.phase(frame) != Phase::Loading {
             return;
         }
-        ctx.global().begin_setup(frame);
+        // Destroying raises UnitDestroyed in every gadget, which counts dead
+        // orks and villagers; the round state is reset after that.
+        units::destroy_all();
+        global.begin_round(frame);
         for ally_team in 0..ALLY_TEAMS {
             let _ = spring::team_control::set_global_los(ally_team, true);
         }
         terrain::initialize();
-        spring::log_info!("ttld-wasm", "world setup started");
+        spring::log_info!("ttld-wasm", "round {} setup started", global.round());
+    }
+
+    /// The UI's restart (the end screen's Restart button, Enter or R).
+    /// `ui_endgame.lua` reloads the Lua rules, which runs every gadget's
+    /// Initialize again: the town handler clears the map and rebuilds the
+    /// town, the storyteller and the ork AI start over, and the counters
+    /// return to zero. That command doesn't reload this module, so the
+    /// round starts over here.
+    fn handle_lua_msg(
+        &self,
+        ctx: &AddonContext<'_, Global>,
+        _player_id: i32,
+        _script: i32,
+        _mode: i32,
+        data: &[u8],
+    ) {
+        if data == RESTART.as_bytes() {
+            spring::log_info!("ttld-wasm", "restart requested");
+            ctx.global().restart();
+        }
     }
 }
 
 const ALLY_TEAMS: i32 = 3;
+/// The UI's restart message (`ui/src/hud/model.rs`).
+const RESTART: &str = "restart";
 
 /// Registers the gadgets. Their order is the order they run in each frame,
 /// which also fixes the order in which they draw from the synced RNG.

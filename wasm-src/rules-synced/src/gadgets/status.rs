@@ -4,7 +4,7 @@ use spring_addons::AddonContext;
 use spring_addons::rules::Gadget;
 use springcabal::message::{Encoder, SendOnChange};
 
-use crate::state::{GameEnd, Global};
+use crate::state::{GameEnd, Global, Phase};
 
 /// Sends the game status to the UI, whenever it has changed, as a
 /// `TTLD_STATUS|key=value|...` message.
@@ -18,6 +18,7 @@ const STATUS_PERIOD: i32 = 6;
 
 #[derive(Clone, Copy, PartialEq)]
 struct Status {
+    round: u32,
     player_unit: i32,
     health: i32,
     max_health: i32,
@@ -37,8 +38,16 @@ impl Gadget<Global> for StatusGadget {
 
     fn game_frame(&self, ctx: &AddonContext<'_, Global>, frame: i32) {
         let global = ctx.global();
-        if !global.running(frame) || frame % STATUS_PERIOD != 0 {
-            return;
+        match global.phase(frame) {
+            Phase::Loading => return,
+            // Every round starts with a status, even one that looks like the
+            // last round's.
+            Phase::Setup => {
+                self.sent.reset();
+                return;
+            }
+            Phase::Running if frame % STATUS_PERIOD != 0 => return,
+            Phase::Running => {}
         }
         self.sent
             .send_if_changed(Status::read(global, frame), |status| {
@@ -61,6 +70,7 @@ impl Status {
         let (health, max_health) = health(player_unit);
         let score = global.score.access();
         Self {
+            round: global.round(),
             player_unit,
             health,
             max_health,
@@ -76,6 +86,7 @@ impl Status {
 
     fn message(&self) -> String {
         Encoder::new("TTLD_STATUS")
+            .kv("round", self.round)
             .kv("health", self.health)
             .kv("maxHealth", self.max_health)
             .kv("villagersKilled", self.villagers_killed)

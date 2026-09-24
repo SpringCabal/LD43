@@ -4,7 +4,7 @@ use spring_addons::AddonContext;
 use spring_addons::rules::Gadget;
 
 use crate::combat::{self, Story};
-use crate::state::Global;
+use crate::state::{Global, Phase};
 
 /// Sends the ork waves on schedule until the town is saved.
 #[derive(Default)]
@@ -22,8 +22,14 @@ impl Gadget<Global> for StoryGadget {
 
     fn game_frame(&self, ctx: &AddonContext<'_, Global>, frame: i32) {
         let global = ctx.global();
-        if !global.running(frame) {
-            return;
+        match global.phase(frame) {
+            Phase::Loading => return,
+            Phase::Setup => {
+                *self.story.borrow_mut() = Story::default();
+                self.boss_due.set(false);
+                return;
+            }
+            Phase::Running => {}
         }
         let wave = self
             .story

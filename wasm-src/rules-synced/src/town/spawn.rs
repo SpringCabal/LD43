@@ -26,7 +26,6 @@ const BLOCKED: i32 = 0;
 const FREE: i32 = 2;
 
 pub fn populate() -> Vec<Villager> {
-    clear_existing_units();
     spawn_houses();
     spawn_blood_mage();
     let villagers = fill_villager_areas();
@@ -37,24 +36,6 @@ pub fn populate() -> Vec<Villager> {
         villagers.len()
     );
     villagers
-}
-
-fn clear_existing_units() {
-    for unit_id in units::all_units() {
-        crate::engine::check(
-            unit_control::destroy_unit(
-                unit_id,
-                unit_control::DestroyUnitOptions {
-                    selfd: false,
-                    reclaimed: true,
-                    attacker_id: -1,
-                    recycle_id: false,
-                },
-            ),
-            "destroy_unit",
-            unit_id,
-        );
-    }
 }
 
 fn spawn_houses() {

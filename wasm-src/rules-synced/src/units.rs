@@ -100,6 +100,26 @@ pub fn all_units() -> Vec<i32> {
     spring::get_all_units().unwrap_or_default()
 }
 
+/// Removes every unit at once, without death sequences, as
+/// unit_town_handler.lua's Initialize does.
+pub fn destroy_all() {
+    for unit_id in all_units() {
+        crate::engine::check(
+            unit_control::destroy_unit(
+                unit_id,
+                unit_control::DestroyUnitOptions {
+                    selfd: false,
+                    reclaimed: true,
+                    attacker_id: -1,
+                    recycle_id: false,
+                },
+            ),
+            "destroy_unit",
+            unit_id,
+        );
+    }
+}
+
 /// Whether the unit has anything queued.
 pub fn has_orders(unit_id: i32) -> bool {
     // Ask for one command: a limit of zero returns an empty queue for every

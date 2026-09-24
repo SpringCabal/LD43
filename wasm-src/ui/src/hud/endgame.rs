@@ -1,6 +1,6 @@
 use alloc::format;
 
-use crate::state::{GameEnd, GameStatus, Global};
+use crate::state::{GameEnd, Global};
 
 use super::model;
 
@@ -20,12 +20,14 @@ pub fn close_intro(global: &Global) {
     let _ = spring::send_commands("pause 0", "");
 }
 
-/// Closes the end screen for a restart, forgetting the finished game.
-pub fn close_endgame(global: &Global) {
-    *global.status.access_mut() = GameStatus::default();
+/// A new round has started (its first status has arrived): closes the end
+/// screen and the target panel. The status already holds the new round's
+/// counters.
+pub fn start_round(global: &Global) {
     let bindings = {
         let mut hud = global.hud.access_mut();
         hud.endgame_open = false;
+        hud.restart_requested = false;
         hud.target = None;
         hud.bindings
     };
@@ -33,9 +35,6 @@ pub fn close_endgame(global: &Global) {
         model::set_bool(bindings.endgame_visible, false);
         model::set_bool(bindings.target_visible, false);
         model::set_bool(bindings.target_enemy, false);
-        model::set_int(bindings.villagers_killed, 0);
-        model::set_int(bindings.allies_drained, 0);
-        model::set_int(bindings.orks_killed, 0);
     }
 }
 
