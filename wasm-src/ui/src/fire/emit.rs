@@ -1,5 +1,3 @@
-use alloc::vec::Vec;
-
 use spring::random::unsynced::float;
 
 use super::particles::{self, Field, Particle};
@@ -9,21 +7,19 @@ const DISC_RADIUS_SCALE: f32 = 0.6;
 const SIZE_SCALE: f32 = 0.35;
 const EMIT_CHANCE_RANGE: i32 = 400;
 
+/// Whether the rules have set the house on fire.
+pub fn on_fire(unit_id: i32) -> bool {
+    spring::get_unit_rules_param_f32(unit_id, "on_fire").unwrap_or(0.0) >= 0.5
+}
+
 /// Starts flames on some of the burning houses.
-pub fn emit(field: &mut Field, houses: &[i32]) {
-    let burning: Vec<i32> = houses
-        .iter()
-        .copied()
-        .filter(|unit_id| {
-            spring::get_unit_rules_param_f32(*unit_id, "on_fire").unwrap_or(0.0) >= 0.5
-        })
-        .collect();
+pub fn emit(field: &mut Field, burning: &[i32]) {
     if burning.is_empty() {
         return;
     }
     apply_wind(field);
     let count = burning.len() as i32;
-    for unit_id in burning {
+    for &unit_id in burning {
         if (float() * EMIT_CHANCE_RANGE as f32) as i32 >= EMIT_CHANCE_RANGE - count {
             continue;
         }
