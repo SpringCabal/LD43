@@ -39,6 +39,8 @@ pub fn setup(handler: &mut WidgetHandler<Global>) {
             GfxHighlightWidget::new(),
         ]
     );
+    #[cfg(feature = "headless-integration")]
+    register_widgets!(handler, [DbgRestartWidget::default()]);
     #[cfg(feature = "e2e")]
     register_widgets!(
         handler,

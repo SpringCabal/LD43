@@ -7,10 +7,12 @@
 
 mod animation;
 mod gameplay;
+mod restart;
 mod victory;
 
 use self::animation::animation_checks;
 use self::gameplay::*;
+use self::restart::*;
 use self::victory::*;
 
 use alloc::vec::Vec;
@@ -27,7 +29,7 @@ use crate::units::{
 const TAG: &str = "[TTLD-Rust-Test]";
 const TITLE: &str = "TO THE LAST DROP INTEGRATION TESTS";
 /// Every check below; fewer means some were skipped.
-const CHECK_COUNT: u32 = 37;
+const CHECK_COUNT: u32 = 42;
 /// CSolidObject::PSTATE_BIT_FLYING.
 const PHYSICAL_STATE_FLYING: u32 = 1 << 7;
 
@@ -62,6 +64,10 @@ pub struct Tracker {
     poultice_z: f32,
     poultice_origin_x: f32,
     poultice_origin_z: f32,
+    /// The first round shortly after setup, and how it ended, for the
+    /// restart checks.
+    first_round: Option<RoundStart>,
+    won_round: Option<RoundEnd>,
 }
 
 struct Checks(Suite);
@@ -148,7 +154,10 @@ pub fn update(tracker: &RefCell<Tracker>, global: &Global, frame: i32) {
     }
     animation_checks(&world);
     match frame {
-        10 => with_checks(&world, setup_checks),
+        10 => {
+            with_checks(&world, setup_checks);
+            with_checks(&world, record_round_start);
+        }
         40 => with_checks(&world, ork_spawn_checks),
         60 => with_checks(&world, player_attack_checks),
         // The UI would send this when the mouse button comes up.
@@ -161,9 +170,20 @@ pub fn update(tracker: &RefCell<Tracker>, global: &Global, frame: i32) {
         330 => final_wave_checks(&world),
         331 => kill_boss_checks(&world),
         400 => victory_checks(&world),
-        429 => with_checks(&world, retreat_persists_checks),
-        430 => world.track(finish),
+        429 => {
+            with_checks(&world, retreat_persists_checks);
+            with_checks(&world, record_round_end);
+        }
+        // The UI restarts the round at frame 440.
+        RESTART_DEADLINE => world.track(|tracker| {
+            check(tracker, false, "the restart started a new round in time");
+            finish(tracker);
+        }),
         _ => {}
+    }
+    if world.track(|tracker| restart_check_due(tracker, &world)) {
+        with_checks(&world, restart_checks);
+        world.track(finish);
     }
 }
 
