@@ -2,9 +2,35 @@ use alloc::format;
 use core::cell::Cell;
 
 use crate::state::Global;
-use crate::{cursor, game, hud};
+use crate::{cursor, hud};
 
-pub fn mouse_press(global: &Global, x: i32, y: i32, button: i32) -> bool {
+/// A move or attack the player holds a mouse button for, as last sent to the
+/// rules.
+#[derive(Clone, Copy)]
+pub struct Held {
+    command: &'static str,
+    x: f32,
+    z: f32,
+}
+
+impl Held {
+    /// Whether the rules need to hear about `next`.
+    fn differs(self, next: Held) -> bool {
+        let (dx, dz) = (next.x - self.x, next.z - self.z);
+        self.command != next.command || dx * dx + dz * dz > RESEND_DISTANCE * RESEND_DISTANCE
+    }
+}
+
+/// A held command's target is sent again once it has moved this far.
+const RESEND_DISTANCE: f32 = 8.0;
+
+pub fn mouse_press(
+    global: &Global,
+    held: &Cell<Option<Held>>,
+    x: i32,
+    y: i32,
+    button: i32,
+) -> bool {
     if global.hud.access().modal() {
         return true;
     }
@@ -13,7 +39,9 @@ pub fn mouse_press(global: &Global, x: i32, y: i32, button: i32) -> bool {
         BUTTON_RIGHT => ATTACK_MOVE,
         _ => return false,
     };
-    send_world_command(command, x, y);
+    if let Some(ground) = ground_at(x, y) {
+        send_held(held, command, ground);
+    }
     true
 }
 
@@ -23,9 +51,14 @@ pub fn mouse_move(button: i32) -> bool {
     matches!(button, BUTTON_LEFT | BUTTON_RIGHT)
 }
 
-pub fn mouse_release(button: i32) -> bool {
+/// Letting go of a steering button stops the blood mage, as in the Lua build.
+pub fn mouse_release(held: &Cell<Option<Held>>, button: i32) -> bool {
     clear_selection();
-    matches!(button, BUTTON_LEFT | BUTTON_RIGHT)
+    if !matches!(button, BUTTON_LEFT | BUTTON_RIGHT) {
+        return false;
+    }
+    release(held);
+    true
 }
 
 /// Like the Lua build's RPG controller, which empties the selection in
@@ -44,28 +77,45 @@ pub fn mouse_wheel(_up: bool, _value: f32) -> bool {
     true
 }
 
-/// While a button is held, keeps steering the blood mage toward the cursor,
-/// once per game frame (`last_frame` is the frame last steered on).
-pub fn hold_mouse(global: &Global, last_frame: &Cell<i32>) {
-    if global.hud.access().modal() {
-        return;
-    }
-    let Ok(mouse) = spring::input::get_mouse_state(0) else {
-        return;
-    };
-    let command = if mouse.left {
-        MOVE
-    } else if mouse.right {
-        ATTACK
+/// While a button is held, keeps steering the blood mage toward the cursor:
+/// the rules hear the command again whenever its target moves, and a stop once
+/// the button is up or a screen takes over the input.
+pub fn hold_mouse(global: &Global, held: &Cell<Option<Held>>) {
+    let command = if global.hud.access().modal() {
+        None
     } else {
+        spring::input::get_mouse_state(0)
+            .ok()
+            .and_then(|mouse| match (mouse.left, mouse.right) {
+                (true, _) => Some(MOVE),
+                (false, true) => Some(ATTACK),
+                (false, false) => None,
+            })
+    };
+    let Some(command) = command else {
+        release(held);
         return;
     };
-    let Some(ground) = global.cursor.get().ground else {
-        return;
+    if let Some(ground) = global.cursor.get().ground {
+        send_held(held, command, ground);
+    }
+}
+
+fn send_held(held: &Cell<Option<Held>>, command: &'static str, ground: spring::types::Float3) {
+    let next = Held {
+        command,
+        x: ground.x,
+        z: ground.z,
     };
-    let frame = game::frame();
-    if last_frame.replace(frame) != frame {
-        send_ground_command(command, ground);
+    if held.get().is_none_or(|last| last.differs(next)) {
+        held.set(Some(next));
+        send_rules_msg(&format!("{command}|{}|{}", next.x, next.z));
+    }
+}
+
+fn release(held: &Cell<Option<Held>>) {
+    if held.take().is_some() {
+        send_rules_msg(STOP);
     }
 }
 
@@ -102,7 +152,7 @@ pub fn key_press(global: &Global, key: i32, ctrl: bool) -> bool {
         return true;
     }
     if key == KEY_S {
-        let _ = spring::send_lua_rules_msg("stop");
+        send_rules_msg(STOP);
         return true;
     }
     if (KEY_1..=KEY_5).contains(&key) {
@@ -117,6 +167,7 @@ const BUTTON_RIGHT: i32 = 3;
 const MOVE: &str = "movement";
 const ATTACK: &str = "attack";
 const ATTACK_MOVE: &str = "attmove";
+const STOP: &str = "stop";
 const KEY_RETURN: i32 = 13;
 const KEY_S: i32 = 115;
 const KEY_1: i32 = 49;
@@ -126,14 +177,10 @@ const KEY_Q_UPPER: i32 = 81;
 const KEY_R: i32 = 114;
 const KEY_R_UPPER: i32 = 82;
 
-fn send_world_command(command: &str, x: i32, y: i32) {
-    if let Some(position) = ground_at(x, y) {
-        send_ground_command(command, position);
+fn send_rules_msg(message: &str) {
+    if let Err(error) = spring::send_lua_rules_msg(message) {
+        spring::log_warning!("ttld-wasm", "input `{message}` not sent: {error:?}");
     }
-}
-
-fn send_ground_command(command: &str, position: spring::types::Float3) {
-    let _ = spring::send_lua_rules_msg(&format!("{command}|{}|{}", position.x, position.z));
 }
 
 fn cast_spell(index: i32) {
@@ -143,7 +190,7 @@ fn cast_spell(index: i32) {
     let Some(position) = ground_at(x, y) else {
         return;
     };
-    let _ = spring::send_lua_rules_msg(&format!(
+    send_rules_msg(&format!(
         "spell|{index}|{}|{}|{}",
         position.x, position.y, position.z
     ));

@@ -19,7 +19,10 @@ pub enum PlayerCommand {
 #[derive(Default)]
 pub struct Player {
     unit_id: Option<i32>,
-    pending: Option<Pending>,
+    /// The move or attack the UI holds a mouse button for, until it says stop.
+    held: Option<Held>,
+    /// A spell cast between frames, cast on the next one.
+    pending_cast: Option<PendingCast>,
     move_goal: Option<MoveGoal>,
     attacking: bool,
     moving_to_attack: bool,
@@ -49,22 +52,40 @@ impl Player {
         }
     }
 
+    /// Takes a command from the UI. The UI sends a held move or attack when it
+    /// starts and when its target moves, and `Stop` when the button is let go;
+    /// the player keeps applying the held command every frame in between, as
+    /// the Lua build did with the UI's per-frame messages.
     pub fn accept(&mut self, command: PlayerCommand, frame: i32) {
-        if self.unit_id.is_none() || frame < self.casting_until {
+        let Some(unit_id) = self.unit_id else {
             return;
+        };
+        match command {
+            PlayerCommand::Cast { spell, x, z } => {
+                if !self.casting(frame) {
+                    self.pending_cast = Some(PendingCast { spell, x, z, frame });
+                }
+            }
+            PlayerCommand::Stop => {
+                self.held = None;
+                self.moving_to_attack = false;
+                if !self.casting(frame) {
+                    self.clear_move(unit_id);
+                    self.clear_attack(unit_id);
+                }
+            }
+            PlayerCommand::Move(_) | PlayerCommand::Attack { .. } => {
+                // A move-to-attack runs at least once before anything replaces it.
+                if self.held.is_some_and(|held| held.move_to && !held.used) {
+                    return;
+                }
+                self.held = Some(Held {
+                    command,
+                    move_to: matches!(command, PlayerCommand::Attack { move_to: true, .. }),
+                    used: false,
+                });
+            }
         }
-        if let Some(pending) = self.pending
-            && pending.move_to
-            && !pending.used
-        {
-            return;
-        }
-        self.pending = Some(Pending {
-            command,
-            frame,
-            move_to: matches!(command, PlayerCommand::Attack { move_to: true, .. }),
-            used: false,
-        });
     }
 
     pub fn begin_cast(&mut self, frame: i32, frames: i32) {
@@ -95,15 +116,8 @@ impl Player {
     }
 
     pub fn take_cast(&mut self, frame: i32) -> Option<(Spell, f32, f32)> {
-        let pending = self.pending?;
-        if pending.frame + INPUT_WINDOW <= frame {
-            return None;
-        }
-        let PlayerCommand::Cast { spell, x, z } = pending.command else {
-            return None;
-        };
-        self.pending = None;
-        Some((spell, x, z))
+        let cast = self.pending_cast.take()?;
+        (cast.frame + INPUT_WINDOW > frame).then_some((cast.spell, cast.x, cast.z))
     }
 
     pub fn update(&mut self, frame: i32) {
@@ -113,19 +127,19 @@ impl Player {
         if self.casting(frame) {
             return;
         }
-        match self.pending {
-            Some(pending) if pending.frame + INPUT_WINDOW > frame => {
-                self.apply(unit_id, pending.command);
-                if let Some(pending) = self.pending.as_mut() {
-                    pending.used = true;
-                }
+        match self.held.as_mut() {
+            Some(held) => {
+                held.used = true;
+                let command = held.command;
+                self.apply(unit_id, command);
             }
-            _ => self.clear_attack(unit_id),
+            None => self.clear_attack(unit_id),
         }
         self.update_move_goal(unit_id);
     }
 }
 
+/// A cast is dropped if no frame took it within this many frames.
 const INPUT_WINDOW: i32 = 2;
 /// The cast animation outlasts the cast by this many frames.
 const CAST_ANIMATION_EXTRA_FRAMES: i32 = 8;
@@ -136,11 +150,19 @@ const AIM_HEIGHT: f32 = 25.0;
 const MAP_MARGIN: f32 = 32.0;
 
 #[derive(Clone, Copy)]
-struct Pending {
+struct Held {
     command: PlayerCommand,
-    frame: i32,
     move_to: bool,
+    /// Whether it has been applied at least once.
     used: bool,
+}
+
+#[derive(Clone, Copy)]
+struct PendingCast {
+    spell: Spell,
+    x: f32,
+    z: f32,
+    frame: i32,
 }
 
 #[derive(Clone, Copy)]

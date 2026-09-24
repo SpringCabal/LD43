@@ -134,6 +134,8 @@ pub fn update(global: &Global, frame: i32) {
         10 => with_checks(&world, setup_checks),
         40 => with_checks(&world, ork_spawn_checks),
         60 => with_checks(&world, player_attack_checks),
+        // The UI would send this when the mouse button comes up.
+        62 => command_player(&world, crate::player::PlayerCommand::Stop),
         120 => spell_checks(&world),
         150 => with_checks(&world, heartburn_checks),
         200 => with_checks(&world, stun_a_target),
@@ -282,16 +284,10 @@ fn player_attack_checks(tracker: &mut Tracker, world: &World) {
         "mage is not firing before an attack order",
     );
     let message = format!("attack|{}|{}", position.x + 200.0, position.z);
-    let orders = {
-        let mut player = world.global.player.access_mut();
-        player.accept(
-            crate::player::parse(message.as_bytes()).expect("attack message parses"),
-            world.frame,
-        );
-        player.update(world.frame);
-        player.take_orders()
-    };
-    orders.into_iter().for_each(crate::player::Order::issue);
+    command_player(
+        world,
+        crate::player::parse(message.as_bytes()).expect("attack message parses"),
+    );
     // The blood mage's unit script aims and fires from these params.
     let firing = rules_param(unit_id, "firing").unwrap_or(0.0);
     let fire_tx = rules_param(unit_id, "fireTx").unwrap_or(0.0);
@@ -305,6 +301,17 @@ fn player_attack_checks(tracker: &mut Tracker, world: &World) {
         fire_tx > position.x,
         &format!("fire target points at the attacked ground (fireTx {fire_tx:.0})"),
     );
+}
+
+/// Hands the player a command as the UI would, and issues the orders it gives.
+fn command_player(world: &World, command: crate::player::PlayerCommand) {
+    let orders = {
+        let mut player = world.global.player.access_mut();
+        player.accept(command, world.frame);
+        player.update(world.frame);
+        player.take_orders()
+    };
+    orders.into_iter().for_each(crate::player::Order::issue);
 }
 
 fn spell_checks(world: &World) {

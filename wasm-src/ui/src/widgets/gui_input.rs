@@ -4,12 +4,12 @@ use spring_addons::ui::Widget;
 use crate::input;
 use crate::state::Global;
 
-/// Mouse and keyboard control of the blood mage. Registered first: it samples
-/// the cursor for the other widgets at the start of every update.
+/// Mouse and keyboard control of the blood mage. Registered before the other
+/// game widgets: it samples the cursor for them at the start of every update.
 #[derive(Default)]
 pub struct GuiInputWidget {
-    /// The game frame the held mouse button last steered on.
-    held_frame: core::cell::Cell<i32>,
+    /// The command the held mouse button steers with.
+    held: core::cell::Cell<Option<input::Held>>,
 }
 
 impl GuiInputWidget {
@@ -26,7 +26,7 @@ impl Widget<Global> for GuiInputWidget {
     fn update(&self, ctx: &spring_addons::AddonContext<'_, Global>, _dt: f32) {
         input::sample_cursor(ctx.global());
         input::clear_selection();
-        input::hold_mouse(ctx.global(), &self.held_frame);
+        input::hold_mouse(ctx.global(), &self.held);
     }
 
     fn mouse_move(
@@ -57,7 +57,7 @@ impl Widget<Global> for GuiInputWidget {
         y: i32,
         button: i32,
     ) -> EventResult {
-        input::mouse_press(ctx.global(), x, y, button).into()
+        input::mouse_press(ctx.global(), &self.held, x, y, button).into()
     }
 
     fn mouse_release(
@@ -67,7 +67,7 @@ impl Widget<Global> for GuiInputWidget {
         _y: i32,
         button: i32,
     ) -> EventResult {
-        input::mouse_release(button).into()
+        input::mouse_release(&self.held, button).into()
     }
 
     fn key_press(
