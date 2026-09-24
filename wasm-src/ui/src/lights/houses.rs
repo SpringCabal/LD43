@@ -2,7 +2,7 @@ use alloc::format;
 use alloc::vec::Vec;
 
 use crate::diagnostics;
-use crate::random::{next, unit_float};
+use crate::random;
 
 use super::PointLight;
 
@@ -14,7 +14,7 @@ pub fn place() -> Option<Vec<PointLight>> {
         return None;
     }
     let mut placed = 0;
-    let mut seed = SEED;
+    random::pin_for_screenshots(SCREENSHOT_SEED);
     let mut deferred_lights = Vec::new();
     for unit_id in houses {
         let Ok(position) = spring::units_info::get_unit_position(
@@ -28,8 +28,7 @@ pub fn place() -> Option<Vec<PointLight>> {
         };
         for dx in [-HALF_SIZE, HALF_SIZE] {
             for dz in [-HALF_SIZE, HALF_SIZE] {
-                seed = next(seed);
-                if unit_float(seed) <= LIGHT_CHANCE {
+                if random::float() <= LIGHT_CHANCE {
                     continue;
                 }
                 deferred_lights.push(PointLight {
@@ -58,7 +57,7 @@ const GREEN: f32 = 0.7;
 const BLUE: f32 = 0.4;
 const COLOR_MULTIPLIER: f32 = 2.0;
 const LIGHT_CHANCE: f32 = 0.6;
-const SEED: u64 = 0x9e37_79b9_7f4a_7c15;
+const SCREENSHOT_SEED: i32 = 1;
 
 fn houses_of(house_def_id: i32) -> Vec<i32> {
     spring::get_all_units()
