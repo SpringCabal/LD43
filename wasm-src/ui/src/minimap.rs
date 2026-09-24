@@ -125,6 +125,7 @@ fn configure(height: i32) {
         );
         let _ = spring::send_commands(&command, "");
     }
+    let _ = spring::send_commands("minimap minimize 0", "");
     let _ = spring::send_commands("minimap simplecolors 1", "");
     let _ = spring::send_commands("minimap unitexp 0.3", "");
     let _ = spring::send_commands("minimap unitsize 1.2", "");

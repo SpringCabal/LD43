@@ -10,7 +10,6 @@ use super::model;
 #[derive(Default)]
 pub struct Document {
     context: Cell<u64>,
-    default_layout_hidden: Cell<bool>,
     bindings_applied: Cell<bool>,
     /// The status revision last shown.
     shown_status: Cell<Option<u32>>,
@@ -46,39 +45,6 @@ impl Document {
         self.context.set(context);
         global.hud.access_mut().bindings = Some(bindings);
         diagnostics::info("To the Last Drop RmlUi HUD initialized");
-    }
-
-    pub fn hide_default_layout(&self) {
-        if self.default_layout_hidden.get() {
-            return;
-        }
-        // Each entry is one whole action line: the callout turns a non-empty
-        // second argument into a *second* command, so ("resbar", "0") ran
-        // `resbar` with no argument (a toggle) followed by a bogus `0`, and
-        // the default HUD stayed on screen.  `hideinterface` is not an option
-        // here — it blanks the RmlUi HUD along with the engine's own widgets.
-        let commands = [
-            "console 0",
-            "resbar 0",
-            "tooltip 0",
-            "clock 0",
-            "info 0",
-            // Keep the minimap available for the WASM widget's native-backed
-            // source pass; the widget slaves the regular minimap while drawing.
-            "minimap minimize 0",
-            "minimap simplecolors 1",
-            "minimap unitexp 0.3",
-            "minimap unitsize 1.2",
-            "minimap fullproxy 0",
-            "showhealthbars 0",
-            "showrezbars 0",
-            "disticon 99999",
-            "endgraph 0",
-        ];
-        let hidden = commands
-            .into_iter()
-            .all(|command| spring::send_commands(command, "").is_ok());
-        self.default_layout_hidden.set(hidden);
     }
 
     pub fn apply_bindings(&self) {
