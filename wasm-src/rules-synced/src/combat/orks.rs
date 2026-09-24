@@ -92,7 +92,11 @@ pub fn flee(global: &Global, unit_id: i32) {
     let cx = (position.x + FLEE_DISTANCE * dx / distance).clamp(1.0, map.map_size_x as f32 - 1.0);
     let cz = (position.z + FLEE_DISTANCE * dz / distance).clamp(1.0, map.map_size_z as f32 - 1.0);
     let cy = units::ground_height(cx, cz);
-    let _ = spring::give_order_to_unit(unit_id, cmd::FIRE_STATE, &[0.0], 0, 0);
+    crate::engine::check(
+        spring::give_order_to_unit(unit_id, cmd::FIRE_STATE, &[0.0], 0, 0),
+        "give_order_to_unit",
+        unit_id,
+    );
     attributes::add_effect(
         global,
         unit_id,
@@ -102,7 +106,11 @@ pub fn flee(global: &Global, unit_id: i32) {
             reload_factor: 0.0,
         },
     );
-    let _ = spring::give_order_to_unit(unit_id, cmd::MOVE, &[cx, cy, cz], 0, 0);
+    crate::engine::check(
+        spring::give_order_to_unit(unit_id, cmd::MOVE, &[cx, cy, cz], 0, 0),
+        "give_order_to_unit",
+        unit_id,
+    );
 }
 
 // Orks attack the town centre.
@@ -119,5 +127,9 @@ fn is_ork(unit_def_id: i32) -> bool {
 
 fn fight(unit_id: i32, x: f32, z: f32) {
     let y = units::ground_height(x, z);
-    let _ = spring::give_order_to_unit(unit_id, cmd::FIGHT, &[x, y, z], 0, 0);
+    crate::engine::check(
+        spring::give_order_to_unit(unit_id, cmd::FIGHT, &[x, y, z], 0, 0),
+        "give_order_to_unit",
+        unit_id,
+    );
 }

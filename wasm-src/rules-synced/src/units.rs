@@ -70,8 +70,19 @@ pub fn create_at(kind: UnitKind, position: Float3, team: i32, facing: i32) -> Op
         unit_id: -1,
         builder_id: -1,
     };
-    let unit_id = unit_control::create_unit(&unit_def, position, facing, team, options).ok()?;
-    (unit_id >= 0).then_some(unit_id)
+    match unit_control::create_unit(&unit_def, position, facing, team, options) {
+        Ok(unit_id) if unit_id >= 0 => Some(unit_id),
+        result => {
+            spring::log_warning!(
+                "ttld-wasm",
+                "creating {} at ({:.0}, {:.0}) failed: {result:?}",
+                kind.def_name(),
+                position.x,
+                position.z
+            );
+            None
+        }
+    }
 }
 
 pub fn position(unit_id: i32) -> Option<Float3> {

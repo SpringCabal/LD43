@@ -275,26 +275,38 @@ impl Order {
     pub fn issue(self) {
         match self {
             Self::Target(unit_id, target) => {
-                let _ = spring::set_unit_target(
+                crate::engine::check(
+                    spring::set_unit_target(
+                        unit_id,
+                        spring::types::UnitTargetRef {
+                            target_id: -1,
+                            pos: target.unwrap_or_default(),
+                            is_ground_target: target.is_some(),
+                        },
+                        spring::types::SetUnitTargetOptions {
+                            manual_fire: false,
+                            user_target: false,
+                        },
+                        0,
+                    ),
+                    "set_unit_target",
                     unit_id,
-                    spring::types::UnitTargetRef {
-                        target_id: -1,
-                        pos: target.unwrap_or_default(),
-                        is_ground_target: target.is_some(),
-                    },
-                    spring::types::SetUnitTargetOptions {
-                        manual_fire: false,
-                        user_target: false,
-                    },
-                    0,
                 );
                 publish_fire_target(unit_id, target.map(|target| (target.x, target.z)));
             }
             Self::MoveGoal(unit_id, goal) => {
-                let _ = spring::set_unit_move_goal(unit_id, goal, 10.0, 0.0, true);
+                crate::engine::check(
+                    spring::set_unit_move_goal(unit_id, goal, 10.0, 0.0, true),
+                    "set_unit_move_goal",
+                    unit_id,
+                );
             }
             Self::ClearGoal(unit_id) => {
-                let _ = spring::clear_unit_goal(unit_id, true);
+                crate::engine::check(
+                    spring::clear_unit_goal(unit_id, true),
+                    "clear_unit_goal",
+                    unit_id,
+                );
             }
         }
     }

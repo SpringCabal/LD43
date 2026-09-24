@@ -47,17 +47,24 @@ impl Document {
         diagnostics::info("To the Last Drop RmlUi HUD initialized");
     }
 
+    /// Replaces the engine's key bindings with the few the game keeps, and
+    /// frees Enter for the intro and end screens.
     pub fn apply_bindings(&self) {
         if self.bindings_applied.replace(true) {
             return;
         }
-        let _ = spring::send_commands("unbindall", "");
-        for binding in ["Any+pause  pause", "f12 screenshot"] {
-            let _ = spring::send_commands(&format!("bind {binding}"), "");
+        for command in [
+            "unbindall",
+            "bind Any+pause  pause",
+            "bind f12 screenshot",
+            "unbindkeyset enter chat",
+            "unbind enter",
+            "unbindaction chat",
+        ] {
+            if let Err(error) = spring::send_commands(command, "") {
+                diagnostics::warning(&format!("key binding `{command}` failed: {error:?}"));
+            }
         }
-        let _ = spring::send_commands("unbindkeyset enter chat", "");
-        let _ = spring::send_commands("unbind enter", "");
-        let _ = spring::send_commands("unbindaction chat", "");
     }
 
     /// Sizes the document to the view.

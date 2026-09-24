@@ -42,14 +42,18 @@ pub fn populate() -> Vec<Villager> {
 
 fn clear_existing_units() {
     for unit_id in units::all_units() {
-        let _ = unit_control::destroy_unit(
+        crate::engine::check(
+            unit_control::destroy_unit(
+                unit_id,
+                unit_control::DestroyUnitOptions {
+                    selfd: false,
+                    reclaimed: true,
+                    attacker_id: -1,
+                    recycle_id: false,
+                },
+            ),
+            "destroy_unit",
             unit_id,
-            unit_control::DestroyUnitOptions {
-                selfd: false,
-                reclaimed: true,
-                attacker_id: -1,
-                recycle_id: false,
-            },
         );
     }
 }

@@ -168,7 +168,11 @@ pub(super) async fn cast_task(state: Rc<RefCell<TtldState>>, ctx: UnitCtx) {
     }
     ctx.signal(SIG_MOVE);
     move_piece(&ctx, pieces.torso, Axis::Y, 0.0, 10.0);
-    let _ = spring::clear_unit_goal(unit.0, true);
+    crate::engine::check(
+        spring::clear_unit_goal(unit.0, true),
+        "clear_unit_goal",
+        unit.0,
+    );
     if level > 1 {
         face_from_position(unit, tx, tz);
     }

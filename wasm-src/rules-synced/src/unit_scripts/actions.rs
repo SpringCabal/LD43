@@ -14,14 +14,22 @@ use super::TtldState;
 use super::common::face_direction;
 
 pub(super) fn issue_patrol_orders(ctx: &UnitCtx) {
-    let _ = spring::give_order_to_unit(ctx.unit(), cmd::REPEAT, &[1.0], 0, 0);
+    crate::engine::check(
+        spring::give_order_to_unit(ctx.unit(), cmd::REPEAT, &[1.0], 0, 0),
+        "give_order_to_unit",
+        ctx.unit(),
+    );
     if let Ok(position) = spring::get_unit_position(ctx.unit().0, false, false) {
-        let _ = spring::give_order_to_unit(
+        crate::engine::check(
+            spring::give_order_to_unit(
+                ctx.unit(),
+                cmd::FIGHT,
+                &[position.x, position.y, position.z],
+                0,
+                0,
+            ),
+            "give_order_to_unit",
             ctx.unit(),
-            cmd::FIGHT,
-            &[position.x, position.y, position.z],
-            0,
-            0,
         );
     }
 }
@@ -47,7 +55,11 @@ pub(super) fn coward_block(ctx: &UnitCtx, target: UnitId) -> bool {
     let cx = unit_position.x - dx + unit_float() * 50.0 - 25.0;
     let cz = unit_position.z - dz + unit_float() * 50.0 - 25.0;
     let cy = spring::get_ground_height(cx, cz).unwrap_or(unit_position.y);
-    let _ = spring::give_order_to_unit(ctx.unit(), cmd::MOVE, &[cx, cy, cz], 0, 0);
+    crate::engine::check(
+        spring::give_order_to_unit(ctx.unit(), cmd::MOVE, &[cx, cy, cz], 0, 0),
+        "give_order_to_unit",
+        ctx.unit(),
+    );
     let _ = spring::set_unit_weapon_state(
         ctx.unit().0,
         0,
@@ -92,10 +104,14 @@ pub(super) fn ork_toss(unit: UnitId, target: i32, state: &Rc<RefCell<TtldState>>
         }
         let scale = if marked { 0.5 } else { 1.0 };
         let impulse = scale * strength * (1.0 - distance / (3.0 * radius));
-        let _ = spring::add_unit_impulse(
+        crate::engine::check(
+            spring::add_unit_impulse(
+                other,
+                spring::Float3::new(impulse * dx / distance, impulse, impulse * dz / distance),
+                0.0,
+            ),
+            "add_unit_impulse",
             other,
-            spring::Float3::new(impulse * dx / distance, impulse, impulse * dz / distance),
-            0.0,
         );
     }
 }

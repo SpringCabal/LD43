@@ -5,6 +5,7 @@ mod actions;
 mod common;
 mod kinds;
 mod module;
+mod state;
 mod tasks;
 
 pub use module::{TtldCusModule, call};
@@ -26,77 +27,13 @@ use self::common::{
     play_unit_sound, set_blocking,
 };
 use self::kinds::ScriptKind;
+use self::state::{Pieces, TtldState};
 use self::tasks::{
     attack_bob_task, attack_task, bob_task, boss_position_task, buff_task, cast_task, death_task,
     house_death_task, melee_attack_task, stun_task,
 };
 
 const COB_INBUILDSTANCE: i32 = 5;
-
-#[derive(Clone, Copy)]
-pub(super) struct Pieces {
-    hand_right: Piece,
-    hand_left: Piece,
-    torso: Piece,
-    house: Piece,
-}
-
-impl Pieces {
-    fn from_init(ctx: &InitCtx<'_>) -> Self {
-        Self {
-            hand_right: ctx.piece("Hand_Right"),
-            hand_left: ctx.piece("Hand_Left"),
-            torso: ctx.piece("Torso"),
-            house: ctx.piece("House"),
-        }
-    }
-}
-
-pub(super) struct TtldState {
-    kind: Option<ScriptKind>,
-    pieces: Pieces,
-    dead: bool,
-    death_pending: bool,
-    first_bob_run: bool,
-    bob_scale: f32,
-    static_bob_scale: f32,
-    time_scale: f32,
-    size_scale: f32,
-    is_ork: bool,
-    death_sound: Option<&'static str>,
-    death_sound_chance: f32,
-    toss_radius: f32,
-    toss_strength: f32,
-    deunorkable: bool,
-    cast_level: i32,
-    cast_tx: f32,
-    cast_tz: f32,
-}
-
-impl TtldState {
-    fn new(ctx: &mut InitCtx<'_>) -> Self {
-        Self {
-            kind: None,
-            pieces: Pieces::from_init(ctx),
-            dead: false,
-            death_pending: false,
-            first_bob_run: true,
-            bob_scale: 2.0,
-            static_bob_scale: 2.0,
-            time_scale: 1.0,
-            size_scale: 1.0,
-            is_ork: false,
-            death_sound: None,
-            death_sound_chance: 1.0,
-            toss_radius: 0.0,
-            toss_strength: 0.0,
-            deunorkable: false,
-            cast_level: 1,
-            cast_tx: 0.0,
-            cast_tz: 0.0,
-        }
-    }
-}
 
 pub struct TtldUnitScript {
     kind: Option<ScriptKind>,
@@ -318,7 +255,11 @@ impl UnitScript for TtldUnitScript {
                 ) {
                     face_from_position(ctx.unit(), tx, tz);
                 }
-                let _ = spring::clear_unit_goal(ctx.unit().0, true);
+                crate::engine::check(
+                    spring::clear_unit_goal(ctx.unit().0, true),
+                    "clear_unit_goal",
+                    ctx.unit().0,
+                );
                 ctx.signal(SIG_ATTACK);
                 ctx.spawn(TaskDefinition::with_state(
                     "ttld-blood-attack",
@@ -345,7 +286,11 @@ impl UnitScript for TtldUnitScript {
                 ));
             }
             Some(ScriptKind::Crossbowman) => {
-                let _ = spring::clear_unit_goal(ctx.unit().0, true);
+                crate::engine::check(
+                    spring::clear_unit_goal(ctx.unit().0, true),
+                    "clear_unit_goal",
+                    ctx.unit().0,
+                );
                 ctx.signal(SIG_ATTACK);
                 ctx.spawn(TaskDefinition::with_state(
                     "ttld-hand-attack",

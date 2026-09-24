@@ -230,7 +230,11 @@ fn resolve_transfusion(unit_id: i32, shortfall: Option<f32>) {
     };
     play_sound("sounds/heal_spell.wav", unit_id);
     let restored = health.max - shortfall.unwrap_or(0.0);
-    let _ = spring::set_unit_health(unit_id, health_value(restored));
+    crate::engine::check(
+        spring::set_unit_health(unit_id, health_value(restored)),
+        "set_unit_health",
+        unit_id,
+    );
     spawn_effect(unit_id, CEG_HEALTH);
 }
 
@@ -393,7 +397,11 @@ fn resolve_impulses(global: &Global, frame: i32) {
         if entry.stun > 0.0 {
             combat::stun(global, entry.unit_id, entry.stun as i32, frame);
         } else {
-            let _ = spring::add_unit_impulse(entry.unit_id, entry.impulse, 0.0);
+            crate::engine::check(
+                spring::add_unit_impulse(entry.unit_id, entry.impulse, 0.0),
+                "add_unit_impulse",
+                entry.unit_id,
+            );
         }
     }
 }
@@ -420,13 +428,17 @@ fn resolve_fireball_impacts(global: &Global, frame: i32) {
         play_sound_at("sounds/fireballhit.wav", position);
         spawn_effect_at(position, CEG_FIREBALL_IMPACT);
         for target in units_in_cylinder(impact.x, impact.z, FIREBALL_RADIUS, ENEMY_TEAM) {
-            let _ = spring::add_unit_damage(
+            crate::engine::check(
+                spring::add_unit_damage(
+                    target,
+                    FIREBALL_DAMAGE,
+                    0.0,
+                    weapon_def_id,
+                    impact.unit_id,
+                    Float3::default(),
+                ),
+                "add_unit_damage",
                 target,
-                FIREBALL_DAMAGE,
-                0.0,
-                weapon_def_id,
-                impact.unit_id,
-                Float3::default(),
             );
         }
     }

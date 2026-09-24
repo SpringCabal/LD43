@@ -75,5 +75,9 @@ pub fn check_idle(villager: Villager) {
     let x = area.x + random::centered(area.width);
     let z = area.z + random::centered(area.height);
     let y = units::ground_height(x, z);
-    let _ = spring::give_order_to_unit(unit_id, cmd::FIGHT, &[x, y, z], 0, 0);
+    crate::engine::check(
+        spring::give_order_to_unit(unit_id, cmd::FIGHT, &[x, y, z], 0, 0),
+        "give_order_to_unit",
+        unit_id,
+    );
 }

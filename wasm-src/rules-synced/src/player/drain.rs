@@ -51,7 +51,11 @@ pub(super) fn drain(
             break;
         }
         if def_of(target) == house {
-            let _ = spring::transfer_unit(target, NEUTRAL_TEAM, false, false);
+            crate::engine::check(
+                spring::transfer_unit(target, NEUTRAL_TEAM, false, false),
+                "transfer_unit",
+                target,
+            );
             to_restore.push(target);
             continue;
         }
@@ -63,13 +67,21 @@ pub(super) fn drain(
             spawn_effect(target, CEG_FLAMES);
             play_sound_at(SOUND_DRAIN, origin);
             blood_trail(origin, target);
-            let _ = spring::set_unit_health(target, health_value(available - remaining));
+            crate::engine::check(
+                spring::set_unit_health(target, health_value(available - remaining)),
+                "set_unit_health",
+                target,
+            );
             restore(&to_restore);
             record_drained(global, consume(&to_kill, origin));
             return (true, None);
         }
         to_kill.push(target);
-        let _ = spring::transfer_unit(target, NEUTRAL_TEAM, false, false);
+        crate::engine::check(
+            spring::transfer_unit(target, NEUTRAL_TEAM, false, false),
+            "transfer_unit",
+            target,
+        );
         remaining -= available;
     }
     restore(&to_restore);
@@ -87,14 +99,18 @@ fn consume(units: &[i32], origin: Float3) -> i32 {
         spawn_effect(*unit_id, CEG_FLAMES);
         play_sound_at(SOUND_DRAIN, origin);
         blood_trail(origin, *unit_id);
-        let _ = spring::destroy_unit(
+        crate::engine::check(
+            spring::destroy_unit(
+                *unit_id,
+                spring::generated::owned::unit_control::DestroyUnitOptions {
+                    selfd: true,
+                    reclaimed: false,
+                    attacker_id: -1,
+                    recycle_id: false,
+                },
+            ),
+            "destroy_unit",
             *unit_id,
-            spring::generated::owned::unit_control::DestroyUnitOptions {
-                selfd: true,
-                reclaimed: false,
-                attacker_id: -1,
-                recycle_id: false,
-            },
         );
         drained += 1;
     }
@@ -107,7 +123,11 @@ fn record_drained(global: &Global, count: i32) {
 
 fn restore(units: &[i32]) {
     for unit_id in units {
-        let _ = spring::transfer_unit(*unit_id, PLAYER_TEAM, false, false);
+        crate::engine::check(
+            spring::transfer_unit(*unit_id, PLAYER_TEAM, false, false),
+            "transfer_unit",
+            *unit_id,
+        );
     }
 }
 
