@@ -15,10 +15,13 @@ pub struct Highlight {
 
 impl Highlight {
     pub fn draw_pre_unit(&self, global: &Global) {
-        let unit = global.cursor.get().unit;
+        // Only the hovered unit is outlined.
+        let Some(unit) = global.cursor.get().unit else {
+            return;
+        };
         let (width, height) = global.view.get();
         if width <= 1 || height <= 1 || !self.ensure_resources(width, height) {
-            draw_outline(unit, false);
+            draw_outline(Some(unit), false);
             return;
         }
         let resources = self.resources.borrow();
@@ -28,7 +31,6 @@ impl Highlight {
         let _ = spring::gfx::push_attrib(gl::ALL_ATTRIB_BITS);
         let _ = spring::gfx::copy_to_texture(&resources.depth, 0, 0, 0, 0, width, height, 0, 0);
         let _ = spring::gfx::bind_texture(&resources.depth, 0, true);
-        apply_resolution(resources, width, height);
         let _ = spring::gfx::use_shader(resources.depth_shader);
         let _ = spring::gfx::render_to_texture(&resources.offscreen, || draw_unit_offscreen(unit));
         let _ = spring::gfx::bind_texture(&resources.offscreen, 0, true);
@@ -66,6 +68,9 @@ impl Highlight {
             destroy(&old);
         }
         *slot = create(width, height);
+        if let Some(resources) = slot.as_ref() {
+            apply_resolution(resources, width, height);
+        }
         self.setup_failed.set(slot.is_none());
         slot.is_some()
     }
@@ -198,28 +203,26 @@ fn set_uniform_int(shader_id: u32, name: &str, value: i32) {
     let _ = spring::gfx::use_shader(0);
 }
 
-fn draw_unit_offscreen(unit: Option<i32>) {
+fn draw_unit_offscreen(unit_id: i32) {
     let _ = spring::gfx::clear(gl::COLOR_BUFFER_BIT, &[0.0, 0.0, 0.0, 0.0], 4);
     let _ = spring::gfx::push_matrix(0);
     let _ = spring::gfx::reset_matrices(0);
     let _ = spring::gfx::color(0.0, 0.0, 0.0, THICKNESS);
-    if let Some(unit_id) = unit {
-        let _ = spring::gfx::unit(
-            unit_id,
-            spring::gfx::GfxUnitDrawOptions {
-                apply_transform: true,
-                // gfx.Unit's `doRawDraw` argument is the second argument of
-                // Lua's gl.Unit.  The original highlight widget calls
-                // gl.Unit(unitID, true), so use the raw engine model path.
-                do_raw_draw: true,
-                no_lua_call: false,
-                full_model: true,
-                // Lua's gl.Unit omits its LOD argument, which auto-selects the
-                // object's Lua-material LOD; Default mirrors that.
-                ..Default::default()
-            },
-        );
-    }
+    let _ = spring::gfx::unit(
+        unit_id,
+        spring::gfx::GfxUnitDrawOptions {
+            apply_transform: true,
+            // gfx.Unit's `doRawDraw` argument is the second argument of
+            // Lua's gl.Unit.  The original highlight widget calls
+            // gl.Unit(unitID, true), so use the raw engine model path.
+            do_raw_draw: true,
+            no_lua_call: false,
+            full_model: true,
+            // Lua's gl.Unit omits its LOD argument, which auto-selects the
+            // object's Lua-material LOD; Default mirrors that.
+            ..Default::default()
+        },
+    );
     let _ = spring::gfx::color(1.0, 1.0, 1.0, 1.0);
     let _ = spring::gfx::pop_matrix(0);
 }
