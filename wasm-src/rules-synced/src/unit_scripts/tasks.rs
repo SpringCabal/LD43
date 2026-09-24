@@ -350,6 +350,9 @@ pub(super) async fn death_task(state: Rc<RefCell<TtldState>>, ctx: UnitCtx) {
     move_piece(&ctx, piece, Axis::Z, -50.0 * size, 30.0 * size);
     ctx.sleep(Duration::from_millis(1500)).await;
     state.borrow_mut().death_pending = false;
+    // Killed added the death paralysis after UnitDestroyed had cleared the
+    // unit's effects, and no callin follows the unit's removal.
+    crate::with_global(|global| crate::combat::forget(global, ctx.unit().0));
     ctx.set_killed_finished(WreckLevel::NoWreck);
 }
 
