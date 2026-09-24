@@ -66,9 +66,7 @@ fn bind_event(model: u64, name: &str, handler: impl FnMut(&Global) + 'static) {
 
 /// Restarts the game by reloading the rules.
 pub fn restart(global: &Global) {
-    let _ = spring::send_commands("cheat 1", "");
-    let _ = spring::send_commands("luarules reload", "");
-    let _ = spring::send_commands("cheat 0", "");
+    springcabal::restart::reload_rules();
     super::endgame::close_endgame(global);
 }
 

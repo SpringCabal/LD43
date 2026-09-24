@@ -1,39 +1,19 @@
-use core::cell::Cell;
-
 use spring_addons::event::KeyEvent;
 use springcabal::menu;
 use springcabal::message::Encoder;
+use springcabal_control::hold::HoldTarget;
 
 use crate::state::Global;
 use crate::{cursor, hud};
 
-/// A move or attack the player holds a mouse button for, as last sent to the
-/// rules.
-#[derive(Clone, Copy)]
-pub struct Held {
-    command: &'static str,
-    x: f32,
-    z: f32,
-}
-
-impl Held {
-    /// Whether the rules need to hear about `next`.
-    fn differs(self, next: Held) -> bool {
-        let (dx, dz) = (next.x - self.x, next.z - self.z);
-        self.command != next.command || dx * dx + dz * dz > RESEND_DISTANCE * RESEND_DISTANCE
-    }
-}
+/// The move or attack the player holds a mouse button for, as last sent to
+/// the rules.
+pub type Held = HoldTarget<&'static str>;
 
 /// A held command's target is sent again once it has moved this far.
-const RESEND_DISTANCE: f32 = 8.0;
+pub const RESEND_DISTANCE: f32 = 8.0;
 
-pub fn mouse_press(
-    global: &Global,
-    held: &Cell<Option<Held>>,
-    x: i32,
-    y: i32,
-    button: i32,
-) -> bool {
+pub fn mouse_press(global: &Global, held: &Held, x: i32, y: i32, button: i32) -> bool {
     if global.hud.access().modal() {
         return true;
     }
@@ -55,7 +35,7 @@ pub fn mouse_move(button: i32) -> bool {
 }
 
 /// Letting go of a steering button stops the blood mage, as in the Lua build.
-pub fn mouse_release(held: &Cell<Option<Held>>, button: i32) -> bool {
+pub fn mouse_release(held: &Held, button: i32) -> bool {
     clear_selection();
     if !matches!(button, BUTTON_LEFT | BUTTON_RIGHT) {
         return false;
@@ -83,7 +63,7 @@ pub fn mouse_wheel(_up: bool, _value: f32) -> bool {
 /// While a button is held, keeps steering the blood mage toward the cursor:
 /// the rules hear the command again whenever its target moves, and a stop once
 /// the button is up or a screen takes over the input.
-pub fn hold_mouse(global: &Global, held: &Cell<Option<Held>>) {
+pub fn hold_mouse(global: &Global, held: &Held) {
     let command = if global.hud.access().modal() {
         None
     } else {
@@ -104,20 +84,19 @@ pub fn hold_mouse(global: &Global, held: &Cell<Option<Held>>) {
     }
 }
 
-fn send_held(held: &Cell<Option<Held>>, command: &'static str, ground: spring::types::Float3) {
-    let next = Held {
-        command,
-        x: ground.x,
-        z: ground.z,
-    };
-    if held.get().is_none_or(|last| last.differs(next)) {
-        held.set(Some(next));
-        send_rules_msg(&Encoder::new(command).field(next.x).field(next.z).finish());
+fn send_held(held: &Held, command: &'static str, ground: spring::types::Float3) {
+    if held.hold(command, (ground.x, ground.z)) {
+        send_rules_msg(
+            &Encoder::new(command)
+                .field(ground.x)
+                .field(ground.z)
+                .finish(),
+        );
     }
 }
 
-fn release(held: &Cell<Option<Held>>) {
-    if held.take().is_some() {
+fn release(held: &Held) {
+    if held.release() {
         send_rules_msg(STOP);
     }
 }

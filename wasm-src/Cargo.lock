@@ -31,6 +31,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "springcabal-control"
+version = "0.1.0"
+dependencies = [
+ "libm",
+ "spring",
+ "spring-addons",
+ "springcabal",
+]
+
+[[package]]
 name = "ttld-rules-unsynced-wasm"
 version = "0.1.0"
 dependencies = [
@@ -54,4 +64,5 @@ dependencies = [
  "spring",
  "spring-addons",
  "springcabal",
+ "springcabal-control",
 ]

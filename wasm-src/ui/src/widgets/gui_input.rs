@@ -6,15 +6,22 @@ use crate::state::Global;
 
 /// Mouse and keyboard control of the blood mage. Registered before the other
 /// game widgets: it samples the cursor for them at the start of every update.
-#[derive(Default)]
 pub struct GuiInputWidget {
     /// The command the held mouse button steers with.
-    held: core::cell::Cell<Option<input::Held>>,
+    held: input::Held,
+}
+
+impl Default for GuiInputWidget {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl GuiInputWidget {
     pub fn new() -> Self {
-        Self::default()
+        Self {
+            held: input::Held::new(input::RESEND_DISTANCE),
+        }
     }
 }
 
