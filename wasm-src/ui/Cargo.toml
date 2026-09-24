@@ -16,6 +16,7 @@ headless-integration = []
 spring = { workspace = true }
 spring-addons = { workspace = true }
 springcabal = { workspace = true }
+ttld-shared = { workspace = true }
 springcabal-control = { workspace = true }
 
 [lints]

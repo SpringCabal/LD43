@@ -55,6 +55,14 @@ dependencies = [
  "spring",
  "spring-addons",
  "springcabal",
+ "ttld-shared",
+]
+
+[[package]]
+name = "ttld-shared"
+version = "0.1.0"
+dependencies = [
+ "springcabal",
 ]
 
 [[package]]
@@ -65,4 +73,5 @@ dependencies = [
  "spring-addons",
  "springcabal",
  "springcabal-control",
+ "ttld-shared",
 ]

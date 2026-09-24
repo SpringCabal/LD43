@@ -2,8 +2,8 @@ use core::cell::Cell;
 
 use spring::ResultExt;
 use spring_addons::ui::Widget;
-use springcabal::message::Encoder;
 use springcabal::shots::screenshot;
+use ttld_shared::Command;
 
 use crate::hud;
 use crate::state::Global;
@@ -161,7 +161,8 @@ impl DbgE2eWidget {
         match step {
             Step::CloseIntro => hud::close_intro(ctx.global()),
             Step::LeaderFixture => {
-                spring::send_lua_rules_msg("e2e|leader-render").log_err("leader fixture");
+                spring::send_lua_rules_msg(&Command::LeaderRenderFixture.message())
+                    .log_err("leader fixture");
             }
             Step::ReportLeaderFixture => report_leader_fixture(),
             Step::Heartburn => send_spell(2, 1000.0),
@@ -344,12 +345,13 @@ fn send_spell(index: i32, z_offset: f32) {
             aim_pos: false,
         },
     ) {
-        let message = Encoder::new("spell")
-            .field(index)
-            .field(position.x)
-            .field(position.y)
-            .field(position.z + z_offset)
-            .finish();
+        let message = Command::Spell {
+            index,
+            x: position.x,
+            y: position.y,
+            z: position.z + z_offset,
+        }
+        .message();
         let accepted = spring::send_lua_rules_msg(&message).unwrap_or(false);
         let name = if index == 5 { "poultice" } else { "heartburn" };
         let _ = spring::echo(&alloc::format!("TTLD E2E {name} sent: {accepted}"), "");
@@ -372,10 +374,11 @@ fn move_player(x_offset: f32, z_offset: f32) {
     ) else {
         return;
     };
-    let message = Encoder::new("movement")
-        .field(position.x + x_offset)
-        .field(position.z + z_offset)
-        .finish();
+    let message = Command::Move {
+        x: position.x + x_offset,
+        z: position.z + z_offset,
+    }
+    .message();
     let _ = spring::send_lua_rules_msg(&message);
 }
 

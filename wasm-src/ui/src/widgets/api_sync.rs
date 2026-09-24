@@ -1,9 +1,7 @@
 use spring_addons::ui::Widget;
-use springcabal::message::key_values;
+use ttld_shared::Status;
 
 use crate::state::Global;
-
-const STATUS_PREFIX: &str = "TTLD_STATUS";
 
 /// Receives the rules' status messages, and starts a new round on the HUD
 /// when their round changes.
@@ -25,14 +23,14 @@ impl Widget<Global> for ApiSyncWidget {
         let Ok(text) = core::str::from_utf8(message) else {
             return;
         };
-        let Some(fields) = key_values(text, STATUS_PREFIX) else {
+        let Some(update) = Status::parse(text) else {
             return;
         };
         let global = ctx.global();
         let new_round = {
             let mut status = global.status.access_mut();
             let previous = status.round;
-            status.apply(fields);
+            status.apply(update);
             previous != 0 && status.round != previous
         };
         if new_round {

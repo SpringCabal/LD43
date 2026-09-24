@@ -17,6 +17,7 @@ pose-probe = []
 spring = { workspace = true }
 spring-addons = { workspace = true }
 springcabal = { workspace = true }
+ttld-shared = { workspace = true }
 
 [lints]
 workspace = true

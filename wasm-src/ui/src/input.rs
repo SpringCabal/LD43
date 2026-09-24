@@ -1,8 +1,8 @@
 use spring::mouse;
 use spring_addons::event::KeyEvent;
 use springcabal::menu;
-use springcabal::message::Encoder;
 use springcabal_control::hold::HoldTarget;
+use ttld_shared::Command;
 
 use crate::state::Global;
 use crate::{cursor, hud};
@@ -87,18 +87,23 @@ pub fn hold_mouse(global: &Global, held: &Held) {
 
 fn send_held(held: &Held, command: &'static str, ground: spring::types::Float3) {
     if held.hold(command, (ground.x, ground.z)) {
-        send_rules_msg(
-            &Encoder::new(command)
-                .field(ground.x)
-                .field(ground.z)
-                .finish(),
-        );
+        let (x, z) = (ground.x, ground.z);
+        let command = if command == ATTACK {
+            Command::Attack {
+                x,
+                z,
+                move_to: false,
+            }
+        } else {
+            Command::Move { x, z }
+        };
+        send_rules_msg(&command.message());
     }
 }
 
 fn release(held: &Held) {
     if held.release() {
-        send_rules_msg(STOP);
+        send_rules_msg(&Command::Stop.message());
     }
 }
 
@@ -117,7 +122,6 @@ pub fn key_press(global: &Global, event: &KeyEvent<'_>) -> bool {
         menu::quit_to_menu();
         return true;
     }
-    let key = event.key_code;
     let (intro_open, endgame_open) = {
         let hud = global.hud.access();
         (hud.intro_open, hud.endgame_open)
@@ -136,22 +140,21 @@ pub fn key_press(global: &Global, event: &KeyEvent<'_>) -> bool {
         return true;
     }
     if event.matches("s") {
-        send_rules_msg(STOP);
+        send_rules_msg(&Command::Stop.message());
         return true;
     }
-    if (KEY_1..=KEY_5).contains(&key) {
-        cast_spell(key - KEY_1 + 1);
+    if let Some(index) = SPELL_KEYS.iter().position(|key| event.matches(key)) {
+        cast_spell(index as i32 + 1);
         return true;
     }
     false
 }
 
-const MOVE: &str = "movement";
+/// What a held mouse button does.
+const MOVE: &str = "move";
 const ATTACK: &str = "attack";
-const STOP: &str = "stop";
-const SPELL: &str = "spell";
-const KEY_1: i32 = 49;
-const KEY_5: i32 = 53;
+/// The keys of spells 1 to 5.
+const SPELL_KEYS: [&str; 5] = ["1", "2", "3", "4", "5"];
 
 fn send_rules_msg(message: &str) {
     if let Err(error) = spring::send_lua_rules_msg(message) {
@@ -167,12 +170,13 @@ fn cast_spell(index: i32) {
         return;
     };
     send_rules_msg(
-        &Encoder::new(SPELL)
-            .field(index)
-            .field(position.x)
-            .field(position.y)
-            .field(position.z)
-            .finish(),
+        &Command::Spell {
+            index,
+            x: position.x,
+            y: position.y,
+            z: position.z,
+        }
+        .message(),
     );
 }
 

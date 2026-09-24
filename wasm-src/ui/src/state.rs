@@ -4,6 +4,8 @@ use core::cell::Cell;
 
 use spring::types::Float3;
 use spring_addons::Resource;
+pub use ttld_shared::GameEnd;
+use ttld_shared::Status;
 
 #[derive(Default)]
 pub struct Global {
@@ -19,26 +21,7 @@ pub struct Global {
     pub cursor: Cell<Cursor>,
 }
 
-/// How far the story has got, as the rules publish it in `gameEnd`.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
-pub enum GameEnd {
-    #[default]
-    Start,
-    VictoryPossible,
-    Victory,
-}
-
-impl GameEnd {
-    pub fn parse(value: &str) -> Self {
-        match value {
-            "victory" => Self::Victory,
-            "victoryPossible" => Self::VictoryPossible,
-            _ => Self::Start,
-        }
-    }
-}
-
-/// The rules' `TTLD_STATUS` message.
+/// The rules' latest [`Status`], as the widgets read it.
 #[derive(Clone, Copy)]
 pub struct GameStatus {
     /// Bumped whenever a message arrives, so readers can tell it changed.
@@ -80,35 +63,21 @@ impl Default for GameStatus {
 }
 
 impl GameStatus {
-    /// Applies the `key=value` fields of a `TTLD_STATUS` message.
-    pub fn apply<'a>(&mut self, fields: impl Iterator<Item = (&'a str, &'a str)>) {
-        let (mut health, mut max_health) = (0, 1000);
-        for (key, value) in fields {
-            match key {
-                "round" => self.round = value.parse().unwrap_or(0),
-                "health" => health = value.parse().unwrap_or(0),
-                "maxHealth" => max_health = value.parse().unwrap_or(1000),
-                "villagersKilled" => parse_into(value, &mut self.villagers_killed),
-                "alliesDrained" => parse_into(value, &mut self.allies_drained),
-                "orksKilled" => parse_into(value, &mut self.orks_killed),
-                "gameEnd" => self.game_end = GameEnd::parse(value),
-                "playerAlive" => self.player_alive = value != "0",
-                "playerUnit" => self.player_unit = value.parse().unwrap_or(-1),
-                "castStart" => self.cast_start_frame = value.parse().unwrap_or(0),
-                "castAnimTime" => self.cast_animation_time = value.parse().unwrap_or(0.0),
-                "casting" => self.casting = value != "0",
-                _ => {}
-            }
-        }
-        self.health = health;
-        self.max_health = max_health;
+    /// Takes a new status from the rules.
+    pub fn apply(&mut self, status: Status) {
+        self.round = status.round;
+        self.player_unit = status.player_unit;
+        self.player_alive = status.player_alive();
+        self.health = status.health;
+        self.max_health = status.max_health;
+        self.casting = status.casting;
+        self.cast_start_frame = status.cast_start;
+        self.cast_animation_time = status.cast_animation_frames as f32;
+        self.villagers_killed = status.villagers_killed;
+        self.allies_drained = status.allies_drained;
+        self.orks_killed = status.orks_killed;
+        self.game_end = status.game_end;
         self.revision = self.revision.wrapping_add(1);
-    }
-}
-
-fn parse_into(value: &str, target: &mut i32) {
-    if let Ok(value) = value.parse() {
-        *target = value;
     }
 }
 

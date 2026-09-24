@@ -9,13 +9,13 @@ use core::cell::Cell;
 
 use spring_addons::AddonContext;
 use spring_addons::rules::Gadget;
+use ttld_shared::Command;
 
 use crate::defs::UnitKind;
 use crate::state::Global;
 use crate::units::{self, PLAYER_TEAM};
 
 const FIXTURE_MESSAGE: &str = "TTLD E2E leader render fixture";
-const REQUEST: &[u8] = b"e2e|leader-render";
 
 /// Spawns the leader render fixture when the e2e UI asks for it.
 #[derive(Default)]
@@ -36,7 +36,8 @@ impl Gadget<Global> for RenderTestGadget {
         _mode: i32,
         data: &[u8],
     ) {
-        if data == REQUEST && !self.spawned.replace(true) {
+        let command = core::str::from_utf8(data).ok().and_then(Command::parse);
+        if command == Some(Command::LeaderRenderFixture) && !self.spawned.replace(true) {
             spawn_leader_fixture(ctx.global());
         }
     }

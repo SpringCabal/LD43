@@ -7,6 +7,8 @@ use spring_addons::Resource;
 use crate::combat::{Attributes, OrkAi, Statuses};
 use crate::player::{Player, Spellbook};
 
+pub use ttld_shared::GameEnd;
+
 #[derive(Default)]
 pub struct Global {
     /// The frame the current round was set up on; see [`Global::phase`].
@@ -80,27 +82,6 @@ impl Global {
 
     pub fn running(&self, frame: i32) -> bool {
         self.phase(frame) == Phase::Running
-    }
-}
-
-/// How far the story has got.
-#[derive(Clone, Copy, Default, PartialEq, Eq)]
-pub enum GameEnd {
-    #[default]
-    Start,
-    /// The final wave has come; killing the boss wins.
-    VictoryPossible,
-    Victory,
-}
-
-impl GameEnd {
-    /// The value published in the `gameEnd` rules param.
-    pub fn name(self) -> &'static str {
-        match self {
-            Self::Start => "start",
-            Self::VictoryPossible => "victoryPossible",
-            Self::Victory => "victory",
-        }
     }
 }
 

@@ -2,6 +2,7 @@ use spring::ResultExt;
 use spring_addons::AddonContext;
 use spring_addons::register_gadgets;
 use spring_addons::rules::{Gadget, GadgetHandler};
+use ttld_shared::Command;
 
 #[cfg(feature = "pose-probe")]
 use crate::pose_probe::PoseProbeGadget;
@@ -67,7 +68,8 @@ impl Gadget<Global> for SetupGadget {
         _mode: i32,
         data: &[u8],
     ) {
-        if data == RESTART.as_bytes() {
+        let command = core::str::from_utf8(data).ok().and_then(Command::parse);
+        if command == Some(Command::Restart) {
             spring::log_info!("ttld-wasm", "restart requested");
             ctx.global().restart();
         }
@@ -75,8 +77,6 @@ impl Gadget<Global> for SetupGadget {
 }
 
 const ALLY_TEAMS: i32 = 3;
-/// The UI's restart message (`ui/src/hud/model.rs`).
-const RESTART: &str = "restart";
 
 /// Registers the gadgets. Their order is the order they run in each frame,
 /// which also fixes the order in which they draw from the synced RNG.
