@@ -1,6 +1,6 @@
 use alloc::vec::Vec;
 
-use crate::random::{self, float};
+use spring::random::unsynced::float;
 
 use super::particles::{self, Field, Particle};
 
@@ -9,9 +9,8 @@ const DISC_RADIUS_SCALE: f32 = 0.6;
 const SIZE_SCALE: f32 = 0.35;
 const EMIT_CHANCE_RANGE: i32 = 400;
 
-/// Starts flames on some of the burning houses; screenshot builds seed the
-/// choice with `frame`.
-pub fn emit(field: &mut Field, houses: &[i32], frame: i32) {
+/// Starts flames on some of the burning houses.
+pub fn emit(field: &mut Field, houses: &[i32]) {
     let burning: Vec<i32> = houses
         .iter()
         .copied()
@@ -24,7 +23,6 @@ pub fn emit(field: &mut Field, houses: &[i32], frame: i32) {
     }
     apply_wind(field);
     let count = burning.len() as i32;
-    random::pin_for_screenshots(frame);
     for unit_id in burning {
         if (float() * EMIT_CHANCE_RANGE as f32) as i32 >= EMIT_CHANCE_RANGE - count {
             continue;

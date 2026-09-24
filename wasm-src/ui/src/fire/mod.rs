@@ -36,7 +36,7 @@ impl Fire {
     pub fn update(&mut self, delta_seconds: f32) {
         let frame = game::status_frame();
         if self.emitted_frame.replace(frame) != Some(frame) {
-            emit::emit(&mut self.field, &self.houses, frame);
+            emit::emit(&mut self.field, &self.houses);
         }
         self.field.advance(delta_seconds);
     }
