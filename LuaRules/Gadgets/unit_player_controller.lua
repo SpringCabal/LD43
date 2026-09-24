@@ -103,7 +103,7 @@ local function MoveUnit(unitID, x, z)
 	--	end
 	--end
 	ClearAttack(unitID)
-	GiveClampedMoveGoal(unitID, x, z, radius)
+	GiveClampedMoveGoal(unitID, x, z, 60)
 end
 
 local function AttackUnit(unitID, x, z, moveTo)
@@ -178,7 +178,8 @@ end
 -------------------------------------------------------------------
 
 function HandleLuaMessage(msg)
-	if not controlledID or Spring.GetGameRulesParam("game_over") == 1 then
+	local gameEnd = Spring.GetGameRulesParam("gameEnd")
+	if not controlledID or gameEnd == "victory" or gameEnd == "loss" then
 		return
 	end
 	local msg_table = explode('|', msg)
@@ -212,7 +213,10 @@ function HandleLuaMessage(msg)
 	elseif msg_table[1] == 'stop' then
 		if controlledID then
 			ClearMove(controlledID)
+			ClearAttack(controlledID)
 		end
+		movementMessage = false
+		doingMoveToAttack = false
 	elseif msg_table[1] == 'spell' then
 		table.remove(msg_table, 1)
 		for i = 1, #msg_table do
@@ -258,4 +262,3 @@ else
 
 -------------------------------------------------------------------
 end
-

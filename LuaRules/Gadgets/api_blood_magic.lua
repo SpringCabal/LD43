@@ -44,7 +44,7 @@ local CEG_POULTICE = [[gtfo_pulse]]
 local SOUND_DRAIN = "sounds/blooddrain.wav"
 
 local function SpawnEffect(unitID, cegName, sound)
-	local x, _, z, _, y = Spring.GetUnitPosition(unitID, true)
+	local x, y, z = Spring.GetUnitPosition(unitID, true)
 	if not x then
 		return
 	end
@@ -67,7 +67,7 @@ local function SpawnEffectPosition(x, y, z, cegName)
 end
 
 local function MakeBloodTrail(x, y, z, targetID)
-	local tx, _, tz, _, ty = Spring.GetUnitPosition(targetID, true)
+	local tx, ty, tz = Spring.GetUnitPosition(targetID, true)
 	if not tx then
 		return
 	end
@@ -106,7 +106,7 @@ local function DrainNearbyUnits(collectorID, required, canPartial)
 	local toKill = {}
 	local toUnNeutral = {}
 	local total = 0
-	local x, _, z, _, y = Spring.GetUnitPosition(collectorID, true)
+	local x, y, z = Spring.GetUnitPosition(collectorID, true)
 	for i = 1, 50 do
 		local unitID = Spring.GetUnitNearestAlly(collectorID, BLOOD_MAGIC_RANGE)
 		if not unitID then
@@ -165,7 +165,7 @@ local function Transfusion(unitID)
 		partialShortBy = partialShortBy - LIFE_BONUS
 	end
 
-	local x, _, z, _, y = Spring.GetUnitPosition(unitID, true)
+	local x, y, z = Spring.GetUnitPosition(unitID, true)
 	local function castFunc()
 		GG.PlaySound("sounds/heal_spell.wav", 30, x, y, z)
 		if Spring.ValidUnitID(unitID) then
@@ -176,7 +176,7 @@ local function Transfusion(unitID)
 
 	
 	local env = Spring.UnitScript.GetScriptEnv(unitID)
-	Spring.UnitScript.CallAsUnit(unitID, env.script.CastAnimation, castFunc, 1, tx, tz)
+	Spring.UnitScript.CallAsUnit(unitID, env.script.CastAnimation, castFunc, 1)
 	local frame = Spring.GetGameFrame()
 	Spring.SetGameRulesParam("castingFreeze", frame + CASTING_TIME_SHORT)
 	Spring.SetGameRulesParam("castAnimTime", CASTING_TIME_SHORT + 8)
@@ -210,9 +210,11 @@ local function Heartburn(unitID, tx, ty, tz)
 			speed = { vx, vy, vz },
 			ttl = flyTime,
 			owner = unitID,
-			--team = PLAYER_TEAM,
+			team = PLAYER_TEAM,
 		})
-		Spring.SetProjectileGravity(proID, -gravity)
+		if proID then
+			Spring.SetProjectileGravity(proID, -gravity)
+		end
 	end
 
 	local env = Spring.UnitScript.GetScriptEnv(unitID)
@@ -296,7 +298,8 @@ local function Poultice(unitID, tx, ty, tz)
 		local units = Spring.GetUnitsInCylinder(x, z, 720, ENEMY_TEAM)
 		for i = 1, #units do
 			local ux, uy, uz = Spring.GetUnitPosition(units[i])
-			local dx, dy, dz = x - ux, y - uy, z - uz
+			-- Poultice throws enemies away from the blood mage.
+			local dx, dy, dz = ux - x, uy - y, uz - z
 			local dist = math.sqrt(dx*dx + dz*dz)
 			local flyTime = 45 + math.floor((dist + math.random()*20 - 10)/60)
 			local wx, wy, wz = Spring.GetUnitVelocity(units[i])
@@ -327,6 +330,9 @@ local spells = { Transfusion, Heartburn, Adrenaline, Migraine, Poultice }
 local function UseSpell(unitID, spellID, tx, ty, tz)
 	Spring.Echo('Casting spell: ', spellID, unitID)
 	local spell = spells[spellID]
+	if not spell or not Spring.ValidUnitID(unitID) then
+		return
+	end
 	spell(unitID, tx, ty, tz)
 end
 

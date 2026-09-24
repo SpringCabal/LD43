@@ -22,17 +22,46 @@ local SCREEN_Y = 0 -- Position on screen. Range of [0, 1].
 
 local MINIMAP_ALPHA = 1
 
--- Top left, width and height of minimap as a proportion of map size.
-local MAP_X = 3300 / Game.mapSizeX
-local MAP_Z = 3400 / Game.mapSizeZ
-local MAP_X_SIZE = 8000 / Game.mapSizeX - MAP_X
-local MAP_Z_SIZE = 8100 / Game.mapSizeZ - MAP_Z
+-- Width and height of the player-centered minimap viewport in world units.
+local VIEWPORT_WORLD_X = 8000 - 3300
+local VIEWPORT_WORLD_Z = 8100 - 3400
+
+local function GetPlayerViewport()
+	local bloodmageDefID = UnitDefNames["bloodmage"].id
+	local units = Spring.GetTeamUnits(Spring.GetMyTeamID())
+	for i = 1, #units do
+		if Spring.GetUnitDefID(units[i]) == bloodmageDefID then
+			local x, _, z = Spring.GetUnitPosition(units[i])
+			if x then
+				-- Keep the same fixed-size crop centered on the bloodmage, including
+				-- when the crop extends beyond a map edge. The minimap texture is
+				-- clamped at the boundary, so its layout and zoom never change.
+				return x - VIEWPORT_WORLD_X * 0.5,
+					z - VIEWPORT_WORLD_Z * 0.5,
+					VIEWPORT_WORLD_X, VIEWPORT_WORLD_Z, MINIMAP_SCALE
+			end
+		end
+	end
+	local fallbackX = (Game.mapSizeX - VIEWPORT_WORLD_X) * 0.5
+	local fallbackZ = (Game.mapSizeZ - VIEWPORT_WORLD_Z) * 0.5
+	return fallbackX, fallbackZ, VIEWPORT_WORLD_X, VIEWPORT_WORLD_Z, MINIMAP_SCALE
+end
 
 ---------------------------------------------------------------
 ---------------------------------------------------------------
 -- Constants and Stuff
 
 local GL_COLOR_ATTACHMENT0_EXT = 0x8CE0
+
+-- GLSL will not initialise a float from an int literal, and tostring() drops the
+-- fractional part of whole numbers, so spell the decimal point out explicitly.
+local function GlslFloat(x)
+	local str = tostring(x)
+	if not str:find("[.eE]") then
+		str = str .. ".0"
+	end
+	return str
+end
 
 local glDrawMiniMap = gl.DrawMiniMap
 local glResetState = gl.ResetState
@@ -47,8 +76,8 @@ local offscreentex
 
 local fadeShader
 local alphaLoc
-local boundsLoc
-local mainBoundsLoc
+local sourceBoundsLoc
+local screenRectLoc
 
 ---------------------------------------------------------------
 ---------------------------------------------------------------
@@ -94,38 +123,40 @@ function widget:Initialize()
 		if (gl.CreateShader) then
 			fadeShader = gl.CreateShader({
 				vertex = [[
-					varying vec2 texCoord;
-					uniform vec2 mainbounds;
+					varying vec2 mapCoord;
 
 					void main() {
-						texCoord = gl_Vertex.xy * 0.5 + 0.5;
-						texCoord /= ]] .. MINIMAP_SCALE ..[[;
-						texCoord.y += mainbounds.y;
-						texCoord.x += mainbounds.x;
+						mapCoord = gl_Vertex.xy * 0.5 + 0.5;
 						gl_Position = vec4(gl_Vertex.xyz, 1.0);
 					}
 				]],
 				fragment = [[
 					uniform sampler2D tex0;
 					uniform float alpha;
-					uniform vec4 bounds;
+					uniform vec4 sourceBounds;
+					uniform vec4 screenRect;
 					uniform vec2 screen;
 
-					varying vec2 texCoord;
+					varying vec2 mapCoord;
 
-					const float edgeFadePixels = ]] .. EDGE_FADE_PIXELS .. [[;
+					const float edgeFadePixels = ]] .. GlslFloat(EDGE_FADE_PIXELS) .. [[;
 
 					void main(void) {
+						vec2 screenPosition = vec2(
+							mapCoord.x * screen.x,
+							(1.0 - mapCoord.y) * screen.y);
+						vec2 cropCoord = (screenPosition - screenRect.xy) / screenRect.zw;
+						if (cropCoord.x < 0.0 || cropCoord.x > 1.0 ||
+							cropCoord.y < 0.0 || cropCoord.y > 1.0) {
+							discard;
+						}
+						vec2 texCoord = vec2(
+							sourceBounds.x + cropCoord.x * sourceBounds.z,
+							sourceBounds.y + (1.0 - cropCoord.y) * sourceBounds.w);
 						vec4 color = texture2D(tex0, texCoord.st);
-						//float width = bounds.z;
-						//float height = bounds.w;
-						float edgeFadeScaledPixels = edgeFadePixels/1080.0 * screen.y * 20;
-						vec2 edgeFadeBase = vec2(edgeFadeScaledPixels / screen.x, edgeFadeScaledPixels / screen.y);
-						vec2 edgeFade = vec2((2.0 * bounds.z) / edgeFadeBase.x, (2.0 * bounds.w) / edgeFadeBase.y);
-						//bounds.y -= 0.015;
-						//bounds.x += 0.005;
-						vec2 edgeAlpha = vec2(clamp(1.0 - abs((texCoord.x - bounds.x)/bounds.z - 0.5) * 2, 0.0, 1.0/edgeFade.x) * edgeFade.x,
-									clamp(1.0 - abs((texCoord.y - bounds.y)/bounds.w - 0.5) * 2.0, 0.0, 1.0/edgeFade.y) * edgeFade.y);
+						float edgeFadeScaledPixels = edgeFadePixels/1080.0 * screen.y * 20.0;
+						vec2 edgeFade = clamp(edgeFadeScaledPixels / screenRect.zw, 0.0, 1.0);
+						vec2 edgeAlpha = min(cropCoord, 1.0 - cropCoord) / max(edgeFade, vec2(0.0001));
 						float final_alpha = edgeAlpha.x * edgeAlpha.y * alpha;
 						color.r = color.r;
 						gl_FragColor = vec4(color.rgb, final_alpha);
@@ -136,8 +167,8 @@ function widget:Initialize()
 				},
 				uniform = {
 					alpha = 0,
-					bounds = {0,0,0,0},
-					mainbounds = {0,0},
+					sourceBounds = {0,0,0,0},
+					screenRect = {0,0,0,0},
 					screen = {0,0},
 				},
 			})
@@ -147,8 +178,8 @@ function widget:Initialize()
 				CleanUpFBO()
 			else
 				alphaLoc = gl.GetUniformLocation(fadeShader, 'alpha')
-				boundsLoc = gl.GetUniformLocation(fadeShader, 'bounds')
-				mainBoundsLoc = gl.GetUniformLocation(fadeShader, 'mainbounds')
+				sourceBoundsLoc = gl.GetUniformLocation(fadeShader, 'sourceBounds')
+				screenRectLoc = gl.GetUniformLocation(fadeShader, 'screenRect')
 				screenLoc = gl.GetUniformLocation(fadeShader, 'screen')
 			end
 		else --Shader Generation impossible, clean up FBO
@@ -171,12 +202,20 @@ end
 local needConfig = true
 function widget:DrawScreen()
 	local vsx,vsy = gl.GetViewSizes()
-	
+
 	if needConfig then
 		gl.ConfigMiniMap(0, vsy/2, SOURCE_SIZE, SOURCE_SIZE)
 		needConfig = false
 	end
-	
+	local mapXWorld, mapZWorld, viewportWorldX, viewportWorldZ, minimapScale = GetPlayerViewport()
+	local minimapPosX, minimapPosY, minimapSizeX, minimapSizeY = Spring.GetMiniMapGeometry()
+	local sourceLeft = (minimapPosX + minimapSizeX * mapXWorld / Game.mapSizeX) / vsx
+	local sourceBottom = (minimapPosY + minimapSizeY * (1 - (mapZWorld + viewportWorldZ) / Game.mapSizeZ)) / vsy
+	local sourceWidthCrop = minimapSizeX * viewportWorldX / Game.mapSizeX / vsx
+	local sourceHeightCrop = minimapSizeY * viewportWorldZ / Game.mapSizeZ / vsy
+	local screenWidth = minimapSizeX * viewportWorldX / Game.mapSizeX * minimapScale
+	local screenHeight = minimapSizeY * viewportWorldZ / Game.mapSizeZ * minimapScale
+
 	gl.PushAttrib(GL.ALL_ATTRIB_BITS)
 	gl.MatrixMode(GL.PROJECTION)
 	gl.PushMatrix()
@@ -190,19 +229,9 @@ function widget:DrawScreen()
 		gl.Texture(0, offscreentex)
 		gl.UseShader(fadeShader)
 		gl.Uniform(alphaLoc, MINIMAP_ALPHA * 3)
-		
-		gl.Uniform(boundsLoc,
-			MAP_X * SOURCE_SIZE/vsx, 
-			1 - (MAP_Z + MAP_Z_SIZE)*SOURCE_SIZE/vsy,
-			MAP_X_SIZE*SOURCE_SIZE/vsx, 
-			MAP_Z_SIZE*SOURCE_SIZE/vsy
-		)
-		
-		gl.Uniform(mainBoundsLoc,
-			(MAP_X*SOURCE_SIZE/vsx) - SCREEN_X/MINIMAP_SCALE, 
-			1 - 1/MINIMAP_SCALE + SCREEN_Y/MINIMAP_SCALE - ((MAP_Z)*SOURCE_SIZE/vsy)
-		)
-		
+		gl.Uniform(sourceBoundsLoc, sourceLeft, sourceBottom, sourceWidthCrop, sourceHeightCrop)
+		gl.Uniform(screenRectLoc, SCREEN_X * vsx, SCREEN_Y * vsy, screenWidth, screenHeight)
+
 		gl.Uniform(screenLoc, vsx, vsy)
 		-- Spring.Echo("Bounds: "..(window.x + lx)/vsx..", "..(window.y + ly)/vsy..", "..((window.x + lx) + lw)/vsx..", "..((window.y + ly) + lh)/vsy)
 		gl.TexRect(-1, 1, 1, -1)
@@ -220,4 +249,3 @@ function widget:DrawScreen()
 	gl.PopMatrix()
 	gl.PopAttrib()
 end
-

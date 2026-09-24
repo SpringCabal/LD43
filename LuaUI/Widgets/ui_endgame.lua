@@ -140,13 +140,9 @@ local function SetupControls(isVictory)
 		fontsize = 24,
 		OnClick = {
 			function()
-				nameBox = nil
-				restartButton = nil
-				submitButton = nil
-				Spring.SendCommands("cheat 1", "luarules reload", "cheat 0")
-				window_endgame:Dispose()
-				window_endgame = nil
-				frame_delay = Spring.GetGameFrame()
+				-- Reloading LuaRules only leaves the finished game state intact.
+				-- Return through the launcher so the game starts from a clean state.
+				Spring.SendCommands("reloadforce")
 			end
 		},
 		parent = window_endgame,
@@ -162,7 +158,7 @@ local function SetupControls(isVictory)
 			function()
 				nameBox = nil
 				restartButton = nil
-				Spring.SendCommands("quit", "quitforce")
+				Spring.SendCommands("reloadforce")
 			end
 		},
 		parent = window_endgame,
@@ -175,7 +171,7 @@ end
 --------------------------------------------------------------------------------
 --callins
 
-include('keysym.h.lua')
+require("keysym.lua")
 local RETURN = KEYSYMS.RETURN
 function widget:KeyPress(key, mods, isRepeat)
 	if key == RETURN and restartButton and restartButton.OnClick and restartButton.OnClick[1] and

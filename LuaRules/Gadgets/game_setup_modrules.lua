@@ -20,5 +20,4 @@ end
 function gadget:Initialize()
 	Spring.SetGlobalLos(0, true)
 	Spring.SetGlobalLos(1, true)
-	Spring.SetGlobalLos(2, true)
 end

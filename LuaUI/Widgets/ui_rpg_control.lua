@@ -5,14 +5,15 @@ function widget:GetInfo()
 		author  = "Gajop, GoogleFrog",
 		date    = "December 2 2018",
 		license = "GNU GPL, v2 or later",
-		layer   = 0,
+		layer   = 1000,
+		handler = true,
 		enabled = true
 	}
 end
 
 -------------------------------------------------------------------
 -------------------------------------------------------------------
-include('keysym.h.lua')
+require("keysym.lua")
 local UP = KEYSYMS.UP
 local DOWN = KEYSYMS.DOWN
 local LEFT = KEYSYMS.LEFT
@@ -33,10 +34,11 @@ local controlledID = nil
 local height
 
 local pressSpace = 1
+local heldButton
 
 local function getMouseCoordinate(mx,my)
 	local traceType, pos = Spring.TraceScreenRay(mx, my, true)
-	if not pos then return false end
+	if not pos then return nil end
 	local x, y, z = pos[1], pos[2], pos[3]
 -- 	if x<2048 or z<2048 or x>8192 or z>8192 then
 -- 		return false
@@ -56,10 +58,14 @@ local function HoldMouse(command, mx, my)
 end
 
 local function MouseControl()
-	local mx, my, lmb, mmb, rmb = Spring.GetMouseState()
-	if lmb then
+	if not heldButton then
+		return
+	end
+
+	local mx, my = Spring.GetMouseState()
+	if heldButton == 1 then
 		HoldMouse(MOVE, mx, my)
-	elseif rmb then
+	elseif heldButton == 3 then
 		HoldMouse(ATTACK, mx, my)
 	end
 end
@@ -69,17 +75,39 @@ function widget:MousePress(mx, my, button)
 		return false
 	end
 
-	-- if Spring.IsAboveMiniMap(mx, my) then
-	-- 	return true
-	-- end
-	
-	local alt, ctrl, meta, shift = Spring.GetModKeyState()
-	if button == 1 then
-		HoldMouse(MOVE, mx, my)
+	if button == 1 or button == 3 then
+		heldButton = button
 		return true
-	elseif button == 3 then
-		HoldMouse("attmove", mx, my)
+	end
+	return false
+end
+
+function widget:MouseMove(mx, my, dx, dy, button)
+	if Spring.GetGameRulesParam("gameMode") ~= "develop" and heldButton then
 		return true
+	end
+	return false
+end
+
+function widget:MouseRelease(mx, my, button)
+	if button == heldButton then
+		heldButton = nil
+	end
+
+	if Spring.GetGameRulesParam("gameMode") ~= "develop" and
+		(button == 1 or button == 3) then
+		Spring.SendLuaRulesMsg("stop")
+		return true
+	end
+	return false
+end
+
+function widget:SelectionChanged()
+	if Spring.GetGameRulesParam("gameMode") ~= "develop" then
+		local selected = Spring.GetSelectedUnits()
+		if selected and #selected > 0 then
+			Spring.SelectUnitArray({})
+		end
 	end
 end
 
@@ -116,15 +144,24 @@ function widget:KeyPress(key, mods, isRepeat)
 	end
 
 	if not controlledID then
-		return
+		return false
 	end
 
 	if key == S then
 		Spring.SendLuaRulesMsg('stop')
 	elseif key >= KEYSYMS.N_1 and key <= KEYSYMS.N_5 then
+		if isRepeat then
+			return true
+		end
 		local num = key - KEYSYMS.N_1 + 1
-		local mx, my, lmb, mmb, rmb = Spring.GetMouseState()
+		local mx, my = Spring.GetMouseState()
 		local x,y,z = getMouseCoordinate(mx,my)
+		if not x then
+			x, y, z = Spring.GetUnitPosition(controlledID)
+		end
+		if not x then
+			return true
+		end
 		Spring.SendLuaRulesMsg('spell|' .. tostring(num) .. '|' ..
 			tostring(x) .. '|' .. tostring(y) .. '|' .. tostring(z))
 	else

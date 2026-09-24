@@ -10,7 +10,7 @@ function widget:GetInfo()
 	}
 end
 
-include("keysym.h.lua")
+require("keysym.lua")
 
 local Chili, screen0
 local children = {}
@@ -37,7 +37,7 @@ local bindDesc = {
 	'Causes a burning sensation.',
 	'Really gets you (and your allies) moving.',
 	'Unbearable headaches for your foes.',
-	'Draws orks towards you.',
+	'Throws orks away from you.',
 }
 
 WG.Bindings = bindText
@@ -46,13 +46,11 @@ WG.BindingDescription = bindDesc
 
 local function SetBindings()
 	local binds = { --real keybinds
-		 "Any+pause  pause",
 		 --"Alt+b  debug",
 		--"--Alt+v  debugcolvol",
 
-		"ctrl+q quitforce",
+		"ctrl+q reloadforce",
 
-		"f12 screenshot",
 	}
 	 for _,binding in pairs(binds) do
 		Spring.SendCommands("bind ".. binding)
@@ -61,7 +59,6 @@ end
 
 local gameMode
 local function UpdateGameMode()
-	Spring.SendCommands("unbindall") --muahahahaha
 	-- debug console
 	Spring.SendCommands('bind f8 toggleErrorConsole')
 	if gameMode == "play" then
@@ -82,10 +79,6 @@ local function UpdateGameMode()
 		Spring.SendCommands("bind w buildunit_house")
 		Spring.SendCommands("bind ` drawinmap")
 		Spring.SendCommands("bind Ctrl+d selfd")
-		Spring.SendCommands("bind Alt+numpad+ speedup")
-		Spring.SendCommands("bind Alt+numpad- slowdown")
-		Spring.SendCommands("bind any++ speedup")
-		Spring.SendCommands("bind any+- slowdown")
 	end
 	SetBindings()
 end

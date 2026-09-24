@@ -67,7 +67,9 @@ end
 function gadget:Initialize()
 	if Spring.GetGameRulesParam("gameMode") == nil then
 		modOptions = Spring.GetModOptions()
-		local gameMode = modOptions.gameMode or modOptions.gamemode
+		-- A direct Lua launch has no generated start script. Keep that launch
+		-- playable while still allowing an explicit gamemode=develop override.
+		local gameMode = modOptions.gameMode or modOptions.gamemode or "play"
 		SafeSetGameMode(gameMode)
 	end
 end

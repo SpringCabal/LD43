@@ -53,7 +53,7 @@ local function ActionOK()
 end
 
 local function ActionCancel()
-    Spring.SendCommands("quit", "quitforce")
+	Spring.SendCommands("reloadforce")
 end
 
 local function SetupControls()
@@ -207,7 +207,7 @@ end
 --------------------------------------------------------------------------------
 --callins
 
-include('keysym.h.lua')
+require("keysym.lua")
 local RETURN = KEYSYMS.RETURN
 function widget:KeyPress(key, mods, isRepeat)
     if key == RETURN and mainWindow and mainWindow.visible then

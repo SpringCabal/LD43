@@ -10,7 +10,7 @@ function widget:GetInfo()
 	}
 end
 
-include('keysym.h.lua')
+require("keysym.lua")
 local RETURN = KEYSYMS.RETURN
 function widget:KeyPress(key, mods, isRepeat)
     if key == RETURN then -- doesn't work, idk
