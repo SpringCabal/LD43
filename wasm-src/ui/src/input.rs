@@ -19,7 +19,7 @@ pub fn mouse_press(global: &Global, held: &Held, x: i32, y: i32, button: i32) ->
     }
     let command = match button {
         BUTTON_LEFT => MOVE,
-        BUTTON_RIGHT => ATTACK_MOVE,
+        BUTTON_RIGHT => ATTACK,
         _ => return false,
     };
     if let Some(ground) = ground_at(x, y) {
@@ -149,7 +149,6 @@ const BUTTON_LEFT: i32 = 1;
 const BUTTON_RIGHT: i32 = 3;
 const MOVE: &str = "movement";
 const ATTACK: &str = "attack";
-const ATTACK_MOVE: &str = "attmove";
 const STOP: &str = "stop";
 const SPELL: &str = "spell";
 const KEY_RETURN: i32 = 13;
