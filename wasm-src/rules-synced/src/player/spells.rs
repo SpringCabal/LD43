@@ -163,6 +163,9 @@ const POULTICE_JITTER: f32 = 20.0;
 // the impulse. A negative value points Poultice into the ground.
 const FPS: f32 = GAME_SPEED as f32;
 const DEFAULT_UNIT_GRAVITY: f32 = 115.0 / FPS / FPS;
+/// Lua's `GG.PlaySound` volumes.
+const SPELL_VOLUME: f32 = 30.0;
+const FIREBALL_VOLUME: f32 = 12.0;
 const CEG_HEALTH: &str = "feature_slurp_spawner";
 const CEG_MIGRAINE: &str = "migraine_pulse_spawner";
 const CEG_ADRENALINE: &str = "adrenaline_sparkles";
@@ -224,7 +227,7 @@ fn resolve_transfusion(unit_id: i32, shortfall: Option<f32>) {
     let Some(health) = health(unit_id) else {
         return;
     };
-    play_sound("sounds/heal_spell.wav", unit_id);
+    play_sound("sounds/heal_spell.wav", SPELL_VOLUME, unit_id);
     let restored = health.max - shortfall.unwrap_or(0.0);
     crate::engine::check(
         spring::set_unit_health(unit_id, health_value(restored)),
@@ -245,7 +248,7 @@ fn resolve_heartburn(unit_id: i32, tx: f32, tz: f32) {
     let Some(weapon_def_id) = defs().fireball else {
         return;
     };
-    play_sound("sounds/fireballfire.wav", unit_id);
+    play_sound("sounds/fireballfire.wav", FIREBALL_VOLUME, unit_id);
     let ty = units::ground_height(tx, tz) + FIREBALL_TARGET_HEIGHT;
     let y = origin.y + FIREBALL_LAUNCH_HEIGHT;
     let dx = tx - origin.x;
@@ -289,7 +292,7 @@ fn resolve_adrenaline(global: &Global, unit_id: i32, frame: i32) {
     let Some(origin) = units::position(unit_id) else {
         return;
     };
-    play_sound("sounds/buff_spell.wav", unit_id);
+    play_sound("sounds/buff_spell.wav", SPELL_VOLUME, unit_id);
     let house = defs().id(UnitKind::House);
     for target in units_in_cylinder(origin.x, origin.z, ADRENALINE_RADIUS, PLAYER_TEAM) {
         if def_of(target) == house {
@@ -306,6 +309,7 @@ fn resolve_migraine(global: &Global, tx: f32, tz: f32, frame: i32) {
     let ty = units::ground_height(tx, tz);
     play_sound_at(
         "sounds/curse_spell.wav",
+        SPELL_VOLUME,
         Float3 {
             x: tx,
             y: ty,
@@ -345,7 +349,7 @@ fn resolve_poultice(global: &Global, unit_id: i32, frame: i32) {
     let unit_gravity = spring::game::get_game_map_info(0)
         .map(|map| map.gravity / FPS / FPS)
         .unwrap_or(DEFAULT_UNIT_GRAVITY);
-    play_sound("sounds/throw_spell.wav", unit_id);
+    play_sound("sounds/throw_spell.wav", SPELL_VOLUME, unit_id);
     for target in units_in_cylinder(origin.x, origin.z, POULTICE_RADIUS, ENEMY_TEAM) {
         let Some(position) = units::position(target) else {
             continue;

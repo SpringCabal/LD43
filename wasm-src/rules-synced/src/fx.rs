@@ -44,13 +44,14 @@ pub fn spawn_ceg(position: Float3, ceg: &DefRef) {
     .log_err_once(&ceg.name);
 }
 
-pub fn play_sound(name: &str, unit_id: i32) {
+/// Plays a sound at a unit, at `volume` (Lua's `GG.PlaySound` volume).
+pub fn play_sound(name: &str, volume: f32, unit_id: i32) {
     let Some(position) = units::position(unit_id) else {
         return;
     };
-    play_sound_at(name, position);
+    play_sound_at(name, volume, position);
 }
 
-pub fn play_sound_at(name: &str, position: Float3) {
-    spring::sound::play_sound_file(name, 1.0, position, Float3::default(), 0).log_err_once(name);
+pub fn play_sound_at(name: &str, volume: f32, position: Float3) {
+    spring::sound::play_sound_file(name, volume, position, Float3::default(), 0).log_err_once(name);
 }

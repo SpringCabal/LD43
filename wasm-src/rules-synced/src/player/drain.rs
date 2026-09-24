@@ -5,7 +5,7 @@ use alloc::vec::Vec;
 use spring::types::Float3;
 
 use crate::defs::{UnitKind, defs};
-use crate::fx::{ceg, play_sound_at, spawn_ceg, spawn_effect};
+use crate::fx::{ceg, play_sound, spawn_ceg, spawn_effect};
 use crate::state::Global;
 use crate::units::{self, NEUTRAL_TEAM, PLAYER_TEAM, def_of, health, health_value};
 
@@ -15,6 +15,7 @@ const DRAIN_SEARCH_LIMIT: i32 = 50;
 const CEG_SINGLE_BLOOD: &str = "feature_poof_single";
 const CEG_FLAMES: &str = "feature_poof_spawner";
 const SOUND_DRAIN: &str = "sounds/blooddrain.wav";
+const SOUND_DRAIN_VOLUME: f32 = 30.0;
 
 pub(super) fn drain_for_transfusion(global: &Global, unit_id: i32) -> Option<Option<f32>> {
     let health = health(unit_id)?;
@@ -64,8 +65,7 @@ pub(super) fn drain(
         };
         let available = health.current + LIFE_BONUS;
         if available > remaining {
-            spawn_effect(target, CEG_FLAMES);
-            play_sound_at(SOUND_DRAIN, origin);
+            drain_effect(target);
             blood_trail(origin, target);
             crate::engine::check(
                 spring::set_unit_health(target, health_value(available - remaining)),
@@ -96,8 +96,7 @@ pub(super) fn drain(
 fn consume(units: &[i32], origin: Float3) -> i32 {
     let mut drained = 0;
     for unit_id in units {
-        spawn_effect(*unit_id, CEG_FLAMES);
-        play_sound_at(SOUND_DRAIN, origin);
+        drain_effect(*unit_id);
         blood_trail(origin, *unit_id);
         crate::engine::check(
             spring::destroy_unit(
@@ -115,6 +114,12 @@ fn consume(units: &[i32], origin: Float3) -> i32 {
         drained += 1;
     }
     drained
+}
+
+/// Flames and the drain sound at a drained villager.
+fn drain_effect(unit_id: i32) {
+    spawn_effect(unit_id, CEG_FLAMES);
+    play_sound(SOUND_DRAIN, SOUND_DRAIN_VOLUME, unit_id);
 }
 
 fn record_drained(global: &Global, count: i32) {
