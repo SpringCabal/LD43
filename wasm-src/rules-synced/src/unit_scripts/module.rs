@@ -1,9 +1,8 @@
-//! The Core-CUS module: attaches scripts to units and dispatches engine calls
-//! and queued rules calls to them.
+//! The Core-CUS module: attaches scripts to units and dispatches the engine's
+//! and the rules' calls to them.
 
 use alloc::collections::BTreeMap;
 use alloc::rc::Rc;
-use alloc::vec::Vec;
 use core::cell::RefCell;
 
 use spring::UnitId;
@@ -19,35 +18,26 @@ use super::TtldUnitScript;
 use super::common::EnginePieces;
 use super::kinds::{capabilities, script_kind_for_def};
 
-thread_local! {
-    static PENDING_UNITS: RefCell<Vec<(i32, i32)>> = const { RefCell::new(Vec::new()) };
-    static PENDING_CALLS: RefCell<Vec<(i32, alloc::string::String, Vec<f32>)>> =
-        const { RefCell::new(Vec::new()) };
-}
-
-/// Queue a named unit-script call for the next Core-CUS tick.
+/// Runs a named unit-script function now, like Lua's `env.Function()`.
 ///
-/// The rules run inside this same module, so `call_unit_script` goes through
-/// the engine and back into a module that is still inside a gadget callin; the
-/// engine rejects that nested call (ApiError 1), so the animation never ran.
-/// Calls are applied in order on the tick, like unit attach.
-pub fn queue_call(unit: i32, function_name: &str, arguments: &[f32]) {
-    if unit >= 0 {
-        PENDING_CALLS.with(|pending| {
-            pending.borrow_mut().push((
-                unit,
-                alloc::string::String::from(function_name),
-                arguments.to_vec(),
-            ));
-        });
+/// The rules are compiled into this module, so they reach the scripts
+/// directly; going through `call_unit_script` would re-enter the module. The
+/// CUS state is only busy while a unit script runs further up the stack, and no
+/// unit script ends up in rules code that calls a script, so a busy state is a
+/// bug and is logged.
+pub fn call(unit: i32, function_name: &str, arguments: &[f32]) {
+    if unit < 0 {
+        return;
+    }
+    if crate::with_cus_module(|module| module.call(unit, function_name, arguments)).is_none() {
+        spring::log_warning!(
+            LOG_SECTION,
+            "{function_name} on unit {unit} dropped: the unit scripts are busy"
+        );
     }
 }
 
-pub fn queue_unit_created(unit: i32, def: i32) {
-    if unit >= 0 {
-        PENDING_UNITS.with(|pending| pending.borrow_mut().push((unit, def)));
-    }
-}
+const LOG_SECTION: &str = "ttld-wasm";
 
 fn instance_id(unit: UnitId) -> u32 {
     0x5454_0000u32.wrapping_add(unit.0 as u32)
@@ -60,54 +50,56 @@ pub struct TtldCusModule {
 }
 
 impl TtldCusModule {
-    fn attach_pending(&mut self) {
-        let pending = PENDING_UNITS.with(|units| core::mem::take(&mut *units.borrow_mut()));
-        for (unit_id, def) in pending {
-            let Some(kind) = script_kind_for_def(def) else {
-                continue;
-            };
-            let unit = UnitId(unit_id);
-            let instance = instance_id(unit);
-            if self.handles.contains_key(&instance) {
-                continue;
+    /// Gives the unit its def's script, if it has one.
+    pub fn attach(&mut self, unit_id: i32, def: i32) {
+        let Some(kind) = script_kind_for_def(def) else {
+            return;
+        };
+        let unit = UnitId(unit_id);
+        let instance = instance_id(unit);
+        if self.handles.contains_key(&instance) {
+            return;
+        }
+        let map = match spring::get_unit_piece_map(unit_id) {
+            Ok(map) => map,
+            Err(error) => {
+                spring::log_warning!(
+                    LOG_SECTION,
+                    "no unit script for unit {unit_id}: piece map failed: {error:?}"
+                );
+                return;
             }
-            // Drop units destroyed before the tick, whose id may even belong to
-            // a new unit by now; retrying them would never end.
-            if spring::get_unit_def_id(unit_id).map_or(true, |current| current.0 != def) {
-                continue;
-            }
-            let Ok(map) = spring::get_unit_piece_map(unit_id) else {
-                queue_unit_created(unit_id, def);
-                continue;
-            };
-            let resolver = EnginePieces { map };
-            let host = WasmCus::new(unit, instance);
-            let engine = Rc::new(RefCell::new(host.engine()));
-            let instance_state = CusInstance::construct(unit, &resolver, engine);
-            let handle = self.registry.attach(instance_state);
-            let _ = self.registry.with(handle, |instance| {
-                instance.with_state(|script| script.set_kind(kind));
-            });
-            self.handles.insert(instance, handle);
-            if WasmCus::attach(unit, instance, capabilities(kind)).is_err() {
-                self.handles.remove(&instance);
-                let _ = self.registry.detach(handle);
-            }
+        };
+        let resolver = EnginePieces { map };
+        let host = WasmCus::new(unit, instance);
+        let engine = Rc::new(RefCell::new(host.engine()));
+        let instance_state = CusInstance::construct(unit, &resolver, engine);
+        let handle = self.registry.attach(instance_state);
+        let _ = self.registry.with(handle, |instance| {
+            instance.with_state(|script| script.set_kind(kind));
+        });
+        self.handles.insert(instance, handle);
+        if let Err(error) = WasmCus::attach(unit, instance, capabilities(kind)) {
+            spring::log_warning!(
+                LOG_SECTION,
+                "no unit script for unit {unit_id}: attach failed: {error:?}"
+            );
+            self.handles.remove(&instance);
+            let _ = self.registry.detach(handle);
         }
     }
 
-    fn apply_pending_calls(&mut self) {
-        let pending = PENDING_CALLS.with(|calls| core::mem::take(&mut *calls.borrow_mut()));
-        for (unit_id, function_name, arguments) in pending {
-            let Some(handle) = self.handles.get(&instance_id(UnitId(unit_id))).copied() else {
-                continue;
-            };
-            self.sync_instance_frame(handle);
-            let _ = self.registry.with(handle, |instance| {
-                let ctx = instance.context();
-                instance.with_state(|script| script.named_call(&ctx, &function_name, &arguments))
-            });
-        }
+    /// Runs a named function of the unit's script. Units without a script,
+    /// and dead units, ignore it, as a Lua script without the function would.
+    fn call(&mut self, unit_id: i32, function_name: &str, arguments: &[f32]) {
+        let Some(handle) = self.handles.get(&instance_id(UnitId(unit_id))).copied() else {
+            return;
+        };
+        self.sync_instance_frame(handle);
+        let _ = self.registry.with(handle, |instance| {
+            let ctx = instance.context();
+            instance.with_state(|script| script.named_call(&ctx, function_name, arguments))
+        });
     }
 
     fn sync_instance_frame(&mut self, handle: CusHandle) {
@@ -220,8 +212,6 @@ impl CoreCusModule for TtldCusModule {
     }
 
     fn cus_tick(&mut self, frame: u32) {
-        self.attach_pending();
-        self.apply_pending_calls();
         #[cfg(feature = "pose-probe")]
         if let Some(level) = crate::pose_probe::cast_level_at(frame as i32) {
             self.run_pose_trigger(level);

@@ -23,7 +23,7 @@ impl Gadget<Global> for CombatGadget {
 
     fn unit_created(
         &self,
-        _ctx: &AddonContext<'_, Global>,
+        ctx: &AddonContext<'_, Global>,
         unit: i32,
         _def: i32,
         team: i32,
@@ -32,9 +32,10 @@ impl Gadget<Global> for CombatGadget {
         // A dying unit's Killed script adds its death paralysis after
         // UnitDestroyed has already cleared its effects, so a reused unit id
         // can still carry it.
-        combat::forget(unit);
+        combat::forget(ctx.global(), unit);
         if team == PLAYER_TEAM {
             combat::add_effect(
+                ctx.global(),
                 unit,
                 Effect::HalfSpeed,
                 Modifier {
@@ -46,7 +47,7 @@ impl Gadget<Global> for CombatGadget {
     }
 
     fn unit_destroyed(&self, ctx: &AddonContext<'_, Global>, event: &UnitDestroyedEvent) {
-        combat::forget(event.unit_id);
+        combat::forget(ctx.global(), event.unit_id);
         ctx.global().statuses.access_mut().forget(event.unit_id);
     }
 }

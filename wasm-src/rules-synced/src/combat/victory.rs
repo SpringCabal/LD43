@@ -21,7 +21,7 @@ pub fn declare_if_won(global: &Global) -> bool {
         orks.units().to_vec()
     };
     for unit_id in &fleeing {
-        orks::flee(*unit_id);
+        orks::flee(global, *unit_id);
     }
     diagnostics::info(&format!("{} orks fleeing", fleeing.len()));
     true

@@ -4,6 +4,7 @@ use spring::cmd;
 
 use crate::defs::defs;
 use crate::random;
+use crate::state::Global;
 use crate::units::{self, ENEMY_TEAM};
 
 use super::attributes::{self, Effect, Modifier};
@@ -76,7 +77,7 @@ pub fn check_idle(unit_id: i32) {
     fight(unit_id, dx, dz);
 }
 
-pub fn flee(unit_id: i32) {
+pub fn flee(global: &Global, unit_id: i32) {
     let Some(position) = units::position(unit_id) else {
         return;
     };
@@ -93,6 +94,7 @@ pub fn flee(unit_id: i32) {
     let cy = units::ground_height(cx, cz);
     let _ = spring::give_order_to_unit(unit_id, cmd::FIRE_STATE, &[0.0], 0, 0);
     attributes::add_effect(
+        global,
         unit_id,
         Effect::Flee,
         Modifier {

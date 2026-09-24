@@ -1,10 +1,9 @@
 use alloc::collections::BTreeMap;
 use alloc::vec::Vec;
-use core::cell::RefCell;
-
 use spring::typed::MoveTypeNumericField;
 
 use crate::defs::{DefInfo, defs};
+use crate::state::Global;
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum Effect {
@@ -21,29 +20,27 @@ pub struct Modifier {
     pub reload_factor: f32,
 }
 
-pub fn add_effect(unit_id: i32, effect: Effect, modifier: Modifier) {
-    with_store(|store| {
-        let effects = store.effects.entry(unit_id).or_default();
+pub fn add_effect(global: &Global, unit_id: i32, effect: Effect, modifier: Modifier) {
+    {
+        let mut attributes = global.attributes.access_mut();
+        let effects = attributes.effects.entry(unit_id).or_default();
         effects.retain(|(existing, _)| *existing != effect);
         effects.push((effect, modifier));
-    });
-    apply(unit_id);
+    }
+    apply(global, unit_id);
 }
 
-pub fn remove_effect(unit_id: i32, effect: Effect) {
-    with_store(|store| {
-        if let Some(effects) = store.effects.get_mut(&unit_id) {
-            effects.retain(|(existing, _)| *existing != effect);
-        }
-    });
-    apply(unit_id);
+pub fn remove_effect(global: &Global, unit_id: i32, effect: Effect) {
+    if let Some(effects) = global.attributes.access_mut().effects.get_mut(&unit_id) {
+        effects.retain(|(existing, _)| *existing != effect);
+    }
+    apply(global, unit_id);
 }
 
-pub fn forget(unit_id: i32) {
-    with_store(|store| {
-        store.effects.remove(&unit_id);
-        store.base_reloads.remove(&unit_id);
-    });
+pub fn forget(global: &Global, unit_id: i32) {
+    let mut attributes = global.attributes.access_mut();
+    attributes.effects.remove(&unit_id);
+    attributes.base_reloads.remove(&unit_id);
 }
 
 const BASE_MOVE: f32 = 1.0;
@@ -54,11 +51,10 @@ const PAUSED_RELOAD: f32 = 100000.0;
 
 /// The attribute effects on every unit, like the Lua build's GG.Attributes.
 ///
-/// Module state rather than addon state because the unit scripts (Core-CUS,
-/// which has no addon context) add effects too. Borrows never span an engine
-/// call, and a conflicting borrow panics instead of skipping the update.
+/// Shared: spells, the ork AI, the combat gadget and the unit scripts' Killed
+/// all add effects. It is never borrowed across an engine call.
 #[derive(Default)]
-struct Store {
+pub struct Attributes {
     /// Each unit's effects in the order they were added, which is the order
     /// their factors multiply in.
     effects: BTreeMap<i32, Vec<(Effect, Modifier)>>,
@@ -66,30 +62,20 @@ struct Store {
     base_reloads: BTreeMap<i32, f32>,
 }
 
-thread_local! {
-    static STORE: RefCell<Store> = RefCell::new(Store::default());
-}
-
-fn with_store<R>(function: impl FnOnce(&mut Store) -> R) -> R {
-    STORE.with(|store| function(&mut store.borrow_mut()))
-}
-
-fn apply(unit_id: i32) {
-    let (move_factor, reload_factor) = combined(unit_id);
+fn apply(global: &Global, unit_id: i32) {
+    let (move_factor, reload_factor) = combined(&global.attributes.access(), unit_id);
     apply_movement(unit_id, move_factor);
-    apply_reload(unit_id, reload_factor);
+    apply_reload(global, unit_id, reload_factor);
 }
 
-fn combined(unit_id: i32) -> (f32, f32) {
-    with_store(|store| {
-        let mut move_factor = BASE_MOVE;
-        let mut reload_factor = BASE_RELOAD;
-        for (_, modifier) in store.effects.get(&unit_id).into_iter().flatten() {
-            move_factor *= modifier.move_factor;
-            reload_factor *= modifier.reload_factor;
-        }
-        (move_factor, reload_factor)
-    })
+fn combined(attributes: &Attributes, unit_id: i32) -> (f32, f32) {
+    let mut move_factor = BASE_MOVE;
+    let mut reload_factor = BASE_RELOAD;
+    for (_, modifier) in attributes.effects.get(&unit_id).into_iter().flatten() {
+        move_factor *= modifier.move_factor;
+        reload_factor *= modifier.reload_factor;
+    }
+    (move_factor, reload_factor)
 }
 
 fn apply_movement(unit_id: i32, factor: f32) {
@@ -124,8 +110,8 @@ fn apply_movement(unit_id: i32, factor: f32) {
 ///
 /// A factor of zero means "never fire again", which the weapon state cannot
 /// express directly, so it becomes a reload long enough to outlast any match.
-fn apply_reload(unit_id: i32, factor: f32) {
-    let Some(base) = base_reload(unit_id) else {
+fn apply_reload(global: &Global, unit_id: i32, factor: f32) {
+    let Some(base) = base_reload(global, unit_id) else {
         return;
     };
     let reload = if factor <= 0.0 {
@@ -145,15 +131,25 @@ fn apply_reload(unit_id: i32, factor: f32) {
 /// live weapon state already carries a factor, so deriving from it would
 /// compound. The first call happens before any effect has been applied, so what
 /// the weapon reports then is the def value.
-fn base_reload(unit_id: i32) -> Option<f32> {
-    if let Some(base) = with_store(|store| store.base_reloads.get(&unit_id).copied()) {
-        return Some(base);
+fn base_reload(global: &Global, unit_id: i32) -> Option<f32> {
+    let known = global
+        .attributes
+        .access()
+        .base_reloads
+        .get(&unit_id)
+        .copied();
+    if known.is_some() {
+        return known;
     }
     let base = spring::owned::units_weapons::get_unit_weapon_state(unit_id, 1, "reloadTime")
         .ok()
         .map(|state| state.reload_time)
         .filter(|reload| *reload > 0.0)?;
-    with_store(|store| store.base_reloads.insert(unit_id, base));
+    global
+        .attributes
+        .access_mut()
+        .base_reloads
+        .insert(unit_id, base);
     Some(base)
 }
 

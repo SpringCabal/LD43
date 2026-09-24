@@ -7,7 +7,7 @@ mod kinds;
 mod module;
 mod tasks;
 
-pub use module::{TtldCusModule, queue_call, queue_unit_created};
+pub use module::{TtldCusModule, call};
 
 use alloc::rc::Rc;
 use core::cell::RefCell;
@@ -172,9 +172,8 @@ impl UnitScript for TtldUnitScript {
             }
             ScriptKind::House => {}
         }
-        // CUS attaches after UnitCreated. A wave's initial movement order can
-        // already have called StartMoving on the previous (empty) script.
-        // Recover that state instead of waiting for another movement order.
+        // A unit can be moving before its script exists (one attached a frame
+        // late, see UnitScriptsGadget), and then its StartMoving went nowhere.
         if kind != ScriptKind::House
             && let Ok(velocity) = spring::get_unit_velocity(ctx.unit().0)
             && velocity.x * velocity.x + velocity.z * velocity.z > 0.0001
@@ -406,19 +405,30 @@ impl UnitScript for TtldUnitScript {
                 collision_volume(ctx.unit(), false);
                 collision_volume(ctx.unit(), true);
                 let _ = spring::set_unit_neutral(ctx.unit().0, true);
-                // Safe inside a CUS callin: the UnitGiven/UnitTaken this raises
-                // have no handler in this module, and the attribute store is
-                // never borrowed across an engine call.
-                let _ =
-                    spring::transfer_unit(ctx.unit().0, crate::units::NEUTRAL_TEAM, false, false);
-                combat::add_effect(
-                    ctx.unit().0,
-                    combat::Effect::DeathParalysis,
-                    combat::Modifier {
-                        move_factor: 0.0,
-                        reload_factor: 0.0,
-                    },
-                );
+                // The transfer raises UnitTaken and UnitGiven right here, inside
+                // this unit script. No gadget handles them, and gadgets never
+                // hold shared state across the engine calls that kill units, so
+                // the attributes are free for the death paralysis below.
+                if let Err(error) =
+                    spring::transfer_unit(ctx.unit().0, crate::units::NEUTRAL_TEAM, false, false)
+                {
+                    spring::log_warning!(
+                        "ttld-wasm",
+                        "dying unit {} not made neutral: {error:?}",
+                        ctx.unit().0
+                    );
+                }
+                crate::with_global(|global| {
+                    combat::add_effect(
+                        global,
+                        ctx.unit().0,
+                        combat::Effect::DeathParalysis,
+                        combat::Modifier {
+                            move_factor: 0.0,
+                            reload_factor: 0.0,
+                        },
+                    )
+                });
                 set_blocking(ctx.unit(), false);
                 ctx.spawn(TaskDefinition::with_state(
                     "ttld-human-death",

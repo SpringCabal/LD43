@@ -4,7 +4,7 @@ use core::cell::Cell;
 
 use spring_addons::Resource;
 
-use crate::combat::{OrkAi, Statuses};
+use crate::combat::{Attributes, OrkAi, Statuses};
 use crate::player::{Player, Spellbook};
 
 #[derive(Default)]
@@ -21,6 +21,8 @@ pub struct Global {
     pub orks: Resource<OrkAi>,
     /// Timed status effects (adrenaline, stun) from spells.
     pub statuses: Resource<Statuses>,
+    /// Speed and reload modifiers on every unit.
+    pub attributes: Resource<Attributes>,
 }
 
 /// Where a game frame falls relative to world setup.

@@ -89,7 +89,7 @@ pub fn cast(
         }
     };
     let level = spell.animation_level();
-    crate::unit_scripts::queue_call(unit_id, "CastAnimation", &[level as f32, tx, tz]);
+    crate::unit_scripts::call(unit_id, "CastAnimation", &[level as f32, tx, tz]);
     global.spells.access_mut().effects.push(PendingEffect {
         unit_id,
         spell,
@@ -377,7 +377,7 @@ fn resolve_poultice(global: &Global, unit_id: i32, frame: i32) {
             frame: frame + (distance / POULTICE_ELMOS_PER_FRAME).ceil() as i32,
         };
         global.spells.access_mut().impulses.push(delayed);
-        crate::unit_scripts::queue_call(target, "StopMoving", &[]);
+        crate::unit_scripts::call(target, "StopMoving", &[]);
     }
     spawn_effect_at(origin, CEG_POULTICE);
 }

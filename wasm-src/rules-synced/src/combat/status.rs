@@ -50,7 +50,7 @@ pub fn adrenaline(global: &Global, unit_id: i32, duration: i32, frame: i32) {
             reload_factor: 2.5,
         }
     };
-    attributes::add_effect(unit_id, Effect::Buff, modifier);
+    attributes::add_effect(global, unit_id, Effect::Buff, modifier);
     call_script(unit_id, "Buff", duration as f32);
     global
         .statuses
@@ -65,6 +65,7 @@ pub fn stun(global: &Global, unit_id: i32, duration: i32, frame: i32) {
         duration
     };
     attributes::add_effect(
+        global,
         unit_id,
         Effect::Stun,
         Modifier {
@@ -83,7 +84,7 @@ pub fn stun(global: &Global, unit_id: i32, duration: i32, frame: i32) {
 pub fn update(global: &Global, frame: i32) {
     let expired = global.statuses.access_mut().take_expired(frame);
     for timer in expired {
-        attributes::remove_effect(timer.unit_id, timer.effect);
+        attributes::remove_effect(global, timer.unit_id, timer.effect);
     }
 }
 
@@ -106,5 +107,5 @@ fn resists(unit_id: i32) -> bool {
 }
 
 fn call_script(unit_id: i32, function_name: &str, argument: f32) {
-    crate::unit_scripts::queue_call(unit_id, function_name, &[argument]);
+    crate::unit_scripts::call(unit_id, function_name, &[argument]);
 }
