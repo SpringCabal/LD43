@@ -1,6 +1,7 @@
 pub mod api_sync;
 #[cfg(feature = "e2e")]
 pub mod dbg_e2e;
+pub mod gallery;
 pub mod gfx_fire;
 pub mod gfx_highlight;
 pub mod gfx_lighting;

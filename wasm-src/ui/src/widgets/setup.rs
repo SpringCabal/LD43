@@ -13,15 +13,20 @@ const MUSIC_VOLUME: f32 = 0.20;
 /// The track's length, in case the engine can't report it.
 const MUSIC_SECONDS: f32 = 270.0;
 
+/// The minimap stays: the minimap widget draws the engine's.
+pub const HIDDEN_INTERFACE: u32 =
+    CONSOLE | RESOURCE_BAR | TOOLTIP | CLOCK | PLAYER_INFO | UNIT_ICONS | END_GRAPH;
+
 /// Registers the widgets in the order they update and draw.
 pub fn setup(handler: &mut WidgetHandler<Global>) {
+    if gallery::active() {
+        gallery::setup(handler);
+        return;
+    }
     register_widgets!(
         handler,
         [
-            // The minimap stays: the minimap widget draws the engine's.
-            HideDefaultInterface::new(
-                CONSOLE | RESOURCE_BAR | TOOLTIP | CLOCK | PLAYER_INFO | UNIT_ICONS | END_GRAPH
-            ),
+            HideDefaultInterface::new(HIDDEN_INTERFACE),
             GuiInputWidget::new(),
             ApiSyncWidget::new(),
             GuiHudWidget::new(),
