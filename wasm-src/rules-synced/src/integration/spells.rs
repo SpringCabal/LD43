@@ -1,16 +1,28 @@
-//! Transfusion and Migraine, cast through the input path: the rules message
-//! the UI sends for keys 1 and 4, which the player takes on its next frame.
+//! Every spell, cast through the input path: the `spell` rules message the
+//! UI sends for keys 1 to 5, which the player takes on its next frame. A
+//! spell sent while the blood mage is still casting is dropped, as in play,
+//! so the casts are spaced out.
 
 use alloc::format;
 use alloc::vec::Vec;
 
+use spring::ResultExt;
 use springcabal::message::Encoder;
+use ttld_shared::Command;
 
 use crate::defs::UnitKind;
-use crate::units::{self, ENEMY_TEAM};
+use crate::units::{self, ENEMY_TEAM, PLAYER_TEAM};
 
 use super::*;
 
+pub(super) const ADRENALINE_CAST: i32 = 120;
+/// Adrenaline's cast (8 frames) is over; Poultice's takes 18.
+pub(super) const POULTICE_CAST: i32 = 130;
+pub(super) const HEARTBURN_CAST: i32 = 150;
+/// Heartburn has drained its blood; its fireball lands about 20 frames on.
+pub(super) const HEARTBURN_ALLY: i32 = 155;
+/// The fireball has landed and Poultice's target is still in the air.
+pub(super) const SPELLS_LANDED_CHECK: i32 = 185;
 pub(super) const TRANSFUSION_CAST: i32 = 240;
 pub(super) const TRANSFUSION_CHECK: i32 = 262;
 /// Migraine is cast right after the Transfusion check.
@@ -31,7 +43,7 @@ pub(super) fn cast_transfusion(world: &World) {
     let hurt_ok =
         hurt.is_some_and(|hurt| spring::set_unit_health(mage, units::health_value(hurt)).is_ok());
     let drained = world.global.score.access().allies_drained;
-    let sent = send_spell(1, position);
+    let sent = send_spell(TRANSFUSION, position);
     world.track(|tracker| {
         check(
             tracker,
@@ -94,7 +106,7 @@ pub(super) fn cast_migraine(world: &World) {
         y: units::ground_height(x, z),
         z,
     };
-    let sent = send_spell(4, target);
+    let sent = send_spell(MIGRAINE, target);
     world.track(|tracker| {
         check(
             tracker,
@@ -133,20 +145,243 @@ pub(super) fn migraine_checks(world: &World) {
     }
 }
 
+/// Adrenaline, cast where the blood mage stands.
+pub(super) fn cast_adrenaline(world: &World) {
+    let Some((_, position)) = mage(world) else {
+        world.track(|tracker| check(tracker, false, "the blood mage is there for Adrenaline"));
+        return;
+    };
+    let drained = world.global.score.access().allies_drained;
+    let sent = send_spell(ADRENALINE, position);
+    world.track(|tracker| {
+        tracker.spell_sent = sent;
+        tracker.drained_before_adrenaline = drained;
+    });
+}
+
+/// Checks Adrenaline, then casts Poultice at an ork out of Heartburn's reach.
+pub(super) fn cast_poultice(world: &World) {
+    let taken = cast_taken(world, ADRENALINE_CAST);
+    let drained = world.global.score.access().allies_drained;
+    world.track(|tracker| {
+        check(
+            tracker,
+            tracker.spell_sent && taken,
+            "Adrenaline, sent as the UI sends it, is cast",
+        );
+        check(
+            tracker,
+            drained > tracker.drained_before_adrenaline,
+            &format!(
+                "blood magic consumed villagers ({} -> {drained} drained)",
+                tracker.drained_before_adrenaline
+            ),
+        );
+    });
+    let Some((_, position)) = mage(world) else {
+        world.track(|tracker| check(tracker, false, "the blood mage is there for Poultice"));
+        return;
+    };
+    // Outside Heartburn's 250-elmo blast, so only Poultice's delayed
+    // AddUnitImpulse moves it.
+    let target = units::create(
+        UnitKind::OrkSmall,
+        position.x + POULTICE_TARGET_OFFSET,
+        position.z,
+        ENEMY_TEAM,
+        0,
+    );
+    let before = target.and_then(units::position);
+    let sent = send_spell(POULTICE, position);
+    world.track(|tracker| {
+        tracker.spell_sent = sent;
+        tracker.poultice_target = target.filter(|_| before.is_some()).unwrap_or(-1);
+        if let Some(before) = before {
+            tracker.poultice_x = before.x;
+            tracker.poultice_z = before.z;
+        }
+        tracker.poultice_origin_x = position.x;
+        tracker.poultice_origin_z = position.z;
+    });
+}
+
+/// Checks Poultice, then casts Heartburn at one ork, with a second one inside
+/// its blast but away from its centre.
+pub(super) fn cast_heartburn(world: &World) {
+    let taken = cast_taken(world, POULTICE_CAST);
+    world.track(|tracker| {
+        check(
+            tracker,
+            tracker.spell_sent && taken,
+            "Poultice, sent as the UI sends it, is cast",
+        )
+    });
+    let Some((_, position)) = mage(world) else {
+        world.track(|tracker| check(tracker, false, "the blood mage is there for Heartburn"));
+        return;
+    };
+    let (tx, tz) = (position.x + 100.0, position.z);
+    let target = units::create(UnitKind::OrkSmall, tx, tz, ENEMY_TEAM, 0);
+    let edge = units::create(
+        UnitKind::OrkSmall,
+        tx,
+        tz + HEARTBURN_EDGE_OFFSET,
+        ENEMY_TEAM,
+        0,
+    );
+    // They stand in the town until the fireball lands, about 20 frames on;
+    // neutral, so the villagers don't kill them first.
+    for unit in [target, edge].into_iter().flatten() {
+        spring::set_unit_neutral(unit, true).log_err("neutral Heartburn target");
+    }
+    let ground = units::ground_height(tx, tz);
+    let sent = send_spell(
+        HEARTBURN,
+        spring::types::Float3 {
+            x: tx,
+            y: ground,
+            z: tz,
+        },
+    );
+    world.track(|tracker| {
+        tracker.spell_sent = sent && target.is_some() && edge.is_some();
+        tracker.heartburn_target = target.unwrap_or(-1);
+        tracker.heartburn_edge = edge.unwrap_or(-1);
+        tracker.heartburn_ground = (tx, tz, ground);
+    });
+}
+
+/// Checks Heartburn, and puts one of the player's units inside its blast.
+/// Created after the cast, so its blood magic can't drain it.
+pub(super) fn heartburn_ally(world: &World) {
+    let taken = cast_taken(world, HEARTBURN_CAST);
+    world.track(|tracker| {
+        check(
+            tracker,
+            tracker.spell_sent && taken,
+            "Heartburn, sent as the UI sends it, is cast with its targets in place",
+        )
+    });
+    let (tx, tz, _) = world.track(|tracker| tracker.heartburn_ground);
+    let ally = units::create(
+        UnitKind::Peasant,
+        tx,
+        tz - HEARTBURN_EDGE_OFFSET,
+        PLAYER_TEAM,
+        0,
+    );
+    world.track(|tracker| tracker.heartburn_ally = ally.unwrap_or(-1));
+}
+
+/// How far from the fireball's target the other units in its blast stand.
+/// Its area of effect is 500, so its radius is 250.
+const HEARTBURN_EDGE_OFFSET: f32 = 170.0;
+/// Where Poultice's target stands, from the blood mage (radius 720).
+const POULTICE_TARGET_OFFSET: f32 = 600.0;
+
+pub(super) fn spells_landed_checks(tracker: &mut Tracker, _world: &World) {
+    let damage_to = |unit_id: i32| {
+        tracker
+            .fireball_hits
+            .iter()
+            .filter(|(hit, _)| *hit == unit_id && unit_id >= 0)
+            .map(|(_, damage)| *damage)
+            .fold(0.0, f32::max)
+    };
+    let centre = damage_to(tracker.heartburn_target);
+    let edge = damage_to(tracker.heartburn_edge);
+    let ally = damage_to(tracker.heartburn_ally);
+    check(
+        tracker,
+        centre > 0.0,
+        &format!("heartburn's fireball explodes on its target ({centre:.0} damage)"),
+    );
+    let (tx, tz, _) = tracker.heartburn_ground;
+    let edge_distance = units::position(tracker.heartburn_edge).map_or(-1.0, |position| {
+        ((position.x - tx).powi(2) + (position.z - tz).powi(2)).sqrt()
+    });
+    check(
+        tracker,
+        edge > 0.0 && edge < centre,
+        &format!(
+            "the fireball's damage falls off away from the blast centre ({edge:.0} < {centre:.0}; \
+             the other ork is {edge_distance:.0} from it)"
+        ),
+    );
+    check(
+        tracker,
+        ally > 0.0,
+        &format!("the fireball also hurts the player's own units ({ally:.0} damage)"),
+    );
+    let (x, z, before) = tracker.heartburn_ground;
+    let after = units::ground_height(x, z);
+    check(
+        tracker,
+        after < before - 1.0,
+        &format!("the fireball leaves a crater (ground {before:.1} -> {after:.1})"),
+    );
+
+    let target = tracker.poultice_target;
+    let (moved, away_dot) = spring::units_info::get_unit_position(
+        target,
+        spring::units_info::GetUnitPositionOptions {
+            mid_pos: false,
+            aim_pos: false,
+        },
+    )
+    .map(|position| {
+        let dx = position.x - tracker.poultice_x;
+        let dz = position.z - tracker.poultice_z;
+        let away_x = tracker.poultice_x - tracker.poultice_origin_x;
+        let away_z = tracker.poultice_z - tracker.poultice_origin_z;
+        ((dx * dx + dz * dz).sqrt(), dx * away_x + dz * away_z)
+    })
+    .unwrap_or((0.0, 0.0));
+    check(
+        tracker,
+        target >= 0 && moved > 1.0 && away_dot > 1.0,
+        &format!(
+            "poultice throws an enemy unit away from the blood mage (moved {moved:.1}, away_dot {away_dot:.1})"
+        ),
+    );
+    let airborne = spring::get_unit_physical_state(target)
+        .map(|physical_state| (physical_state & PHYSICAL_STATE_FLYING) != 0)
+        .unwrap_or(false);
+    check(
+        tracker,
+        target >= 0 && airborne,
+        "poultice target is airborne after the impulse",
+    );
+}
+
 fn mage(world: &World) -> Option<(i32, spring::types::Float3)> {
     let mage = world.global.player.access().unit_id()?;
     Some((mage, units::position(mage)?))
 }
 
-/// Sends the UI's `spell|index|x|y|z` message.
+/// Spell numbers, as the UI's keys send them.
+const TRANSFUSION: i32 = 1;
+const HEARTBURN: i32 = 2;
+const ADRENALINE: i32 = 3;
+const MIGRAINE: i32 = 4;
+const POULTICE: i32 = 5;
+
+/// Sends the message the UI sends when a spell key is pressed over `target`.
 fn send_spell(index: i32, target: spring::types::Float3) -> bool {
-    let message = Encoder::new("spell")
-        .field(index)
-        .field(target.x)
-        .field(target.y)
-        .field(target.z)
-        .finish();
-    springcabal::message::send_to_rules(&message)
+    springcabal::message::send_to_rules(
+        &Command::Spell {
+            index,
+            x: target.x,
+            y: target.y,
+            z: target.z,
+        }
+        .message(),
+    )
+}
+
+/// Whether the player took the cast sent on frame `sent`.
+fn cast_taken(world: &World, sent: i32) -> bool {
+    world.global.player.access().cast_start_frame() >= sent
 }
 
 pub(super) const VICTORY_ATTACK: i32 = 405;

@@ -34,7 +34,7 @@ use crate::units::{
 const TAG: &str = "[TTLD-Rust-Test]";
 const TITLE: &str = "TO THE LAST DROP INTEGRATION TESTS";
 /// Every check below; fewer means some were skipped.
-const CHECK_COUNT: u32 = 52;
+const CHECK_COUNT: u32 = 53;
 /// CSolidObject::PSTATE_BIT_FLYING.
 const PHYSICAL_STATE_FLYING: u32 = 1 << 7;
 
@@ -54,6 +54,9 @@ pub struct Tracker {
     /// The ork the stun checks stun, and every bite of a small ork.
     stun_ork: i32,
     bites: Vec<Bite>,
+    /// Whether the last spell's message went out (and its targets exist).
+    spell_sent: bool,
+    drained_before_adrenaline: i32,
     /// Villagers drained before Transfusion, and Migraine's targets.
     drained_before_transfusion: i32,
     migraine_targets: Vec<i32>,
@@ -168,8 +171,11 @@ pub fn update(tracker: &RefCell<Tracker>, global: &Global, frame: i32) {
         60 => with_checks(&world, player_attack_checks),
         // The UI would send this when the mouse button comes up.
         62 => command_player(&world, crate::player::PlayerCommand::Stop),
-        120 => spell_checks(&world),
-        150 => with_checks(&world, spells_landed_checks),
+        ADRENALINE_CAST => cast_adrenaline(&world),
+        POULTICE_CAST => cast_poultice(&world),
+        HEARTBURN_CAST => cast_heartburn(&world),
+        HEARTBURN_ALLY => heartburn_ally(&world),
+        SPELLS_LANDED_CHECK => with_checks(&world, spells_landed_checks),
         STUN_SETUP => with_checks(&world, stun_fixture),
         STUN_START => with_checks(&world, stun_the_ork),
         STUN_PAUSED_CHECK => with_checks(&world, stunned_checks),
