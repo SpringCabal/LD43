@@ -26,7 +26,7 @@ use super::victory::VictoryGadget;
 
 /// Starts a round, on the first game frame and on the first frame after the
 /// player asks for a restart: removes every unit, forgets the previous
-/// round, opens the map to every ally team and prepares the terrain types.
+/// round, opens the map to the two player ally teams and prepares the terrain types.
 /// The town itself is built by the town gadget in the same frame; see
 /// [`Phase`].
 #[derive(Default)]
@@ -76,7 +76,9 @@ impl Gadget<Global> for SetupGadget {
     }
 }
 
-const ALLY_TEAMS: i32 = 3;
+/// `game_setup_modrules.lua` opens the map to ally teams 0 and 1 only; in
+/// the menu's two-team layout ally team 2 is Gaia.
+const ALLY_TEAMS: i32 = 2;
 
 /// Registers the gadgets. Their order is the order they run in each frame,
 /// which also fixes the order in which they draw from the synced RNG.

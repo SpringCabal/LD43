@@ -77,6 +77,21 @@ pub(super) fn setup_checks(tracker: &mut Tracker, world: &World) {
             leader_scales.0, leader_scales.1
         ),
     );
+    // game_setup_modrules.lua opens the map to ally teams 0 and 1 only.
+    let gaia_ally_team = spring::game::get_gaia_team_id(0)
+        .and_then(spring::teams::get_team_ally_team_id)
+        .unwrap_or(-1);
+    let los = |ally_team| spring::game::get_global_los(ally_team).unwrap_or(-1);
+    check(
+        tracker,
+        los(0) == 1 && los(1) == 1 && gaia_ally_team == 2 && los(gaia_ally_team) == 0,
+        &format!(
+            "global LOS for ally teams 0 and 1, not Gaia's ally team {gaia_ally_team} ({}, {}, {})",
+            los(0),
+            los(1),
+            los(gaia_ally_team)
+        ),
+    );
     check(
         tracker,
         spring::owned::units_weapons::get_unit_weapon_state(player, 1, "reloadTime")
