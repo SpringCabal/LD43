@@ -51,4 +51,5 @@ These are deliberate. Keep them when matching the Lua original; they are not dif
 - The Poultice pulse (`../effects/gtfo_pulse.lua`) is larger and lasts twice as long, with a green wave of `migraine` particles.
 - A drain that can't pay for a spell gives the villagers it had picked back to the player. Lua leaves them on the neutral team for the rest of the round, where they can't be drained or used again (`rules-synced/src/player/drain.rs`).
 - A boss that fails to spawn is spawned again before victory becomes possible; Lua would declare victory as soon as the final wave arrived (`rules-synced/src/gadgets/story.rs`).
+- The builder, a unit no game code spawns, animates with the crossbowman's script, whose model and weapon it shares. Its Lua def names `defender.lua`, a script the game never shipped, so the Lua builder has no script and doesn't animate; `gallery parity ttld` shows the difference in its move and attack shots (`rules-synced/src/unit_scripts/kinds.rs`).
 - Restart starts a new round in place, and R restarts as well as Enter and the end screen's button; Lua's end screen reloads the whole game (`reloadforce`).
