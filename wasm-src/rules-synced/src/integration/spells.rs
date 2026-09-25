@@ -146,7 +146,7 @@ fn send_spell(index: i32, target: spring::types::Float3) -> bool {
         .field(target.y)
         .field(target.z)
         .finish();
-    spring::send_lua_rules_msg(&message).unwrap_or(false)
+    springcabal::message::send_to_rules(&message)
 }
 
 pub(super) const VICTORY_ATTACK: i32 = 405;
@@ -162,7 +162,7 @@ pub(super) fn attack_after_victory(world: &World) {
         .field(position.x + 200.0)
         .field(position.z)
         .finish();
-    let sent = spring::send_lua_rules_msg(&message).unwrap_or(false);
+    let sent = springcabal::message::send_to_rules(&message);
     world.track(|tracker| tracker.victory_attack_sent = sent);
 }
 

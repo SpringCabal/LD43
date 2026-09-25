@@ -1,44 +1,26 @@
-//! Gallery mode, for the verification galleries
-//! (`verification/fixtures/gallery/gallery.lua` in springcabal-games).  They
-//! set the `gallery` modoption, place the camera themselves and capture single
-//! units and effects, so only the widgets that draw what a player sees in the
-//! world stay: no HUD, RmlUi document, minimap, input, camera or music.
+//! Gallery mode (`springcabal::gallery`): only the widgets that draw what a
+//! player sees in the world.
 
-use spring_addons::register_widgets;
 use spring_addons::ui::{HideDefaultInterface, Widget, WidgetHandler};
+use springcabal::gallery::Gallery;
 
 use super::*;
 use crate::cursor;
 use crate::state::{Cursor, Global};
 
-/// Whether the `gallery` modoption is set.
-pub fn active() -> bool {
-    spring::game_options::get_mod_option("gallery")
-        .ok()
-        .flatten()
-        .is_some_and(|mode| !mode.is_empty())
-}
-
 /// The lighting pass (sun, house, staff, cursor and projectile lights, bloom),
 /// burning houses, the map edge and the hover highlight. The staff light's
 /// flicker stays still: it follows real time, which differs between runs.
 pub fn setup(handler: &mut WidgetHandler<Global>) {
-    register_widgets!(
-        handler,
-        [
-            HideDefaultInterface::new(setup::HIDDEN_INTERFACE),
-            GalleryPointerWidget,
-            ApiSyncWidget::new(),
-            GfxLightingWidget::new(true),
-            GfxFireWidget::new(),
-            GfxMapEdgeWidget::new(),
-            GfxHighlightWidget::new(),
-        ]
-    );
-    spring::log_notice!(
-        "ttld-ui",
-        "gallery mode: HideDefaultInterface GalleryPointer ApiSync GfxLighting GfxFire GfxMapEdge GfxHighlight"
-    );
+    Gallery::new(handler)
+        .widget(HideDefaultInterface::new(setup::HIDDEN_INTERFACE))
+        .widget(GalleryPointerWidget)
+        .widget(ApiSyncWidget::new())
+        .widget(GfxLightingWidget::new(true))
+        .widget(GfxFireWidget::new())
+        .widget(GfxMapEdgeWidget::new())
+        .widget(GfxHighlightWidget::new())
+        .announce("ttld-ui");
 }
 
 /// Stands in for the player's pointer, which the input and HUD widgets track

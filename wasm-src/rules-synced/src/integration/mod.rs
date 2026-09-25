@@ -84,7 +84,7 @@ struct Checks(Suite);
 
 impl Default for Checks {
     fn default() -> Self {
-        Self(Suite::new(TAG, TITLE).require_at_least(CHECK_COUNT))
+        Self(Suite::new(TAG, TITLE, CHECK_COUNT))
     }
 }
 

@@ -161,8 +161,7 @@ impl DbgE2eWidget {
         match step {
             Step::CloseIntro => hud::close_intro(ctx.global()),
             Step::LeaderFixture => {
-                spring::send_lua_rules_msg(&Command::LeaderRenderFixture.message())
-                    .log_err("leader fixture");
+                springcabal::message::send_to_rules(&Command::LeaderRenderFixture.message());
             }
             Step::ReportLeaderFixture => report_leader_fixture(),
             Step::Heartburn => send_spell(2, 1000.0),
@@ -352,7 +351,7 @@ fn send_spell(index: i32, z_offset: f32) {
             z: position.z + z_offset,
         }
         .message();
-        let accepted = spring::send_lua_rules_msg(&message).unwrap_or(false);
+        let accepted = springcabal::message::send_to_rules(&message);
         let name = if index == 5 { "poultice" } else { "heartburn" };
         let _ = spring::echo(&alloc::format!("TTLD E2E {name} sent: {accepted}"), "");
     } else {
@@ -379,7 +378,7 @@ fn move_player(x_offset: f32, z_offset: f32) {
         z: position.z + z_offset,
     }
     .message();
-    let _ = spring::send_lua_rules_msg(&message);
+    springcabal::message::send_to_rules(&message);
 }
 
 fn report_tracking(label: &str) {

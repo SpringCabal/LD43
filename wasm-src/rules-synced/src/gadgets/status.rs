@@ -32,7 +32,7 @@ impl Gadget<Global> for StatusGadget {
             Phase::Running => {}
         }
         self.sent.send_if_changed(read(global, frame), |status| {
-            spring::send_to_unsynced(&status.message()).is_ok()
+            springcabal::message::send_to_ui(&status.message())
         });
     }
 }

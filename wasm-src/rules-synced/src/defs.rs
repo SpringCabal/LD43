@@ -1,9 +1,10 @@
 //! The unit and weapon defs the rules refer to, resolved once, and the per-def
 //! values they read on hot paths, cached on first use.
 
-use alloc::boxed::Box;
 use alloc::collections::BTreeMap;
-use core::cell::{OnceCell, RefCell};
+use core::cell::RefCell;
+
+use springcabal::defs::DefCache;
 
 /// Every unit def the rules refer to by name.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -80,14 +81,12 @@ pub struct Defs {
     info: RefCell<BTreeMap<i32, DefInfo>>,
 }
 
-thread_local! {
-    static DEFS: OnceCell<&'static Defs> = const { OnceCell::new() };
-}
+static DEFS: DefCache<Defs> = DefCache::new(Defs::resolve);
 
 /// The game's defs. Resolved on first use, which is always after the engine
 /// has loaded them.
 pub fn defs() -> &'static Defs {
-    DEFS.with(|defs| *defs.get_or_init(|| Box::leak(Box::new(Defs::resolve()))))
+    DEFS.get()
 }
 
 impl Defs {

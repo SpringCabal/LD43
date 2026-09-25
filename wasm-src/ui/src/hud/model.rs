@@ -73,8 +73,7 @@ pub fn restart(global: &Global) {
     if global.hud.access().restart_requested {
         return;
     }
-    if let Err(error) = spring::send_lua_rules_msg(&Command::Restart.message()) {
-        spring::log_warning!("ttld-ui", "restart not sent: {error:?}");
+    if !springcabal::message::send_to_rules(&Command::Restart.message()) {
         return;
     }
     global.hud.access_mut().restart_requested = true;

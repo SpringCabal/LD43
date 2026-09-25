@@ -97,13 +97,13 @@ fn send_held(held: &Held, command: &'static str, ground: spring::types::Float3) 
         } else {
             Command::Move { x, z }
         };
-        send_rules_msg(&command.message());
+        springcabal::message::send_to_rules(&command.message());
     }
 }
 
 fn release(held: &Held) {
     if held.release() {
-        send_rules_msg(&Command::Stop.message());
+        springcabal::message::send_to_rules(&Command::Stop.message());
     }
 }
 
@@ -140,7 +140,7 @@ pub fn key_press(global: &Global, event: &KeyEvent<'_>) -> bool {
         return true;
     }
     if event.matches("s") {
-        send_rules_msg(&Command::Stop.message());
+        springcabal::message::send_to_rules(&Command::Stop.message());
         return true;
     }
     if let Some(index) = SPELL_KEYS.iter().position(|key| event.matches(key)) {
@@ -156,12 +156,6 @@ const ATTACK: &str = "attack";
 /// The keys of spells 1 to 5.
 const SPELL_KEYS: [&str; 5] = ["1", "2", "3", "4", "5"];
 
-fn send_rules_msg(message: &str) {
-    if let Err(error) = spring::send_lua_rules_msg(message) {
-        spring::log_warning!("ttld-wasm", "input `{message}` not sent: {error:?}");
-    }
-}
-
 fn cast_spell(index: i32) {
     let Some((x, y)) = cursor() else {
         return;
@@ -169,7 +163,7 @@ fn cast_spell(index: i32) {
     let Some(position) = ground_at(x, y) else {
         return;
     };
-    send_rules_msg(
+    springcabal::message::send_to_rules(
         &Command::Spell {
             index,
             x: position.x,

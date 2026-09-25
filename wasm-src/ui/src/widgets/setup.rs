@@ -17,7 +17,7 @@ pub const HIDDEN_INTERFACE: u32 =
 
 /// Registers the widgets in the order they update and draw.
 pub fn setup(handler: &mut WidgetHandler<Global>) {
-    if gallery::active() {
+    if springcabal::gallery::active() {
         gallery::setup(handler);
         return;
     }
