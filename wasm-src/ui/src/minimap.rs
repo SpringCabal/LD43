@@ -3,16 +3,14 @@ use core::cell::{Cell, RefCell};
 
 use spring::{gfx, gl};
 
+use ttld_shared::minimap::{Viewport, centered_viewport, viewport_for_position};
+
 use crate::gl_uniforms;
 
-const MINIMAP_SCALE: f32 = 1.3;
 const SOURCE_SIZE: i32 = 600;
 const SCREEN_X: f32 = 0.0;
 const SCREEN_Y: f32 = 0.0;
 const MINIMAP_ALPHA: f32 = 1.0;
-// The viewport is as large as the town area, x 3300..8000 and z 3400..8100.
-const VIEWPORT_WORLD_X: f32 = 8000.0 - 3300.0;
-const VIEWPORT_WORLD_Z: f32 = 8100.0 - 3400.0;
 
 /// The player-centred minimap.
 #[derive(Default)]
@@ -32,15 +30,6 @@ struct Resources {
     screen: i32,
     width: i32,
     height: i32,
-}
-
-#[derive(Clone, Copy)]
-struct Viewport {
-    origin_x: f32,
-    origin_z: f32,
-    width: f32,
-    height: f32,
-    scale: f32,
 }
 
 /// Draw the same cropped/faded player-centered viewport as
@@ -274,57 +263,6 @@ fn player_viewport(unit_id: i32, map_size_x: f32, map_size_z: f32) -> Viewport {
     };
 
     viewport_for_position(position.x, position.z)
-}
-
-fn viewport_for_position(position_x: f32, position_z: f32) -> Viewport {
-    // Keep the crop centered on the unit even when its origin is outside the
-    // map. The source texture is edge-clamped, so the map boundary supplies
-    // the small amount of padding needed at the edge without changing the
-    // minimap's layout or zoom.
-    Viewport {
-        origin_x: position_x - VIEWPORT_WORLD_X * 0.5,
-        origin_z: position_z - VIEWPORT_WORLD_Z * 0.5,
-        width: VIEWPORT_WORLD_X,
-        height: VIEWPORT_WORLD_Z,
-        scale: MINIMAP_SCALE,
-    }
-}
-
-fn centered_viewport(map_size_x: f32, map_size_z: f32) -> Viewport {
-    Viewport {
-        origin_x: (map_size_x - VIEWPORT_WORLD_X) * 0.5,
-        origin_z: (map_size_z - VIEWPORT_WORLD_Z) * 0.5,
-        width: VIEWPORT_WORLD_X,
-        height: VIEWPORT_WORLD_Z,
-        scale: MINIMAP_SCALE,
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::{MINIMAP_SCALE, VIEWPORT_WORLD_X, VIEWPORT_WORLD_Z, viewport_for_position};
-
-    #[test]
-    fn centered_viewport_follows_player_interior() {
-        let viewport = viewport_for_position(5580.0, 7100.0);
-
-        assert_eq!(viewport.origin_x, 5580.0 - VIEWPORT_WORLD_X * 0.5);
-        assert_eq!(viewport.origin_z, 7100.0 - VIEWPORT_WORLD_Z * 0.5);
-        assert_eq!(viewport.width, VIEWPORT_WORLD_X);
-        assert_eq!(viewport.height, VIEWPORT_WORLD_Z);
-        assert_eq!(viewport.scale, MINIMAP_SCALE);
-    }
-
-    #[test]
-    fn north_edge_keeps_player_centered() {
-        let viewport = viewport_for_position(5580.0, 1000.0);
-
-        assert_eq!(viewport.origin_x, 5580.0 - VIEWPORT_WORLD_X * 0.5);
-        assert_eq!(viewport.origin_z, 1000.0 - VIEWPORT_WORLD_Z * 0.5);
-        assert_eq!(viewport.width, VIEWPORT_WORLD_X);
-        assert_eq!(viewport.height, VIEWPORT_WORLD_Z);
-        assert_eq!(viewport.scale, MINIMAP_SCALE);
-    }
 }
 
 fn draw_source() {

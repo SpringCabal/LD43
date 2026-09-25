@@ -6,6 +6,8 @@
 
 extern crate alloc;
 
+pub mod minimap;
+
 use alloc::string::String;
 
 use springcabal::message::{Encoder, fields, key_values};
