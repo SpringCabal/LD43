@@ -163,7 +163,7 @@ impl PoseProbeGadget {
 
 impl Gadget<Global> for PoseProbeGadget {
     fn name(&self) -> &'static str {
-        "TTLD Pose Probe"
+        "PoseProbe"
     }
 
     fn game_frame(&self, _ctx: &spring_addons::AddonContext<'_, Global>, frame: i32) {
