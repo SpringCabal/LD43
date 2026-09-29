@@ -1,3 +1,4 @@
+use spring::commands;
 use spring_addons::AddonContext;
 use spring_addons::rules::Gadget;
 
@@ -15,7 +16,11 @@ impl Gadget<Global> for VictoryGadget {
 
     fn game_frame(&self, ctx: &AddonContext<'_, Global>, frame: i32) {
         if ctx.global().running(frame) {
-            combat::declare_if_won(ctx.global());
+            // After the story's and the ork AI's commands, whose results it
+            // reads and whose orders its retreat replaces.
+            commands::run(|| {
+                crate::with_global(combat::declare_if_won);
+            });
         }
     }
 }

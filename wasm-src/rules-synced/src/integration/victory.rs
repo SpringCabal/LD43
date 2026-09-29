@@ -1,6 +1,7 @@
 use alloc::format;
 
 use spring::cmd;
+use spring::commands;
 
 use crate::combat::{self, Story};
 use crate::defs::{UnitKind, defs};
@@ -9,15 +10,13 @@ use crate::state::GameEnd;
 use super::*;
 
 /// Brings on the final wave the way the story does, since it only comes
-/// after several minutes. Spawning and the gate open with nothing borrowed:
-/// both re-enter the module through UnitCreated.
+/// after several minutes: the gate opens once the wave's units exist.
 pub(super) fn final_wave_checks(world: &World) {
-    let global = world.global;
     combat::spawn_wave(Story::final_wave());
-    let opened = combat::open_victory(global);
-    let game_end = global.game_end.get();
-    let bosses = boss_ids();
-    world.track(|tracker| {
+    world.then_track(|tracker, global| {
+        let opened = combat::open_victory(global);
+        let game_end = global.game_end.get();
+        let bosses = boss_ids();
         check(
             tracker,
             opened && game_end == GameEnd::VictoryPossible && !bosses.is_empty(),
@@ -44,18 +43,17 @@ pub(super) fn kill_boss_checks(world: &World) {
         core::mem::take(&mut tracker.bosses)
     });
     for boss in bosses {
-        let killed = spring::destroy_unit(
-            boss,
-            spring::effects_control::DestroyUnitOptions {
-                selfd: false,
-                recycle_id: false,
-                reclaimed: false,
-                attacker_id: -1,
-            },
-        );
-        if let Err(error) = killed {
-            spring::log_warning!("ttld-wasm", "boss {boss} not killed: {error:?}");
-        }
+        let options = spring::effects_control::DestroyUnitOptions {
+            selfd: false,
+            recycle_id: false,
+            reclaimed: false,
+            attacker_id: -1,
+        };
+        commands::destroy_unit(boss, options).then(move |killed| {
+            if let Err(error) = killed {
+                spring::log_warning!("ttld-wasm", "boss {boss} not killed: {error:?}");
+            }
+        });
     }
 }
 

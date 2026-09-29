@@ -1,3 +1,4 @@
+use spring::commands;
 use spring_addons::AddonContext;
 use spring_addons::rules::{Gadget, UnitDestroyedEvent};
 
@@ -17,10 +18,15 @@ impl Gadget<Global> for OrksGadget {
         if !ctx.global().running(frame) {
             return;
         }
-        let batch = ctx.global().orks.access_mut().next_batch();
-        for unit_id in batch {
-            combat::check_idle(unit_id);
-        }
+        // After this frame's waves, which spawn as commands: the batch counts
+        // the new orks, and the random numbers are drawn in the same order as
+        // in Lua.
+        commands::run(|| {
+            let batch = crate::with_global(|global| global.orks.access_mut().next_batch());
+            for unit_id in batch {
+                combat::check_idle(unit_id);
+            }
+        });
     }
 
     fn unit_created(

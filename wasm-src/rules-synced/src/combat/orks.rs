@@ -1,6 +1,7 @@
 use alloc::vec::Vec;
 
 use spring::cmd;
+use spring::commands;
 
 use crate::defs::defs;
 use crate::random;
@@ -62,10 +63,18 @@ impl OrkAi {
     }
 }
 
+/// Sends a new ork at the town. Called from its UnitCreated, which runs
+/// inside the command that creates it, so the order goes out at once: the
+/// idle check later in the same frame must see it.
 pub fn advance(unit_id: i32) {
     let dx = AIM_X + random::centered(AIM_VARIANCE);
     let dz = AIM_Z + random::centered(AIM_VARIANCE);
-    fight(unit_id, dx, dz);
+    let y = units::ground_height(dx, dz);
+    crate::engine::check(
+        spring::give_order_to_unit(unit_id, cmd::FIGHT, &[dx, y, dz], 0, 0),
+        "give_order_to_unit",
+        unit_id,
+    );
 }
 
 pub fn check_idle(unit_id: i32) {
@@ -74,7 +83,8 @@ pub fn check_idle(unit_id: i32) {
     }
     let dx = AIM_X + random::centered(AIM_REACHED_VARIANCE);
     let dz = AIM_Z + random::centered(AIM_REACHED_VARIANCE);
-    fight(unit_id, dx, dz);
+    let y = units::ground_height(dx, dz);
+    order(unit_id, cmd::FIGHT, &[dx, y, dz]);
 }
 
 pub fn flee(global: &Global, unit_id: i32) {
@@ -92,11 +102,7 @@ pub fn flee(global: &Global, unit_id: i32) {
     let cx = (position.x + FLEE_DISTANCE * dx / distance).clamp(1.0, map.map_size_x as f32 - 1.0);
     let cz = (position.z + FLEE_DISTANCE * dz / distance).clamp(1.0, map.map_size_z as f32 - 1.0);
     let cy = units::ground_height(cx, cz);
-    crate::engine::check(
-        spring::give_order_to_unit(unit_id, cmd::FIRE_STATE, &[0.0], 0, 0),
-        "give_order_to_unit",
-        unit_id,
-    );
+    order(unit_id, cmd::FIRE_STATE, &[0.0]);
     attributes::add_effect(
         global,
         unit_id,
@@ -106,11 +112,7 @@ pub fn flee(global: &Global, unit_id: i32) {
             reload_factor: 0.0,
         },
     );
-    crate::engine::check(
-        spring::give_order_to_unit(unit_id, cmd::MOVE, &[cx, cy, cz], 0, 0),
-        "give_order_to_unit",
-        unit_id,
-    );
+    order(unit_id, cmd::MOVE, &[cx, cy, cz]);
 }
 
 // Orks attack the town centre.
@@ -125,11 +127,8 @@ fn is_ork(unit_def_id: i32) -> bool {
     defs().is_ork(unit_def_id)
 }
 
-fn fight(unit_id: i32, x: f32, z: f32) {
-    let y = units::ground_height(x, z);
-    crate::engine::check(
-        spring::give_order_to_unit(unit_id, cmd::FIGHT, &[x, y, z], 0, 0),
-        "give_order_to_unit",
-        unit_id,
-    );
+/// Gives the order once the current callin has returned.
+fn order(unit_id: i32, cmd_id: i32, params: &[f32]) {
+    commands::give_order_to_unit(unit_id, cmd_id, params, 0, 0)
+        .then(move |result| crate::engine::check(result, "give_order_to_unit", unit_id));
 }

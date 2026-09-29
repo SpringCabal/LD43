@@ -1,4 +1,5 @@
 use spring::ResultExt;
+use spring::commands;
 use spring_addons::AddonContext;
 use spring_addons::register_gadgets;
 use spring_addons::rules::{Gadget, GadgetHandler};
@@ -42,9 +43,12 @@ impl Gadget<Global> for SetupGadget {
         if global.phase(frame) != Phase::Loading {
             return;
         }
-        // Destroying raises UnitDestroyed in every gadget, which counts dead
-        // orks and villagers; the round state is reset after that.
+        // The destroys run once this frame's gadgets have returned, before
+        // the commands they queue: the town gadget builds the new town on the
+        // squares the old houses unblock. Their UnitDestroyed counts dead orks
+        // and villagers, so the round state is forgotten after that.
         units::destroy_all();
+        commands::run(|| crate::with_global(Global::forget_round));
         global.begin_round(frame);
         for ally_team in 0..ALLY_TEAMS {
             spring::team_control::set_global_los(ally_team, true)

@@ -2,7 +2,9 @@
 
 use alloc::vec::Vec;
 
+use spring::commands;
 use spring::types::Float3;
+use spring::units_info;
 
 use crate::defs::{UnitKind, defs};
 use crate::fx::{ceg, play_sound, spawn_ceg, spawn_effect};
@@ -11,7 +13,10 @@ use crate::units::{self, NEUTRAL_TEAM, PLAYER_TEAM, def_of, health, health_value
 
 const BLOOD_MAGIC_RANGE: f32 = 600.0;
 const LIFE_BONUS: f32 = 500.0;
-const DRAIN_SEARCH_LIMIT: i32 = 50;
+const DRAIN_SEARCH_LIMIT: usize = 50;
+/// How far an ally's middle can stand from its position, on the ground plane.
+const MIDDLE_MARGIN: f32 = 100.0;
+const ALL_UNITS: i32 = -1;
 const CEG_SINGLE_BLOOD: &str = "feature_poof_single";
 const CEG_FLAMES: &str = "feature_poof_spawner";
 const SOUND_DRAIN: &str = "sounds/blooddrain.wav";
@@ -43,20 +48,12 @@ pub(super) fn drain(
     let mut remaining = required;
     let mut to_kill: Vec<i32> = Vec::new();
     let mut to_restore: Vec<i32> = Vec::new();
-    for _ in 0..DRAIN_SEARCH_LIMIT {
-        let Ok(target) = spring::get_unit_nearest_ally(collector_id, BLOOD_MAGIC_RANGE) else {
-            break;
-        };
-        let target = target.0;
-        if target < 0 {
-            break;
-        }
+    for target in nearest_allies(collector_id, origin)
+        .into_iter()
+        .take(DRAIN_SEARCH_LIMIT)
+    {
         if def_of(target) == house {
-            crate::engine::check(
-                spring::transfer_unit(target, NEUTRAL_TEAM, false, false),
-                "transfer_unit",
-                target,
-            );
+            transfer(target, NEUTRAL_TEAM);
             to_restore.push(target);
             continue;
         }
@@ -77,11 +74,7 @@ pub(super) fn drain(
             return (true, None);
         }
         to_kill.push(target);
-        crate::engine::check(
-            spring::transfer_unit(target, NEUTRAL_TEAM, false, false),
-            "transfer_unit",
-            target,
-        );
+        transfer(target, NEUTRAL_TEAM);
         remaining -= available;
     }
     restore(&to_restore);
@@ -93,24 +86,60 @@ pub(super) fn drain(
     (false, None)
 }
 
+/// The collector's allies within blood magic range, nearest first: the
+/// order in which Lua's `GetUnitNearestAlly` finds them when every ally it
+/// returns moves to the neutral team before it asks again. The transfers are
+/// commands, which that search wouldn't see yet, so the allies are ranked up
+/// front, measuring as the engine's search does: from the collector's
+/// position to each ally's middle, on the ground plane.
+fn nearest_allies(collector_id: i32, origin: Float3) -> Vec<i32> {
+    let Ok(ally_team) = units_info::get_unit_ally_team(collector_id) else {
+        return Vec::new();
+    };
+    let range_squared = BLOOD_MAGIC_RANGE * BLOOD_MAGIC_RANGE;
+    let mut allies: Vec<(f32, i32)> = units::units_in_cylinder(
+        origin.x,
+        origin.z,
+        BLOOD_MAGIC_RANGE + MIDDLE_MARGIN,
+        ALL_UNITS,
+    )
+    .into_iter()
+    .filter(|unit_id| {
+        *unit_id != collector_id && units_info::get_unit_ally_team(*unit_id).ok() == Some(ally_team)
+    })
+    .filter_map(|unit_id| {
+        let middle = units_info::get_unit_position(
+            unit_id,
+            units_info::GetUnitPositionOptions {
+                mid_pos: true,
+                aim_pos: false,
+            },
+        )
+        .ok()?;
+        let dx = origin.x - middle.x;
+        let dz = origin.z - middle.z;
+        let distance_squared = dx * dx + dz * dz;
+        (distance_squared <= range_squared).then_some((distance_squared, unit_id))
+    })
+    .collect();
+    allies.sort_by(|a, b| a.0.total_cmp(&b.0));
+    allies.into_iter().map(|(_, unit_id)| unit_id).collect()
+}
+
 fn consume(units: &[i32], origin: Float3) -> i32 {
     let mut drained = 0;
     for unit_id in units {
-        drain_effect(*unit_id);
-        blood_trail(origin, *unit_id);
-        crate::engine::check(
-            spring::destroy_unit(
-                *unit_id,
-                spring::generated::owned::unit_control::DestroyUnitOptions {
-                    selfd: true,
-                    reclaimed: false,
-                    attacker_id: -1,
-                    recycle_id: false,
-                },
-            ),
-            "destroy_unit",
-            *unit_id,
-        );
+        let unit_id = *unit_id;
+        drain_effect(unit_id);
+        blood_trail(origin, unit_id);
+        let options = spring::generated::owned::unit_control::DestroyUnitOptions {
+            selfd: true,
+            reclaimed: false,
+            attacker_id: -1,
+            recycle_id: false,
+        };
+        commands::destroy_unit(unit_id, options)
+            .then(move |result| crate::engine::check(result, "destroy_unit", unit_id));
         drained += 1;
     }
     drained
@@ -128,12 +157,14 @@ fn record_drained(global: &Global, count: i32) {
 
 fn restore(units: &[i32]) {
     for unit_id in units {
-        crate::engine::check(
-            spring::transfer_unit(*unit_id, PLAYER_TEAM, false, false),
-            "transfer_unit",
-            *unit_id,
-        );
+        transfer(*unit_id, PLAYER_TEAM);
     }
+}
+
+/// Moves the unit to `team` once the current callin has returned.
+fn transfer(unit_id: i32, team: i32) {
+    commands::transfer_unit(unit_id, team, false, false)
+        .then(move |result| crate::engine::check(result, "transfer_unit", unit_id));
 }
 
 fn blood_trail(origin: Float3, target_id: i32) {

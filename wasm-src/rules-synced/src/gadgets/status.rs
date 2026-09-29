@@ -1,3 +1,6 @@
+use alloc::rc::Rc;
+
+use spring::commands;
 use spring_addons::AddonContext;
 use spring_addons::rules::Gadget;
 use springcabal::message::SendOnChange;
@@ -10,7 +13,8 @@ use crate::state::{Global, Phase};
 /// `TTLD_STATUS|key=value|...` message.
 #[derive(Default)]
 pub struct StatusGadget {
-    sent: SendOnChange<Status>,
+    /// Shared with the command that sends the status.
+    sent: Rc<SendOnChange<Status>>,
 }
 
 impl Gadget<Global> for StatusGadget {
@@ -31,8 +35,15 @@ impl Gadget<Global> for StatusGadget {
             Phase::Running if frame % STATUS_PERIOD != 0 => return,
             Phase::Running => {}
         }
-        self.sent.send_if_changed(read(global, frame), |status| {
-            springcabal::message::send_to_ui(&status.message())
+        // Read once this frame's commands (drains, deaths, the victory) have
+        // run, and sent from there too: `send_to_unsynced` runs its receivers
+        // inside the call.
+        let sent = Rc::clone(&self.sent);
+        commands::run(move || {
+            let status = crate::with_global(|global| read(global, frame));
+            sent.send_if_changed(status, |status| {
+                springcabal::message::send_to_ui(&status.message())
+            });
         });
     }
 }

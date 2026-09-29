@@ -7,6 +7,7 @@ use alloc::format;
 use alloc::vec::Vec;
 
 use spring::cmd;
+use spring::commands;
 
 use crate::combat;
 use crate::defs::UnitKind;
@@ -37,26 +38,40 @@ pub struct Bite {
     pub frame: i32,
 }
 
-pub(super) fn stun_fixture(tracker: &mut Tracker, _world: &World) {
-    let peasant = units::create(UnitKind::Peasant, FIXTURE_X, FIXTURE_Z, PLAYER_TEAM, 0);
-    let ork = units::create(
-        UnitKind::OrkSmall,
-        FIXTURE_X + ORK_OFFSET,
-        FIXTURE_Z,
-        ENEMY_TEAM,
-        0,
-    );
-    let (Some(peasant), Some(ork)) = (peasant, ork) else {
-        check(tracker, false, "the stunned-ork fixture spawned");
-        return;
-    };
-    let ordered = spring::give_order_to_unit(ork, cmd::ATTACK, &[peasant as f32], 0, 0);
-    check(
-        tracker,
-        ordered.is_ok(),
-        &format!("the fixture ork is ordered to attack a peasant ({ordered:?})"),
-    );
-    tracker.stun_ork = ork;
+pub(super) fn stun_fixture(world: &World) {
+    let tracker = Rc::clone(world.tracker);
+    commands::queue(|| {
+        let peasant = units::create(UnitKind::Peasant, FIXTURE_X, FIXTURE_Z, PLAYER_TEAM, 0);
+        let ork = units::create(
+            UnitKind::OrkSmall,
+            FIXTURE_X + ORK_OFFSET,
+            FIXTURE_Z,
+            ENEMY_TEAM,
+            0,
+        );
+        (peasant, ork)
+    })
+    .then(move |fixture| {
+        let (Some(peasant), Some(ork)) = fixture else {
+            check(
+                &mut tracker.borrow_mut(),
+                false,
+                "the stunned-ork fixture spawned",
+            );
+            return;
+        };
+        commands::give_order_to_unit(ork, cmd::ATTACK, &[peasant as f32], 0, 0).then(
+            move |ordered| {
+                let mut tracker = tracker.borrow_mut();
+                check(
+                    &mut tracker,
+                    ordered.is_ok(),
+                    &format!("the fixture ork is ordered to attack a peasant ({ordered:?})"),
+                );
+                tracker.stun_ork = ork;
+            },
+        );
+    });
 }
 
 pub(super) fn stun_the_ork(tracker: &mut Tracker, world: &World) {

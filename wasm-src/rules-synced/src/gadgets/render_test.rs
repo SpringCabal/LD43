@@ -56,28 +56,15 @@ fn spawn_leader_fixture(global: &Global) {
     // ordinary 1x draw scale. They are on the player team solely to keep the
     // fixture stationary; the draw path is the same for allied and enemy
     // units.
-    let boss = units::create(
-        UnitKind::OrkBoss,
-        origin.x - 220.0,
-        origin.z - 140.0,
-        PLAYER_TEAM,
-        0,
-    );
-    let orkbig = units::create(
-        UnitKind::OrkBig,
-        origin.x + 220.0,
-        origin.z - 140.0,
-        PLAYER_TEAM,
-        0,
-    );
-    let _ = spring::echo(
-        &alloc::format!(
-            "{FIXTURE_MESSAGE}: boss={:?} orkbig={:?} origin=({:.0},{:.0})",
-            boss,
-            orkbig,
-            origin.x,
-            origin.z
-        ),
-        "",
-    );
+    let (x, z) = (origin.x, origin.z);
+    units::spawn(UnitKind::OrkBoss, x - 220.0, z - 140.0, PLAYER_TEAM, 0).then(move |boss| {
+        units::spawn(UnitKind::OrkBig, x + 220.0, z - 140.0, PLAYER_TEAM, 0).then(move |orkbig| {
+            let _ = spring::echo(
+                &alloc::format!(
+                    "{FIXTURE_MESSAGE}: boss={boss:?} orkbig={orkbig:?} origin=({x:.0},{z:.0})"
+                ),
+                "",
+            );
+        });
+    });
 }

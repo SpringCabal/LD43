@@ -5,7 +5,7 @@ use spring_addons::AddonContext;
 use spring_addons::rules::{Gadget, UnitDestroyedEvent};
 
 use crate::defs::defs;
-use crate::player::{self, Order};
+use crate::player;
 use crate::state::{GameEnd, Global};
 
 /// The blood mage: takes the UI's commands, moves, attacks and casts.
@@ -27,35 +27,20 @@ impl Gadget<Global> for PlayerGadget {
             return;
         }
         player::resolve_pending(global, frame);
-        let cast = {
-            let mut player = global.player.access_mut();
-            player.unit_id().and_then(|unit_id| {
-                let (spell, x, z) = player.take_cast(frame)?;
-                Some((unit_id, spell, x, z))
-            })
-        };
-        // Casting drains (destroys) nearby allies, whose UnitDestroyed needs
-        // the player unborrowed.
-        if let Some((unit_id, spell, x, z)) = cast
+        let mut player = global.player.access_mut();
+        if let Some(unit_id) = player.unit_id()
+            && let Some((spell, x, z)) = player.take_cast(frame)
             && let Some(outcome) = player::cast(global, unit_id, spell, x, z, frame)
         {
             #[cfg(feature = "e2e")]
             spring::log_info!("ttld-wasm", "TTLD E2E cast {spell:?} on frame {frame}");
-            global
-                .player
-                .access_mut()
-                .begin_cast(frame, outcome.cast_frames);
+            player.begin_cast(frame, outcome.cast_frames);
         }
-        let orders = {
-            let mut player = global.player.access_mut();
-            if global.game_end.get() == GameEnd::Victory {
-                // Lua's last movement message goes stale on its own.
-                player.drop_held();
-            }
-            player.update(frame);
-            player.take_orders()
-        };
-        orders.into_iter().for_each(Order::issue);
+        if global.game_end.get() == GameEnd::Victory {
+            // Lua's last movement message goes stale on its own.
+            player.drop_held();
+        }
+        player.update(frame);
     }
 
     fn handle_lua_msg(

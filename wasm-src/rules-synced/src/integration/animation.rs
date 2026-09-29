@@ -1,6 +1,7 @@
 use alloc::vec::Vec;
 
 use spring::cmd;
+use spring::commands;
 
 use crate::defs::UnitKind;
 use crate::units::{self, PLAYER_TEAM};
@@ -41,8 +42,9 @@ pub(super) fn animation_checks(world: &World) {
         world.track(|tracker| tracker.ork_heights.push(matrix[13]));
     }
     if frame == ANIMATION_SPAWN {
-        let unit = units::create(UnitKind::Crossbowman, 5580.0, 7700.0, PLAYER_TEAM, 0);
-        world.track(|tracker| tracker.animation_unit = unit);
+        let tracker = Rc::clone(world.tracker);
+        units::spawn(UnitKind::Crossbowman, 5580.0, 7700.0, PLAYER_TEAM, 0)
+            .then(move |unit| tracker.borrow_mut().animation_unit = unit);
     }
     let Some(unit) = world.track(|tracker| tracker.animation_unit) else {
         if frame == ANIMATION_CHECK {
@@ -53,7 +55,7 @@ pub(super) fn animation_checks(world: &World) {
     match frame {
         ANIMATION_WALK => {
             let (x, z) = (5980.0, 7700.0);
-            let _ = spring::give_order_to_unit(
+            let _ = commands::give_order_to_unit(
                 unit,
                 cmd::MOVE,
                 &[x, units::ground_height(x, z), z],
@@ -62,12 +64,12 @@ pub(super) fn animation_checks(world: &World) {
             );
         }
         ANIMATION_STOP => {
-            let _ = spring::give_order_to_unit(unit, cmd::STOP, &[], 0, 0);
+            let _ = commands::give_order_to_unit(unit, cmd::STOP, &[], 0, 0);
         }
         ANIMATION_FIRE => {
             if let Some(position) = units::position(unit) {
                 let (x, z) = (position.x, position.z + 350.0);
-                let _ = spring::give_order_to_unit(
+                let _ = commands::give_order_to_unit(
                     unit,
                     cmd::ATTACK,
                     &[x, units::ground_height(x, z), z],
@@ -84,15 +86,7 @@ pub(super) fn animation_checks(world: &World) {
     }
     if frame == ANIMATION_CHECK {
         world.track(report_animation);
-        let _ = spring::destroy_unit(
-            unit,
-            spring::effects_control::DestroyUnitOptions {
-                selfd: false,
-                recycle_id: false,
-                reclaimed: true,
-                attacker_id: -1,
-            },
-        );
+        units::destroy(unit);
     }
 }
 

@@ -42,10 +42,17 @@ pub enum Phase {
 }
 
 impl Global {
-    /// Starts a round on `frame`: forgets the previous round's shared state
-    /// and marks `frame` as the setup frame. Only the setup gadget calls
-    /// this, once the previous round's units are gone.
+    /// Starts a round on `frame`: marks `frame` as the setup frame, so the
+    /// other gadgets set up their parts of the round in it. Only the setup
+    /// gadget calls this.
     pub fn begin_round(&self, frame: i32) {
+        self.setup_frame.set(Some(frame));
+        self.round.set(self.round.get() + 1);
+    }
+
+    /// Forgets the previous round's shared state, once its units are gone:
+    /// their UnitDestroyed counts dead orks and villagers.
+    pub fn forget_round(&self) {
         self.game_end.set(GameEnd::default());
         *self.score.access_mut() = Score::default();
         *self.player.access_mut() = Player::default();
@@ -53,8 +60,6 @@ impl Global {
         *self.orks.access_mut() = OrkAi::default();
         *self.statuses.access_mut() = Statuses::default();
         *self.attributes.access_mut() = Attributes::default();
-        self.setup_frame.set(Some(frame));
-        self.round.set(self.round.get() + 1);
     }
 
     /// Asks for a new round: the setup gadget builds it on the next frame.

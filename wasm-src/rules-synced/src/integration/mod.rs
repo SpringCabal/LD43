@@ -20,9 +20,11 @@ pub use self::stun::Bite;
 use self::stun::*;
 use self::victory::*;
 
+use alloc::rc::Rc;
 use alloc::vec::Vec;
 use core::cell::RefCell;
 
+use spring::commands;
 use springcabal::check::Suite;
 
 use crate::defs::defs;
@@ -144,14 +146,15 @@ fn enemy_unit_count() -> i32 {
 
 /// What the checks see: the gadgets' shared state and the current frame.
 struct World<'a> {
-    tracker: &'a RefCell<Tracker>,
+    tracker: &'a Rc<RefCell<Tracker>>,
     global: &'a Global,
     frame: i32,
 }
 
-/// Called from `game_frame` with no state borrowed: several checks spawn or
-/// destroy units, which re-enters this module through the callins.
-pub fn update(tracker: &RefCell<Tracker>, global: &Global, frame: i32) {
+/// Runs as a command, once the other gadgets' commands of the frame have run.
+/// The units the checks spawn or destroy, and the orders they give, are
+/// commands too: checks of their effects follow with [`World::then_track`].
+pub fn update(tracker: &Rc<RefCell<Tracker>>, global: &Global, frame: i32) {
     let world = World {
         tracker,
         global,
@@ -168,7 +171,7 @@ pub fn update(tracker: &RefCell<Tracker>, global: &Global, frame: i32) {
             with_checks(&world, record_round_start);
         }
         40 => with_checks(&world, ork_spawn_checks),
-        60 => with_checks(&world, player_attack_checks),
+        60 => player_attack_checks(&world),
         // The UI would send this when the mouse button comes up.
         62 => command_player(&world, crate::player::PlayerCommand::Stop),
         ADRENALINE_CAST => cast_adrenaline(&world),
@@ -176,7 +179,7 @@ pub fn update(tracker: &RefCell<Tracker>, global: &Global, frame: i32) {
         HEARTBURN_CAST => cast_heartburn(&world),
         HEARTBURN_ALLY => heartburn_ally(&world),
         SPELLS_LANDED_CHECK => with_checks(&world, spells_landed_checks),
-        STUN_SETUP => with_checks(&world, stun_fixture),
+        STUN_SETUP => stun_fixture(&world),
         STUN_START => with_checks(&world, stun_the_ork),
         STUN_PAUSED_CHECK => with_checks(&world, stunned_checks),
         STUN_OVER_CHECK => with_checks(&world, stun_over_checks),
@@ -222,6 +225,14 @@ pub fn bite(tracker: &mut Tracker, bite: Bite) {
 impl World<'_> {
     fn track<R>(&self, function: impl FnOnce(&mut Tracker) -> R) -> R {
         function(&mut self.tracker.borrow_mut())
+    }
+
+    /// Runs `function` once the commands queued so far have run.
+    fn then_track(&self, function: impl FnOnce(&mut Tracker, &Global) + 'static) {
+        let tracker = Rc::clone(self.tracker);
+        commands::run(move || {
+            crate::with_global(|global| function(&mut tracker.borrow_mut(), global));
+        });
     }
 }
 

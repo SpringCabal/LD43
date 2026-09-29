@@ -7,6 +7,7 @@ use alloc::format;
 use alloc::vec::Vec;
 
 use spring::ResultExt;
+use spring::commands;
 use springcabal::message::Encoder;
 use ttld_shared::Command;
 
@@ -90,26 +91,30 @@ pub(super) fn cast_migraine(world: &World) {
         return;
     };
     let (x, z) = (position.x + MIGRAINE_OFFSET, position.z);
-    let targets: Vec<i32> = (0..MIGRAINE_TARGETS)
-        .filter_map(|index| {
-            units::create(
-                UnitKind::OrkSmall,
-                x,
-                z + 40.0 * index as f32,
-                ENEMY_TEAM,
-                0,
-            )
-        })
-        .collect();
-    let target = spring::types::Float3 {
-        x,
-        y: units::ground_height(x, z),
-        z,
-    };
-    let sent = send_spell(MIGRAINE, target);
-    world.track(|tracker| {
+    let tracker = Rc::clone(world.tracker);
+    commands::queue(move || {
+        (0..MIGRAINE_TARGETS)
+            .filter_map(|index| {
+                units::create(
+                    UnitKind::OrkSmall,
+                    x,
+                    z + 40.0 * index as f32,
+                    ENEMY_TEAM,
+                    0,
+                )
+            })
+            .collect::<Vec<i32>>()
+    })
+    .then(move |targets| {
+        let target = spring::types::Float3 {
+            x,
+            y: units::ground_height(x, z),
+            z,
+        };
+        let sent = send_spell(MIGRAINE, target);
+        let mut tracker = tracker.borrow_mut();
         check(
-            tracker,
+            &mut tracker,
             sent && targets.len() == MIGRAINE_TARGETS,
             &format!(
                 "Migraine is sent as the UI sends it, at {} orks",
@@ -184,16 +189,18 @@ pub(super) fn cast_poultice(world: &World) {
     };
     // Outside Heartburn's 250-elmo blast, so only Poultice's delayed
     // AddUnitImpulse moves it.
-    let target = units::create(
+    let tracker = Rc::clone(world.tracker);
+    units::spawn(
         UnitKind::OrkSmall,
         position.x + POULTICE_TARGET_OFFSET,
         position.z,
         ENEMY_TEAM,
         0,
-    );
-    let before = target.and_then(units::position);
-    let sent = send_spell(POULTICE, position);
-    world.track(|tracker| {
+    )
+    .then(move |target| {
+        let before = target.and_then(units::position);
+        let sent = send_spell(POULTICE, position);
+        let mut tracker = tracker.borrow_mut();
         tracker.spell_sent = sent;
         tracker.poultice_target = target.filter(|_| before.is_some()).unwrap_or(-1);
         if let Some(before) = before {
@@ -221,29 +228,34 @@ pub(super) fn cast_heartburn(world: &World) {
         return;
     };
     let (tx, tz) = (position.x + 100.0, position.z);
-    let target = units::create(UnitKind::OrkSmall, tx, tz, ENEMY_TEAM, 0);
-    let edge = units::create(
-        UnitKind::OrkSmall,
-        tx,
-        tz + HEARTBURN_EDGE_OFFSET,
-        ENEMY_TEAM,
-        0,
-    );
-    // They stand in the town until the fireball lands, about 20 frames on;
-    // neutral, so the villagers don't kill them first.
-    for unit in [target, edge].into_iter().flatten() {
-        spring::set_unit_neutral(unit, true).log_err("neutral Heartburn target");
-    }
-    let ground = units::ground_height(tx, tz);
-    let sent = send_spell(
-        HEARTBURN,
-        spring::types::Float3 {
-            x: tx,
-            y: ground,
-            z: tz,
-        },
-    );
-    world.track(|tracker| {
+    let tracker = Rc::clone(world.tracker);
+    commands::queue(move || {
+        let target = units::create(UnitKind::OrkSmall, tx, tz, ENEMY_TEAM, 0);
+        let edge = units::create(
+            UnitKind::OrkSmall,
+            tx,
+            tz + HEARTBURN_EDGE_OFFSET,
+            ENEMY_TEAM,
+            0,
+        );
+        (target, edge)
+    })
+    .then(move |(target, edge)| {
+        // They stand in the town until the fireball lands, about 20 frames
+        // on; neutral, so the villagers don't kill them first.
+        for unit in [target, edge].into_iter().flatten() {
+            spring::set_unit_neutral(unit, true).log_err("neutral Heartburn target");
+        }
+        let ground = units::ground_height(tx, tz);
+        let sent = send_spell(
+            HEARTBURN,
+            spring::types::Float3 {
+                x: tx,
+                y: ground,
+                z: tz,
+            },
+        );
+        let mut tracker = tracker.borrow_mut();
         tracker.spell_sent = sent && target.is_some() && edge.is_some();
         tracker.heartburn_target = target.unwrap_or(-1);
         tracker.heartburn_edge = edge.unwrap_or(-1);
@@ -263,14 +275,15 @@ pub(super) fn heartburn_ally(world: &World) {
         )
     });
     let (tx, tz, _) = world.track(|tracker| tracker.heartburn_ground);
-    let ally = units::create(
+    let tracker = Rc::clone(world.tracker);
+    units::spawn(
         UnitKind::Peasant,
         tx,
         tz - HEARTBURN_EDGE_OFFSET,
         PLAYER_TEAM,
         0,
-    );
-    world.track(|tracker| tracker.heartburn_ally = ally.unwrap_or(-1));
+    )
+    .then(move |ally| tracker.borrow_mut().heartburn_ally = ally.unwrap_or(-1));
 }
 
 /// How far from the fireball's target the other units in its blast stand.

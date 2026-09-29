@@ -134,53 +134,56 @@ pub(super) fn ork_spawn_checks(tracker: &mut Tracker, world: &World) {
     tracker.ork_distance = ork_distance(world);
 }
 
-pub(super) fn player_attack_checks(tracker: &mut Tracker, world: &World) {
+pub(super) fn player_attack_checks(world: &World) {
     let Some(unit_id) = world.global.player.access().unit_id() else {
-        check(
-            tracker,
-            false,
-            "player unit is available for the attack test",
-        );
+        world.track(|tracker| {
+            check(
+                tracker,
+                false,
+                "player unit is available for the attack test",
+            )
+        });
         return;
     };
     let Some(position) = units::position(unit_id) else {
-        check(tracker, false, "player unit has a position");
+        world.track(|tracker| check(tracker, false, "player unit has a position"));
         return;
     };
-    check(
-        tracker,
-        crate::unit_scripts::fire_target(unit_id) == Some(None),
-        "mage is not firing before an attack order",
-    );
+    world.track(|tracker| {
+        check(
+            tracker,
+            crate::unit_scripts::fire_target(unit_id) == Some(None),
+            "mage is not firing before an attack order",
+        )
+    });
     let message = format!("attack|{}|{}", position.x + 200.0, position.z);
     command_player(
         world,
         crate::player::parse(message.as_bytes()).expect("attack message parses"),
     );
-    // The blood mage's unit script aims and fires at this target.
-    let target = crate::unit_scripts::fire_target(unit_id).flatten();
-    let fire_tx = target.map_or(0.0, |(tx, _)| tx);
-    check(
-        tracker,
-        target.is_some(),
-        "attack order gives the mage script its fire target",
-    );
-    check(
-        tracker,
-        fire_tx > position.x,
-        &format!("fire target points at the attacked ground (fireTx {fire_tx:.0})"),
-    );
+    // The blood mage's unit script aims and fires at this target, once the
+    // player's orders have gone out.
+    world.then_track(move |tracker, _| {
+        let target = crate::unit_scripts::fire_target(unit_id).flatten();
+        let fire_tx = target.map_or(0.0, |(tx, _)| tx);
+        check(
+            tracker,
+            target.is_some(),
+            "attack order gives the mage script its fire target",
+        );
+        check(
+            tracker,
+            fire_tx > position.x,
+            &format!("fire target points at the attacked ground (fireTx {fire_tx:.0})"),
+        );
+    });
 }
 
-/// Hands the player a command as the UI would, and issues the orders it gives.
+/// Hands the player a command as the UI would; the player gives its orders.
 pub(super) fn command_player(world: &World, command: crate::player::PlayerCommand) {
-    let orders = {
-        let mut player = world.global.player.access_mut();
-        player.accept(command, world.frame);
-        player.update(world.frame);
-        player.take_orders()
-    };
-    orders.into_iter().for_each(crate::player::Order::issue);
+    let mut player = world.global.player.access_mut();
+    player.accept(command, world.frame);
+    player.update(world.frame);
 }
 
 /// The weapon's current reload in seconds, straight from the engine.

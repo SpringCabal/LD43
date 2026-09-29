@@ -1,3 +1,5 @@
+use spring::commands;
+
 use crate::random;
 use crate::state::GameEnd;
 use crate::units::{self, ENEMY_TEAM, OrkKind};
@@ -19,9 +21,7 @@ pub struct Wave {
 
 impl Story {
     /// Picks the wave that is due, if any, and advances the schedule. Once the
-    /// town is saved, nothing is due. Spawning is deliberately left to the
-    /// caller: creating a unit re-enters the module through UnitCreated, which
-    /// must find the story unborrowed.
+    /// town is saved, nothing is due.
     pub fn take_due_wave(&mut self, frame: i32, game_end: GameEnd) -> Option<&'static Wave> {
         if game_end == GameEnd::Victory || self.step >= WAVES.len() || frame < self.next_frame {
             return None;
@@ -159,6 +159,7 @@ const WAVES: [Wave; 13] = [
     },
 ];
 
+/// Spawns the wave once the current callin has returned; see [`spawn`].
 pub fn spawn_wave(wave: &Wave) {
     spring::log_info!("ttld-wasm", "wave: {}", wave.name);
     for (kind, count) in wave.units {
@@ -168,14 +169,18 @@ pub fn spawn_wave(wave: &Wave) {
     }
 }
 
-/// Spawns one more boss on the ring.
+/// Spawns one more boss on the ring, once the current callin has returned.
 pub fn spawn_boss() {
     spawn(OrkKind::Boss);
 }
 
+/// One command per ork: its ring position is drawn when it is created, so
+/// the draws alternate with those of the ork AI's UnitCreated as in Lua.
 fn spawn(kind: OrkKind) {
-    let (x, z) = ring_position();
-    units::create(kind.unit(), x, z, ENEMY_TEAM, 0);
+    commands::run(move || {
+        let (x, z) = ring_position();
+        units::create(kind.unit(), x, z, ENEMY_TEAM, 0);
+    });
 }
 
 fn ring_position() -> (f32, f32) {

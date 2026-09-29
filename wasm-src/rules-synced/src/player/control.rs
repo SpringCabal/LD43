@@ -1,5 +1,4 @@
-use alloc::vec::Vec;
-
+use spring::commands;
 use spring::types::Float3;
 
 use crate::defs::{UnitKind, defs};
@@ -29,9 +28,6 @@ pub struct Player {
     cast_start_frame: i32,
     /// How long the cast animation (and the staff glow) lasts, in frames.
     cast_animation_frames: i32,
-    /// Engine orders decided while updating, issued by the caller once it has
-    /// released the player; see [`Order`].
-    orders: Vec<Order>,
 }
 
 impl Player {
@@ -97,14 +93,9 @@ impl Player {
         self.cast_start_frame = frame;
         self.cast_animation_frames = frames + CAST_ANIMATION_EXTRA_FRAMES;
         if let Some(unit_id) = self.unit_id {
-            self.orders.push(Order::ClearGoal(unit_id));
+            clear_goal(unit_id);
         }
         self.move_goal = None;
-    }
-
-    /// The orders the last calls decided on, in order.
-    pub fn take_orders(&mut self) -> Vec<Order> {
-        core::mem::take(&mut self.orders)
     }
 
     pub fn cast_start_frame(&self) -> i32 {
@@ -215,35 +206,34 @@ impl Player {
         let tx = position.x + ATTACK_REACH * dx / distance;
         let tz = position.z + ATTACK_REACH * dz / distance;
         let ty = units::ground_height(tx, tz) + AIM_HEIGHT;
-        self.orders.push(Order::Target(
+        aim(
             unit_id,
             Some(Float3 {
                 x: tx,
                 y: ty,
                 z: tz,
             }),
-        ));
+        );
         self.attacking = true;
     }
 
     fn set_move_goal(&mut self, unit_id: i32, x: f32, z: f32, radius: f32) {
         let (x, z) = clamp_to_map(x, z);
         let y = units::ground_height(x, z);
-        self.orders
-            .push(Order::MoveGoal(unit_id, Float3 { x, y, z }));
+        set_goal(unit_id, Float3 { x, y, z });
         self.move_goal = Some(MoveGoal { x, z, radius });
     }
 
     fn clear_move(&mut self, unit_id: i32) {
         if self.move_goal.is_some() {
-            self.orders.push(Order::ClearGoal(unit_id));
+            clear_goal(unit_id);
             self.move_goal = None;
         }
     }
 
     fn clear_attack(&mut self, unit_id: i32) {
         if self.attacking {
-            self.orders.push(Order::Target(unit_id, None));
+            aim(unit_id, None);
             self.attacking = false;
         }
     }
@@ -263,57 +253,42 @@ impl Player {
     }
 }
 
-/// An engine call the player decided on.
-///
-/// The player is shared state, so it records these instead of calling the
-/// engine while borrowed; whoever updated it issues them afterwards.
-#[derive(Clone, Copy)]
-pub enum Order {
-    /// Aim at a ground point, or stop aiming.
-    Target(i32, Option<Float3>),
-    MoveGoal(i32, Float3),
-    ClearGoal(i32),
+// The player's engine calls run once the current callin has returned, in the
+// order the player decided on them: after the blood magic of a cast, and with
+// the player free for the callins they cause (the scripts' StartMoving and
+// StopMoving).
+
+/// Aims at a ground point, or stops aiming.
+fn aim(unit_id: i32, target: Option<Float3>) {
+    commands::queue(move || {
+        spring::set_unit_target(
+            unit_id,
+            spring::types::UnitTargetRef {
+                target_id: -1,
+                pos: target.unwrap_or_default(),
+                is_ground_target: target.is_some(),
+            },
+            spring::types::SetUnitTargetOptions {
+                manual_fire: false,
+                user_target: false,
+            },
+            0,
+        )
+    })
+    .then(move |result| {
+        crate::engine::check(result, "set_unit_target", unit_id);
+        publish_fire_target(unit_id, target.map(|target| (target.x, target.z)));
+    });
 }
 
-impl Order {
-    pub fn issue(self) {
-        match self {
-            Self::Target(unit_id, target) => {
-                crate::engine::check(
-                    spring::set_unit_target(
-                        unit_id,
-                        spring::types::UnitTargetRef {
-                            target_id: -1,
-                            pos: target.unwrap_or_default(),
-                            is_ground_target: target.is_some(),
-                        },
-                        spring::types::SetUnitTargetOptions {
-                            manual_fire: false,
-                            user_target: false,
-                        },
-                        0,
-                    ),
-                    "set_unit_target",
-                    unit_id,
-                );
-                publish_fire_target(unit_id, target.map(|target| (target.x, target.z)));
-            }
-            Self::MoveGoal(unit_id, goal) => {
-                crate::engine::check(
-                    spring::set_unit_move_goal(unit_id, goal, 10.0, 0.0, true),
-                    "set_unit_move_goal",
-                    unit_id,
-                );
-            }
-            Self::ClearGoal(unit_id) => {
-                crate::engine::check(
-                    spring::clear_unit_goal(unit_id, true),
-                    "clear_unit_goal",
-                    unit_id,
-                );
-            }
-        }
-    }
+fn set_goal(unit_id: i32, goal: Float3) {
+    commands::queue(move || spring::set_unit_move_goal(unit_id, goal, 10.0, 0.0, true))
+        .then(move |result| crate::engine::check(result, "set_unit_move_goal", unit_id));
+}
+
+fn clear_goal(unit_id: i32) {
+    commands::queue(move || spring::clear_unit_goal(unit_id, true))
+        .then(move |result| crate::engine::check(result, "clear_unit_goal", unit_id));
 }
 
 /// The blood mage's unit script holds its fire without a target, and faces

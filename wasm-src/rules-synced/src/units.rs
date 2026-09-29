@@ -1,6 +1,7 @@
 use alloc::string::String;
 use alloc::vec::Vec;
 
+use spring::commands::{self, Pending};
 use spring::generated::owned::unit_control;
 use spring::types::Float3;
 
@@ -54,6 +55,16 @@ pub fn ground_height(x: f32, z: f32) -> f32 {
     spring::get_ground_height(x, z).unwrap_or(0.0)
 }
 
+/// Creates a unit once the current callin has returned: creating runs
+/// UnitCreated in every gadget. `.then` gets the new unit, `None` if it
+/// failed.
+pub fn spawn(kind: UnitKind, x: f32, z: f32, team: i32, facing: i32) -> Pending<Option<i32>> {
+    commands::queue(move || create(kind, x, z, team, facing))
+}
+
+/// Creates a unit now. Only for code that runs as a command (see [`spawn`]),
+/// which draws its random numbers and creates the unit in one step, so they
+/// interleave with the draws of UnitCreated as in Lua.
 pub fn create(kind: UnitKind, x: f32, z: f32, team: i32, facing: i32) -> Option<i32> {
     let y = ground_height(x, z);
     create_at(kind, Float3 { x, y, z }, team, facing)
@@ -101,41 +112,25 @@ pub fn all_units() -> Vec<i32> {
 }
 
 /// Removes every unit at once, without death sequences, as
-/// unit_town_handler.lua's Initialize does.
+/// unit_town_handler.lua's Initialize does, once the current callin has
+/// returned.
 pub fn destroy_all() {
     for unit_id in all_units() {
-        crate::engine::check(
-            unit_control::destroy_unit(
-                unit_id,
-                unit_control::DestroyUnitOptions {
-                    selfd: false,
-                    reclaimed: true,
-                    attacker_id: -1,
-                    recycle_id: false,
-                },
-            ),
-            "destroy_unit",
-            unit_id,
-        );
+        destroy(unit_id);
     }
 }
 
-/// Removes a unit without a death sequence.
-#[cfg(feature = "headless-integration")]
+/// Removes a unit without a death sequence, once the current callin has
+/// returned.
 pub fn destroy(unit_id: i32) {
-    crate::engine::check(
-        unit_control::destroy_unit(
-            unit_id,
-            unit_control::DestroyUnitOptions {
-                selfd: false,
-                reclaimed: true,
-                attacker_id: -1,
-                recycle_id: false,
-            },
-        ),
-        "destroy_unit",
-        unit_id,
-    );
+    let options = unit_control::DestroyUnitOptions {
+        selfd: false,
+        reclaimed: true,
+        attacker_id: -1,
+        recycle_id: false,
+    };
+    commands::destroy_unit(unit_id, options)
+        .then(move |result| crate::engine::check(result, "destroy_unit", unit_id));
 }
 
 /// Whether the unit has anything queued.

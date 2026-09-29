@@ -33,7 +33,7 @@ pub struct Modifier {
 /// The attribute effects on every unit, like the Lua build's GG.Attributes.
 ///
 /// Shared: spells, the ork AI, the combat gadget and the unit scripts' Killed
-/// all add effects. It is never borrowed across an engine call.
+/// all add effects.
 #[derive(Default)]
 pub struct Attributes {
     units: BTreeMap<i32, UnitAttributes>,

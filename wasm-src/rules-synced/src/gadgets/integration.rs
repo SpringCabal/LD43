@@ -1,7 +1,7 @@
+use alloc::rc::Rc;
 use core::cell::RefCell;
 
-use alloc::vec::Vec;
-
+use spring::commands;
 use spring_addons::AddonContext;
 use spring_addons::rules::{Gadget, UnitPreDamagedEvent};
 
@@ -12,13 +12,8 @@ use crate::state::Global;
 /// Runs the headless gameplay checks.
 #[derive(Default)]
 pub struct IntegrationGadget {
-    tracker: RefCell<integration::Tracker>,
-    /// Fireball damage seen since the last frame. Kept apart from the
-    /// tracker, which is borrowed while checks run and can be when damage
-    /// arrives.
-    fireball_hits: RefCell<Vec<(i32, f32)>>,
-    /// Small orks' bites since the last frame, kept apart for the same reason.
-    bites: RefCell<Vec<integration::Bite>>,
+    /// Shared with the commands the checks run as.
+    tracker: Rc<RefCell<integration::Tracker>>,
 }
 
 impl Gadget<Global> for IntegrationGadget {
@@ -28,18 +23,11 @@ impl Gadget<Global> for IntegrationGadget {
 
     fn game_frame(&self, ctx: &AddonContext<'_, Global>, frame: i32) {
         if ctx.global().running(frame) {
-            let hits = self.fireball_hits.take();
-            let bites = self.bites.take();
-            {
-                let mut tracker = self.tracker.borrow_mut();
-                for (unit_id, damage) in hits {
-                    integration::fireball_hit(&mut tracker, unit_id, damage);
-                }
-                for bite in bites {
-                    integration::bite(&mut tracker, bite);
-                }
-            }
-            integration::update(&self.tracker, ctx.global(), frame);
+            // The checks see the frame as the other gadgets' commands left it.
+            let tracker = Rc::clone(&self.tracker);
+            commands::run(move || {
+                crate::with_global(|global| integration::update(&tracker, global, frame));
+            });
         }
     }
 
@@ -48,16 +36,18 @@ impl Gadget<Global> for IntegrationGadget {
         _ctx: &AddonContext<'_, Global>,
         event: &UnitPreDamagedEvent,
     ) -> Option<spring::DamageResult> {
+        let mut tracker = self.tracker.borrow_mut();
         if defs().fireball == Some(event.weapon_def_id) {
-            self.fireball_hits
-                .borrow_mut()
-                .push((event.unit_id, event.damage));
+            integration::fireball_hit(&mut tracker, event.unit_id, event.damage);
         }
         if event.attacker_id >= 0 && defs().is(event.attacker_def_id, UnitKind::OrkSmall) {
-            self.bites.borrow_mut().push(integration::Bite {
-                attacker: event.attacker_id,
-                frame: spring::game::current_frame(),
-            });
+            integration::bite(
+                &mut tracker,
+                integration::Bite {
+                    attacker: event.attacker_id,
+                    frame: spring::game::current_frame(),
+                },
+            );
         }
         None
     }

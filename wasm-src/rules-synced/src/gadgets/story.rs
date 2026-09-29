@@ -1,5 +1,7 @@
+use alloc::rc::Rc;
 use core::cell::{Cell, RefCell};
 
+use spring::commands;
 use spring_addons::AddonContext;
 use spring_addons::rules::Gadget;
 
@@ -11,8 +13,8 @@ use crate::state::{Global, Phase};
 pub struct StoryGadget {
     story: RefCell<Story>,
     /// The final wave has come, but victory isn't possible until its boss is
-    /// on the map.
-    boss_due: Cell<bool>,
+    /// on the map. Shared with the command that checks for it.
+    boss_due: Rc<Cell<bool>>,
 }
 
 impl Gadget<Global> for StoryGadget {
@@ -39,8 +41,14 @@ impl Gadget<Global> for StoryGadget {
             combat::spawn_wave(wave);
             self.boss_due.set(self.boss_due.get() || wave.able_to_win);
         }
-        if self.boss_due.get() && combat::open_victory(global) {
-            self.boss_due.set(false);
+        if self.boss_due.get() {
+            // After the wave's spawns, so its boss is on the map.
+            let boss_due = Rc::clone(&self.boss_due);
+            commands::run(move || {
+                if crate::with_global(combat::open_victory) {
+                    boss_due.set(false);
+                }
+            });
         }
     }
 }

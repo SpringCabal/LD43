@@ -1,10 +1,12 @@
-use alloc::vec::Vec;
+use alloc::rc::Rc;
+use core::cell::RefCell;
 
 use spring::ResultExt;
+use spring::commands;
 use spring::generated::owned::unit_control;
 use spring::types::Float3;
 
-use super::villagers::Villager;
+use super::villagers::{Villager, Villagers};
 use crate::defs::{UnitKind, defs};
 use crate::random;
 use crate::units::{self, PLAYER_TEAM, VillagerKind};
@@ -26,43 +28,52 @@ const PLACEMENT_TRIES: i32 = 8;
 const BLOCKED: i32 = 0;
 const FREE: i32 = 2;
 
-pub fn populate() -> Vec<Villager> {
+/// Builds the town once the current callin has returned, one unit per
+/// command: each placement tests the build order against the houses and
+/// villagers created before it (and the terrain their UnitCreated blocked),
+/// and the random numbers are drawn in the same order as in Lua.
+pub fn populate(villagers: Rc<RefCell<Villagers>>) {
+    let list = Rc::clone(&villagers);
+    commands::run(move || *list.borrow_mut() = Villagers::default());
     spawn_houses();
     spawn_blood_mage();
-    let villagers = fill_villager_areas();
-    spring::log_info!(
-        "ttld-wasm",
-        "town populated: {} houses, {} villagers",
-        HOUSE_POSITIONS.len(),
-        villagers.len()
-    );
-    villagers
+    fill_villager_areas(&villagers);
+    commands::run(move || {
+        spring::log_info!(
+            "ttld-wasm",
+            "town populated: {} houses, {} villagers",
+            HOUSE_POSITIONS.len(),
+            villagers.borrow().count()
+        );
+    });
 }
 
 fn spawn_houses() {
     for (x, z) in HOUSE_POSITIONS {
         let x = (x / HOUSE_GRID).floor() * HOUSE_GRID;
         let z = (z / HOUSE_GRID).floor() * HOUSE_GRID;
-        units::create(UnitKind::House, x, z, PLAYER_TEAM, random::facing());
+        commands::run(move || {
+            units::create(UnitKind::House, x, z, PLAYER_TEAM, random::facing());
+        });
     }
 }
 
 fn spawn_blood_mage() {
-    if units::create(
+    units::spawn(
         UnitKind::BloodMage,
         BLOOD_MAGE_X,
         BLOOD_MAGE_Z,
         PLAYER_TEAM,
         0,
     )
-    .is_none()
-    {
-        spring::log_warning!("ttld-wasm", "blood mage failed to spawn");
-    }
+    .then(|unit| {
+        if unit.is_none() {
+            spring::log_warning!("ttld-wasm", "blood mage failed to spawn");
+        }
+    });
 }
 
-fn fill_villager_areas() -> Vec<Villager> {
-    let mut spawned = Vec::new();
+fn fill_villager_areas(villagers: &Rc<RefCell<Villagers>>) {
     for area in &VILLAGER_AREAS {
         for (kind, count) in area.units {
             let kind = kind.unit();
@@ -71,15 +82,18 @@ fn fill_villager_areas() -> Vec<Villager> {
                 continue;
             };
             for _ in 0..*count {
-                if let Some(unit_id) = spawn_villager(area, kind, def_id) {
-                    spawned.push(Villager { unit_id, area });
-                }
+                let villagers = Rc::clone(villagers);
+                commands::queue(move || spawn_villager(area, kind, def_id)).then(move |unit_id| {
+                    if let Some(unit_id) = unit_id {
+                        villagers.borrow_mut().push(Villager { unit_id, area });
+                    }
+                });
             }
         }
     }
-    spawned
 }
 
+/// Places and creates one villager. Runs as a command.
 fn spawn_villager(area: &'static VillagerArea, kind: UnitKind, def_id: i32) -> Option<i32> {
     let facing = random::facing();
     let position = find_placement(area, def_id, facing);

@@ -1,3 +1,4 @@
+use spring::commands;
 use spring_addons::AddonContext;
 use spring_addons::rules::Gadget;
 
@@ -25,7 +26,7 @@ impl Gadget<Global> for UnitScriptsGadget {
     /// after the unit update. This gadget runs after the others, as Lua's
     /// unit_script.lua runs after most of the game's gadgets.
     fn game_frame(&self, _ctx: &AddonContext<'_, Global>, frame: i32) {
-        crate::with_cus_module_or_defer(move |host| host.game_frame(frame));
+        wake_tasks_last(frame);
     }
 
     fn unit_created(
@@ -38,4 +39,18 @@ impl Gadget<Global> for UnitScriptsGadget {
     ) {
         unit_scripts::attach(unit, def);
     }
+}
+
+/// Wakes the tasks once every other command of this frame has run, including
+/// those that commands queued (the ork AI's and the villagers' orders): in
+/// Lua all of it ran before the wake-up, and a task started before it counts
+/// its sleep from the previous frame.
+fn wake_tasks_last(frame: i32) {
+    commands::run(move || {
+        if commands::is_empty() {
+            crate::with_cus_module_or_defer(move |host| host.game_frame(frame));
+        } else {
+            wake_tasks_last(frame);
+        }
+    });
 }
