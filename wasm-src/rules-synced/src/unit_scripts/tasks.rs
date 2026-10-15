@@ -1,5 +1,3 @@
-//! The scripts' animation tasks.
-
 use alloc::rc::Rc;
 use core::cell::RefCell;
 
@@ -50,8 +48,6 @@ pub(super) async fn bob_task(state: Rc<RefCell<TtldState>>, ctx: UnitCtx) {
     }
 }
 
-/// One walk bob: torso offset and speed (both scaled by the bob scale) and the
-/// pause after each move (scaled by the time scale), from shared.lua's Bob.
 const BOB_STEPS: [(f32, f32, f32); 6] = [
     (3.0, 20.0, 100.0),
     (4.0, 10.0, 66.0),
@@ -89,8 +85,6 @@ pub(super) async fn attack_bob_task(state: Rc<RefCell<TtldState>>, ctx: UnitCtx)
     turn(&ctx, piece, Axis::Y, 0.0, 120.0_f32.to_radians());
 }
 
-/// swordsman.lua's FireWeapon: finish the attack bob, then only a swordsman
-/// (not a peasant) swings its hand.
 pub(super) async fn melee_attack_task(state: Rc<RefCell<TtldState>>, ctx: UnitCtx) {
     attack_bob_task(Rc::clone(&state), ctx.clone()).await;
     let is_sword = state.borrow().kind == Some(ScriptKind::Swordsman);
@@ -196,7 +190,6 @@ pub(super) async fn cast_task(state: Rc<RefCell<TtldState>>, ctx: UnitCtx) {
     lower_arms(&ctx, pieces);
 }
 
-/// The start of CastAnimation: both hands come up, slower for the long casts.
 fn raise_arms(ctx: &UnitCtx, pieces: Pieces, level: i32) {
     move_piece(
         ctx,
@@ -261,7 +254,6 @@ fn raise_arms(ctx: &UnitCtx, pieces: Pieces, level: i32) {
     );
 }
 
-/// The end of CastAnimation: both hands go back down.
 fn lower_arms(ctx: &UnitCtx, pieces: Pieces) {
     move_piece(ctx, pieces.hand_right, Axis::X, 0.0, 100.0);
     move_piece(ctx, pieces.hand_right, Axis::Z, 0.0, 80.0);
@@ -350,8 +342,6 @@ pub(super) async fn death_task(state: Rc<RefCell<TtldState>>, ctx: UnitCtx) {
     move_piece(&ctx, piece, Axis::Z, -50.0 * size, 30.0 * size);
     ctx.sleep(Duration::from_millis(1500)).await;
     state.borrow_mut().death_pending = false;
-    // Killed added the death paralysis after UnitDestroyed had cleared the
-    // unit's effects, and no callin follows the unit's removal.
     crate::with_global(|global| crate::combat::forget(global, ctx.unit().0));
     ctx.set_killed_finished(WreckLevel::NoWreck);
 }

@@ -1,6 +1,7 @@
+pub mod mapedge;
 use spring_addons::ui::Widget;
 
-use crate::mapedge::MapEdge;
+use self::mapedge::MapEdge;
 use crate::state::Global;
 
 #[derive(Default)]

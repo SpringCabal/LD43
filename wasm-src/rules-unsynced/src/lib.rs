@@ -1,6 +1,3 @@
-//! Draws units at the size their def asks for, like the unsynced half of the
-//! Lua build's unit_enlarger.lua gadget.
-
 extern crate alloc;
 
 use alloc::collections::BTreeMap;
@@ -10,10 +7,8 @@ use spring_addons::event::EventResult;
 use spring_addons::unsynced::{UnsyncedAddon, UnsyncedHandler};
 use spring_addons::{AddonContext, register_unsynced_addons};
 
-/// Scales units whose def has `hscale`/`vscale` custom params.
 #[derive(Default)]
 struct UnitEnlarger {
-    /// Horizontal and vertical draw scale per unit def; `None` draws unscaled.
     scales: RefCell<BTreeMap<i32, Option<(f32, f32)>>>,
 }
 
@@ -27,7 +22,6 @@ impl UnitEnlarger {
         scale
     }
 
-    /// Scaled units need the Lua draw path, which calls DrawUnit.
     fn arm(&self, unit_id: i32, def_id: i32) {
         if self.scale(def_id).is_some() {
             let _ = spring::unsynced_ctrl::set_unit_lua_draw(unit_id, true);
@@ -66,12 +60,10 @@ impl UnsyncedAddon for UnitEnlarger {
         if let Some((horizontal, vertical)) = scale {
             let _ = spring::gfx::scale(horizontal, vertical, horizontal);
         }
-        // Scaling only sets up the transform; the engine still draws the unit.
         EventResult::Ignored
     }
 }
 
-/// The def's draw scale, unless it is 1 both ways.
 fn read_scale(def_id: i32) -> Option<(f32, f32)> {
     let horizontal = custom_scale(def_id, "hscale").unwrap_or(1.0);
     let vertical = custom_scale(def_id, "vscale").unwrap_or(1.0);

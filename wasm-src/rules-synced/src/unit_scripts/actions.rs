@@ -1,5 +1,3 @@
-//! Unit actions the script callbacks take.
-
 use alloc::rc::Rc;
 use core::cell::RefCell;
 use spring::ResultExt;

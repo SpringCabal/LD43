@@ -3,8 +3,8 @@ local modinfo = {
 	shortname = "TTLDW",
 	game = "To the Last Drop WASM",
 	shortgame = "TTLDW",
-	version = "0.1.0-wasm",
-	description = "To the Last Drop gameplay ported to Rust Core-WASM and RmlUi",
+	version = "$VERSION",
+	description = "LD43 game",
 	modtype = "1",
 	-- Single-player only: without this the engine binds a UDP socket and warns
 	-- that nobody else can reach it. Nothing here is ever hosted or joined.

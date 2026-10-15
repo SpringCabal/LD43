@@ -1,18 +1,8 @@
 extern crate alloc;
 
-mod camera;
 mod cursor;
-mod deferred_lighting;
-mod fire;
 mod game;
 mod gl_uniforms;
-mod highlight;
-mod hud;
-mod input;
-mod lighting;
-mod lights;
-mod mapedge;
-mod minimap;
 mod state;
 mod widgets;
 

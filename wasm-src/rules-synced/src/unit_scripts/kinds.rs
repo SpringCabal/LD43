@@ -1,5 +1,3 @@
-//! Which script each unit def runs, and the callbacks each script handles.
-
 use spring::cus::ScriptCapabilities;
 
 use crate::defs::{UnitKind, defs};
@@ -25,9 +23,6 @@ pub(super) fn script_kind_for_def(def: i32) -> Option<ScriptKind> {
         UnitKind::OrkBig => ScriptKind::OrkBig,
         UnitKind::OrkBoss => ScriptKind::OrkBoss,
         UnitKind::Coward => ScriptKind::Coward,
-        // The Lua build names defender.lua for the builder, a file it never
-        // shipped. The builder has the crossbowman's model and weapon, so it
-        // gets the crossbowman's script.
         UnitKind::Crossbowman | UnitKind::Builder => ScriptKind::Crossbowman,
         UnitKind::Swordsman => ScriptKind::Swordsman,
         UnitKind::Peasant => ScriptKind::Peasant,

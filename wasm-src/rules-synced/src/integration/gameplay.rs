@@ -29,8 +29,6 @@ pub(super) fn setup_checks(tracker: &mut Tracker, world: &World) {
         defs().id(UnitKind::OrkSmall).is_some() && defs().id(UnitKind::House).is_some(),
         "unit defs resolve (weapon/unit def tables loaded cleanly)",
     );
-    // Houses are drawn scaled, and the unsynced UI reads the factors straight
-    // out of the def's custom params.
     let scales = defs()
         .id(UnitKind::House)
         .map(|house| {
@@ -77,7 +75,6 @@ pub(super) fn setup_checks(tracker: &mut Tracker, world: &World) {
             leader_scales.0, leader_scales.1
         ),
     );
-    // game_setup_modrules.lua opens the map to ally teams 0 and 1 only.
     let gaia_ally_team = spring::game::get_gaia_team_id(0)
         .and_then(spring::teams::get_team_ally_team_id)
         .unwrap_or(-1);
@@ -110,9 +107,6 @@ pub(super) fn ork_spawn_checks(tracker: &mut Tracker, world: &World) {
         alive > 0,
         &format!("first wave spawned orks ({alive} alive)"),
     );
-    // The regression this guards: CreateUnit re-enters the module through
-    // UnitCreated, so spawning while the world was borrowed silently dropped
-    // every ork and left them without orders for the whole match.
     check(
         tracker,
         registered as i32 == alive,
@@ -159,10 +153,8 @@ pub(super) fn player_attack_checks(world: &World) {
     let message = format!("attack|{}|{}", position.x + 200.0, position.z);
     command_player(
         world,
-        crate::player::parse(message.as_bytes()).expect("attack message parses"),
+        crate::gadgets::player::behavior::parse(message.as_bytes()).expect("attack message parses"),
     );
-    // The blood mage's unit script aims and fires at this target, once the
-    // player's orders have gone out.
     world.then_track(move |tracker, _| {
         let target = crate::unit_scripts::fire_target(unit_id).flatten();
         let fire_tx = target.map_or(0.0, |(tx, _)| tx);
@@ -179,14 +171,15 @@ pub(super) fn player_attack_checks(world: &World) {
     });
 }
 
-/// Hands the player a command as the UI would; the player gives its orders.
-pub(super) fn command_player(world: &World, command: crate::player::PlayerCommand) {
+pub(super) fn command_player(
+    world: &World,
+    command: crate::gadgets::player::behavior::PlayerCommand,
+) {
     let mut player = world.global.player.access_mut();
     player.accept(command, world.frame);
     player.update(world.frame);
 }
 
-/// The weapon's current reload in seconds, straight from the engine.
 pub(super) fn live_reload(unit_id: i32) -> f32 {
     spring::owned::units_weapons::get_unit_weapon_state(unit_id, 1, "reloadTime")
         .map(|state| state.reload_time)

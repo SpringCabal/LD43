@@ -1,10 +1,9 @@
+pub mod behavior;
 use spring_addons::AddonContext;
 use spring_addons::rules::{Gadget, UnitDestroyedEvent};
 
 use crate::state::Global;
-use crate::terrain;
 
-/// Makes the ground under buildings impassable while they stand.
 #[derive(Default)]
 pub struct TerrainGadget;
 
@@ -21,10 +20,10 @@ impl Gadget<Global> for TerrainGadget {
         _team: i32,
         _builder: i32,
     ) {
-        terrain::block(unit, def);
+        behavior::block(unit, def);
     }
 
     fn unit_destroyed(&self, _ctx: &AddonContext<'_, Global>, event: &UnitDestroyedEvent) {
-        terrain::unblock(event.unit_id, event.unit_def_id);
+        behavior::unblock(event.unit_id, event.unit_def_id);
     }
 }

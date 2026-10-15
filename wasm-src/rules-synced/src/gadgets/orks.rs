@@ -1,11 +1,11 @@
+pub(crate) mod behavior;
+
 use spring::commands;
 use spring_addons::AddonContext;
 use spring_addons::rules::{Gadget, UnitDestroyedEvent};
 
-use crate::combat;
 use crate::state::Global;
 
-/// The ork AI: every ork attacks the town, and idle orks get a new target.
 #[derive(Default)]
 pub struct OrksGadget;
 
@@ -18,13 +18,10 @@ impl Gadget<Global> for OrksGadget {
         if !ctx.global().running(frame) {
             return;
         }
-        // After this frame's waves, which spawn as commands: the batch counts
-        // the new orks, and the random numbers are drawn in the same order as
-        // in Lua.
         commands::run(|| {
             let batch = crate::with_global(|global| global.orks.access_mut().next_batch());
             for unit_id in batch {
-                combat::check_idle(unit_id);
+                behavior::check_idle(unit_id);
             }
         });
     }
@@ -39,7 +36,7 @@ impl Gadget<Global> for OrksGadget {
     ) {
         let registered = ctx.global().orks.access_mut().created(unit, def, team);
         if registered {
-            combat::advance(unit);
+            behavior::advance(unit);
         }
     }
 

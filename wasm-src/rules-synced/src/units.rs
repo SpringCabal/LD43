@@ -11,7 +11,6 @@ pub const PLAYER_TEAM: i32 = 0;
 pub const ENEMY_TEAM: i32 = 1;
 pub const NEUTRAL_TEAM: i32 = 2;
 
-/// The point the orks attack and flee from.
 pub const TOWN_CENTRE_X: f32 = 5650.0;
 pub const TOWN_CENTRE_Z: f32 = 5720.0;
 
@@ -55,16 +54,10 @@ pub fn ground_height(x: f32, z: f32) -> f32 {
     spring::get_ground_height(x, z).unwrap_or(0.0)
 }
 
-/// Creates a unit once the current callin has returned: creating runs
-/// UnitCreated in every gadget. `.then` gets the new unit, `None` if it
-/// failed.
 pub fn spawn(kind: UnitKind, x: f32, z: f32, team: i32, facing: i32) -> Pending<Option<i32>> {
     commands::queue(move || create(kind, x, z, team, facing))
 }
 
-/// Creates a unit now. Only for code that runs as a command (see [`spawn`]),
-/// which draws its random numbers and creates the unit in one step, so they
-/// interleave with the draws of UnitCreated as in Lua.
 pub fn create(kind: UnitKind, x: f32, z: f32, team: i32, facing: i32) -> Option<i32> {
     let y = ground_height(x, z);
     create_at(kind, Float3 { x, y, z }, team, facing)
@@ -111,17 +104,12 @@ pub fn all_units() -> Vec<i32> {
     spring::get_all_units().unwrap_or_default()
 }
 
-/// Removes every unit at once, without death sequences, as
-/// unit_town_handler.lua's Initialize does, once the current callin has
-/// returned.
 pub fn destroy_all() {
     for unit_id in all_units() {
         destroy(unit_id);
     }
 }
 
-/// Removes a unit without a death sequence, once the current callin has
-/// returned.
 pub fn destroy(unit_id: i32) {
     let options = unit_control::DestroyUnitOptions {
         selfd: false,
@@ -133,10 +121,7 @@ pub fn destroy(unit_id: i32) {
         .then(move |result| crate::engine::check(result, "destroy_unit", unit_id));
 }
 
-/// Whether the unit has anything queued.
 pub fn has_orders(unit_id: i32) -> bool {
-    // Ask for one command: a limit of zero returns an empty queue for every
-    // unit, which made every idle check re-issue the same order.
     spring::units_commands::get_command_queue(unit_id, 1)
         .map(|commands| !commands.is_empty())
         .unwrap_or(true)

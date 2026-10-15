@@ -1,7 +1,3 @@
-//! Speed and reload effects on units: the Lua build's
-//! `unit_attributes_generic.lua` (GG.Attributes), limited to the move and
-//! reload factors TTLD's effects use, and `unit_turn_without_interia.lua`.
-
 use alloc::collections::{BTreeMap, BTreeSet};
 use alloc::format;
 use alloc::vec::Vec;
@@ -30,35 +26,23 @@ pub struct Modifier {
     pub reload_factor: f32,
 }
 
-/// The attribute effects on every unit, like the Lua build's GG.Attributes.
-///
-/// Shared: spells, the ork AI, the combat gadget and the unit scripts' Killed
-/// all add effects.
 #[derive(Default)]
 pub struct Attributes {
     units: BTreeMap<i32, UnitAttributes>,
-    /// Units whose weapons are paused (a reload factor of 0); see
-    /// [`update_paused`].
     paused: BTreeSet<i32>,
-    /// Each unit def's unmodified weapons (Lua's `origUnitWeapons`).
     weapons: BTreeMap<i32, Vec<WeaponBase>>,
 }
 
 #[derive(Default)]
 struct UnitAttributes {
-    /// The effects in the order they were added, which is the order their
-    /// factors multiply in.
     effects: Vec<(Effect, Modifier)>,
-    /// The factors last applied; none yet means 1.
     applied_move: Option<f32>,
     applied_reload: Option<f32>,
 }
 
 #[derive(Clone, Copy)]
 struct WeaponBase {
-    /// Seconds.
     reload: f32,
-    /// Seconds between the shots of a burst.
     burst_rate: f32,
 }
 
@@ -89,7 +73,6 @@ pub fn forget(global: &Global, unit_id: i32) {
     attributes.paused.remove(&unit_id);
 }
 
-/// A new ground unit turns without inertia (`unit_turn_without_interia.lua`).
 pub fn remove_turn_inertia(unit_id: i32) {
     let Some(movement) = movement_of(unit_id) else {
         return;
@@ -102,16 +85,12 @@ pub fn remove_turn_inertia(unit_id: i32) {
     );
 }
 
-/// Keeps paused weapons from reloading, every [`UPDATE_PERIOD`] frames, as
-/// Lua's `UpdatePausedReload` does. Call it every frame.
 pub fn update_paused(global: &Global, frame: i32) {
     if frame % UPDATE_PERIOD != 1 {
         return;
     }
     let paused: Vec<i32> = global.attributes.access().paused.iter().copied().collect();
     for unit_id in paused {
-        // A dying unit pauses its weapons after UnitDestroyed has forgotten
-        // it, so it is dropped here once it is gone.
         if !units::valid(unit_id) {
             global.attributes.access_mut().paused.remove(&unit_id);
             continue;
@@ -132,17 +111,11 @@ pub fn update_paused(global: &Global, frame: i32) {
 }
 
 const UPDATE_PERIOD: i32 = 3;
-/// Seconds. Long enough that a paused weapon never comes off cooldown, short
-/// enough for the engine's frame count.
 const PAUSED_RELOAD: f32 = 100000.0;
-/// Slowed units brake at this multiple of their brake rate, so they drop to
-/// their new speed at once instead of coasting.
 const SLOWED_BRAKE_FACTOR: f32 = 1000.0;
 const MINIMUM_FACTOR: f32 = 0.001;
 const TURN_ACCEL_PER_TURN_RATE: f32 = 1.2;
 
-/// Applies the unit's combined factors where they changed, as Lua's
-/// `UpdateUnitAttributes`.
 fn apply(global: &Global, unit_id: i32) {
     let (move_factor, reload_factor, applied_move, applied_reload) = {
         let attributes = global.attributes.access();
@@ -177,9 +150,6 @@ fn apply(global: &Global, unit_id: i32) {
     }
 }
 
-/// Lua's `UpdateMovementSpeed` for a ground unit, with the turn and
-/// acceleration factors equal to the move factor, as every TTLD effect has
-/// them.
 fn apply_movement(unit_id: i32, factor: f32) {
     let Some(movement) = movement_of(unit_id) else {
         return;
@@ -203,7 +173,6 @@ fn apply_movement(unit_id: i32, factor: f32) {
     };
     let mut acc_rate = movement.max_acc * accel_factor;
     if slowed && acc_rate > speed_factor {
-        // Keeps a slowed unit from speeding up briefly on a new order.
         acc_rate = speed_factor;
     }
     use MoveTypeNumericField as Field;
@@ -240,8 +209,6 @@ fn apply_movement(unit_id: i32, factor: f32) {
     }
 }
 
-/// A unit that can't move stops, unless it is in the air: a unit killed
-/// mid-throw keeps flying.
 fn stop_if_grounded(unit_id: i32) {
     let Some(position) = units::position(unit_id) else {
         return;
@@ -252,8 +219,6 @@ fn stop_if_grounded(unit_id: i32) {
     }
 }
 
-/// Lua's `UpdateWeapons`: scales every weapon's reload by `factor`, keeping
-/// the progress of the reload under way. A factor of 0 pauses the weapons.
 fn apply_reload(global: &Global, unit_id: i32, factor: f32) {
     let Some(bases) = weapon_bases(global, unit_id) else {
         return;
@@ -265,13 +230,10 @@ fn apply_reload(global: &Global, unit_id: i32, factor: f32) {
             continue;
         };
         if factor <= 0.0 {
-            // As in Lua, only the first weapon pauses now; the others do
-            // within UPDATE_PERIOD frames, in update_paused.
             if !global.attributes.access_mut().paused.insert(unit_id) {
                 continue;
             }
             let reload_state = if state.reload_frame < frame as f32 {
-                // Ready to fire: keep it almost ready.
                 (frame + UPDATE_PERIOD + 1) as f32
             } else {
                 rescaled(frame, &state, PAUSED_RELOAD) + UPDATE_PERIOD as f32
@@ -293,15 +255,11 @@ fn apply_reload(global: &Global, unit_id: i32, factor: f32) {
     }
 }
 
-/// The frame the weapon's reload finishes at once its reload time becomes
-/// `reload`, keeping the fraction still to go.
 fn rescaled(frame: i32, state: &units_weapons::UnitWeaponState, reload: f32) -> f32 {
     let frame = frame as f32;
     frame + (state.reload_frame - frame) * reload / state.reload_time
 }
 
-/// The unit def's unmodified weapons. Read from the first unit of the def,
-/// before any effect has changed it, so they are the def's values.
 fn weapon_bases(global: &Global, unit_id: i32) -> Option<Vec<WeaponBase>> {
     let def_id = units::def_of(unit_id)?;
     if let Some(bases) = global.attributes.access().weapons.get(&def_id) {
@@ -329,8 +287,6 @@ fn weapon_count(unit_id: i32) -> i32 {
         .unwrap_or(0) as i32
 }
 
-/// The state of a weapon, by its zero-based slot. The read-only query counts
-/// weapons from 1, as Lua does; the setters count from 0.
 fn weapon_state(unit_id: i32, weapon: i32) -> Option<units_weapons::UnitWeaponState> {
     units_weapons::get_unit_weapon_state(unit_id, weapon + 1, "reloadTime")
         .log_err(&format!("weapon {weapon} of unit {unit_id}"))

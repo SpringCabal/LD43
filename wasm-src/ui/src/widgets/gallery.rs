@@ -1,18 +1,12 @@
-//! Gallery mode (`springcabal::gallery`): only the widgets that draw what a
-//! player sees in the world.
-
 use spring_addons::ui::{HideDefaultInterface, Widget, WidgetHandler};
-use springcabal::gallery::Gallery;
+use springcabal::verification::WorldWidgets;
 
 use super::*;
 use crate::cursor;
 use crate::state::{Cursor, Global};
 
-/// The lighting pass (sun, house, staff, cursor and projectile lights, bloom),
-/// burning houses, the map edge and the hover highlight. The staff light's
-/// flicker stays still: it follows real time, which differs between runs.
 pub fn setup(handler: &mut WidgetHandler<Global>) {
-    Gallery::new(handler)
+    WorldWidgets::new(handler)
         .widget(HideDefaultInterface::new(setup::HIDDEN_INTERFACE))
         .widget(GalleryPointerWidget)
         .widget(ApiSyncWidget::new())
@@ -23,10 +17,6 @@ pub fn setup(handler: &mut WidgetHandler<Global>) {
         .announce("ttld-ui");
 }
 
-/// Stands in for the player's pointer, which the input and HUD widgets track
-/// in the game: the view size, and a cursor resting on the middle of the view,
-/// where the gallery puts its subject.  The cursor light and the highlight
-/// follow it.
 struct GalleryPointerWidget;
 
 impl Widget<Global> for GalleryPointerWidget {

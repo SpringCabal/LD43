@@ -1,3 +1,4 @@
+pub mod behavior;
 use core::cell::Cell;
 
 use spring::types::Float3;
@@ -5,13 +6,10 @@ use spring_addons::AddonContext;
 use spring_addons::rules::{Gadget, UnitDestroyedEvent};
 
 use crate::defs::defs;
-use crate::player;
 use crate::state::{GameEnd, Global};
 
-/// The blood mage: takes the UI's commands, moves, attacks and casts.
 #[derive(Default)]
 pub struct PlayerGadget {
-    /// The last game frame, which timestamps commands arriving between frames.
     frame: Cell<i32>,
 }
 
@@ -26,18 +24,17 @@ impl Gadget<Global> for PlayerGadget {
         if !global.running(frame) {
             return;
         }
-        player::resolve_pending(global, frame);
+        behavior::resolve_pending(global, frame);
         let mut player = global.player.access_mut();
         if let Some(unit_id) = player.unit_id()
             && let Some((spell, x, z)) = player.take_cast(frame)
-            && let Some(outcome) = player::cast(global, unit_id, spell, x, z, frame)
+            && let Some(outcome) = behavior::cast(global, unit_id, spell, x, z, frame)
         {
             #[cfg(feature = "e2e")]
             spring::log_info!("ttld-wasm", "TTLD E2E cast {spell:?} on frame {frame}");
             player.begin_cast(frame, outcome.cast_frames);
         }
         if global.game_end.get() == GameEnd::Victory {
-            // Lua's last movement message goes stale on its own.
             player.drop_held();
         }
         player.update(frame);
@@ -51,11 +48,10 @@ impl Gadget<Global> for PlayerGadget {
         _mode: i32,
         data: &[u8],
     ) {
-        // After victory the blood mage takes no more commands, as in Lua.
         if ctx.global().game_end.get() == GameEnd::Victory {
             return;
         }
-        if let Some(command) = player::parse(data) {
+        if let Some(command) = behavior::parse(data) {
             ctx.global()
                 .player
                 .access_mut()
@@ -87,13 +83,12 @@ impl Gadget<Global> for PlayerGadget {
         _projectile_id: i32,
     ) -> bool {
         if defs().fireball == Some(weapon_def_id) {
-            player::fireball_exploded(Float3 {
+            behavior::fireball_exploded(Float3 {
                 x: pos.0,
                 y: pos.1,
                 z: pos.2,
             });
         }
-        // Keep the engine's own explosion graphics.
         false
     }
 }

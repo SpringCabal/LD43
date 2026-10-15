@@ -1,12 +1,12 @@
+pub mod fire;
 use core::cell::{Cell, RefCell};
 
 use spring_addons::UnitDestroyedEvent;
 use spring_addons::ui::Widget;
 
-use crate::fire::Fire;
+use self::fire::Fire;
 use crate::state::Global;
 
-/// Flames on burning houses.
 #[derive(Default)]
 pub struct GfxFireWidget {
     fire: RefCell<Fire>,

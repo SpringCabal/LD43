@@ -5,46 +5,30 @@ use spring_addons::ui::Widget;
 use springcabal::shots::screenshot;
 use ttld_shared::Command;
 
-use crate::hud;
 use crate::state::Global;
+use crate::widgets::gui_hud::hud;
 
-/// Logged after the last step; the visual suite quits on it.
 pub const DONE_MARKER: &str = "TTLD E2E done";
 
-/// What the visual run does, by game frame. The suite's goldens are the
-/// first three screenshots, which are taken with the game paused on their
-/// frame (`pauseatframe`), so they show the same frame every run; the first
-/// two also feed its leader-render comparison.
 const STEPS: &[(i32, When, Step)] = &[
     (40, When::Running, Step::CloseIntro),
     (73, When::Paused, Step::Shot("leader-render baseline")),
-    // Spawns the stationary boss/normal-ork pair for the pixel-level render
-    // comparison, through the regular synced message path. The rules
-    // messages up to the fireball shot are sent while paused, so the rules
-    // take them on the same frame every run.
     (78, When::Paused, Step::LeaderFixture),
     (121, When::Running, Step::ReportLeaderFixture),
     (132, When::Paused, Step::Shot("leader-render fixture")),
-    // Heartburn through the same rules message as the key/mouse input.
     (150, When::Paused, Step::Heartburn),
     (167, When::Paused, Step::Shot("heartburn fireball")),
     (189, When::Running, Step::Shot("heartburn landing")),
-    // Hover-only target UI and the unit outline, with real engine mouse
-    // moves.
     (227, When::Running, Step::Hover("orkboss")),
     (233, When::Running, Step::CheckHover("orkboss")),
     (240, When::Running, Step::Shot("hovering the ork leader")),
     (254, When::Running, Step::Hover("orkbig")),
     (260, When::Running, Step::CheckHover("orkbig")),
     (274, When::Running, Step::Shot("hovering a big ork")),
-    // A real engine selection, which the input widget clears on its next
-    // update.
     (281, When::Running, Step::SeedSelection),
     (288, When::Running, Step::CheckSelection),
     (288, When::Running, Step::Shot("selection cleared")),
     (303, When::Running, Step::MouseWheel),
-    // Drive the player toward the north map edge as well as east, which
-    // exercises the minimap's edge behaviour.
     (339, When::Running, Step::MovePlayer),
     (376, When::Running, Step::RememberPoultice),
     (376, When::Running, Step::Shot("before poultice")),
@@ -67,7 +51,6 @@ const STEPS: &[(i32, When, Step)] = &[
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum When {
     Running,
-    /// With the game paused on the step's frame.
     Paused,
 }
 
@@ -91,21 +74,14 @@ enum Step {
     Done,
 }
 
-/// Updates to stay paused after a paused step, so its screenshot is drawn
-/// and its rules message handled before the game goes on.
 const PAUSED_UPDATES: u32 = 10;
-/// Updates to wait in a pause before running a paused step.
 const SETTLE_UPDATES: u32 = 2;
 
 #[derive(Default)]
 pub struct DbgE2eWidget {
-    /// The next step to run.
     next: Cell<usize>,
-    /// Whether the pause frames have been requested.
     pauses_requested: Cell<bool>,
-    /// Updates left before the game resumes after a paused step.
     resume_in: Cell<Option<u32>>,
-    /// Updates seen so far in the current pause.
     paused_updates: Cell<u32>,
     shots: Cell<u32>,
     hovered: Cell<Option<i32>>,
@@ -130,9 +106,6 @@ impl DbgE2eWidget {
         }
     }
 
-    /// Whether the game has been paused for a few updates. The first draw
-    /// after the pause arrives can still interpolate towards the next frame,
-    /// which moves fast things such as the fireball.
     fn settled_in_pause(&self) -> bool {
         if !paused() {
             self.paused_updates.set(0);
@@ -211,8 +184,6 @@ impl Widget<Global> for DbgE2eWidget {
         if self.resume_when_due() {
             return;
         }
-        // Steps of one frame run together; a later frame's steps wait for
-        // the next update, so each sees what the previous ones did.
         let mut running = None;
         while let Some(&(due, when, step)) = STEPS.get(self.next.get()) {
             if frame < due || running.is_some_and(|running| running != due) {
@@ -268,8 +239,6 @@ fn echo(line: &str) {
     spring::echo(line, "").log_err("e2e report");
 }
 
-/// Logs whether the HUD shows the unit the mouse was moved onto as its
-/// target, as the hover highlight and target panel do.
 fn report_hover(global: &Global, def_name: &str, unit: Option<i32>) {
     let target = global.hud.access().target.map(|(unit, _)| unit);
     let cursor = global.cursor.get().unit;
@@ -455,9 +424,6 @@ impl DbgE2eWidget {
             let Ok(def) = spring::units_info::get_unit_def_id(target) else {
                 continue;
             };
-            // The native query is team-filtered, but retain the check here so
-            // the visual assertion cannot accidentally observe a stale or
-            // misclassified unit if the query contract changes.
             if team != 1 {
                 continue;
             }

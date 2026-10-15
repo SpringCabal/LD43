@@ -1,5 +1,3 @@
-//! The per-unit state a unit script shares with its tasks.
-
 use spring::cus::{InitCtx, Piece};
 
 use super::kinds::ScriptKind;
@@ -42,10 +40,7 @@ pub(crate) struct TtldState {
     pub(super) cast_level: i32,
     pub(super) cast_tx: f32,
     pub(super) cast_tz: f32,
-    /// How long the current buff or stun animation lasts, in frames.
     pub(super) effect_frames: i32,
-    /// The blood mage's ground target while the player attacks, Lua's
-    /// `GG.fireTx`/`GG.fireTz`: without one it holds its fire.
     pub(super) fire_target: Option<(f32, f32)>,
 }
 

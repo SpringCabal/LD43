@@ -1,8 +1,3 @@
-//! The restart. After the won round, the UI's headless-integration build
-//! presses the end screen's Restart (`ui/src/widgets/dbg_restart.rs`), and the
-//! new round must look as the first one did the same number of frames after
-//! its setup.
-
 use alloc::format;
 use alloc::vec::Vec;
 
@@ -13,24 +8,20 @@ use crate::units::PLAYER_TEAM;
 
 use super::*;
 
-/// What a round looks like shortly after its setup.
 #[derive(Clone, Copy)]
 pub(super) struct RoundStart {
-    /// Frames since the round's setup.
     after_setup: i32,
     units: usize,
     villagers: i32,
     enemies: i32,
 }
 
-/// How the won round ended, recorded just before the restart.
 #[derive(Clone, Copy)]
 pub(super) struct RoundEnd {
     game_end: GameEnd,
     orks_killed: i32,
 }
 
-/// If the new round hasn't been checked by this frame, the restart failed.
 pub(super) const RESTART_DEADLINE: i32 = 600;
 
 pub(super) fn record_round_start(tracker: &mut Tracker, world: &World) {
@@ -49,7 +40,6 @@ pub(super) fn record_round_end(tracker: &mut Tracker, world: &World) {
     });
 }
 
-/// Whether this is the frame to check the restarted round on.
 pub(super) fn restart_check_due(tracker: &Tracker, world: &World) -> bool {
     let (Some(first), Some(setup)) = (tracker.first_round, world.global.setup_frame()) else {
         return false;
@@ -137,12 +127,9 @@ pub(super) fn restart_checks(tracker: &mut Tracker, world: &World) {
     );
 }
 
-/// Where the town handler puts the blood mage.
 const MAGE_X: f32 = 5580.0;
 const MAGE_Z: f32 = 7100.0;
 
-/// The units that aren't dying. A unit killed just before the restart plays
-/// out its death after it, as in Lua.
 fn living_units() -> Vec<i32> {
     units::all_units()
         .into_iter()

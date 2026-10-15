@@ -1,8 +1,3 @@
-//! A stunned ork: its weapons pause, and it attacks again once the stun
-//! wears off. Lua's `UpdateWeapons` keeps the reload under way; scaling only
-//! the reload time let a stunned ork fire once with a 100,000 s reload and
-//! disarmed it for the rest of the round.
-
 use alloc::format;
 use alloc::vec::Vec;
 
@@ -15,23 +10,18 @@ use crate::units::{self, ENEMY_TEAM, PLAYER_TEAM};
 
 use super::*;
 
-/// The fixture stands far from the town and the ork waves.
 const FIXTURE_X: f32 = 8500.0;
 const FIXTURE_Z: f32 = 8500.0;
 const ORK_OFFSET: f32 = 40.0;
 pub(super) const STUN_SETUP: i32 = 160;
 pub(super) const STUN_START: i32 = 190;
 const STUN_FRAMES: i32 = 90;
-/// Bites already on their way when the stun lands still arrive.
 const STUN_SETTLE: i32 = 5;
 pub(super) const STUN_PAUSED_CHECK: i32 = 230;
-/// The stun ends on the first frame after STUN_START + STUN_FRAMES.
 const STUN_END: i32 = STUN_START + STUN_FRAMES + 1;
 pub(super) const STUN_OVER_CHECK: i32 = 360;
-/// The paused reload the attributes use, in seconds.
 const PAUSED_RELOAD: f32 = 100000.0;
 
-/// A bite: the ork that bit, and the frame.
 #[derive(Clone, Copy)]
 pub struct Bite {
     pub attacker: i32,
@@ -119,7 +109,6 @@ pub(super) fn stun_over_checks(tracker: &mut Tracker, _world: &World) {
     );
 }
 
-/// Seconds, from the ork weapon defs.
 const BITE_RELOAD: f32 = 0.5;
 const FIREBOMB_RELOAD: f32 = 15.0;
 
@@ -131,7 +120,6 @@ fn bites_between(tracker: &Tracker, from: i32, to: i32) -> usize {
         .count()
 }
 
-/// The live reload of each of the unit's weapons, in seconds.
 fn reloads(unit_id: i32) -> Vec<f32> {
     let count = spring::owned::units_weapons::get_unit_weapon_count(unit_id).unwrap_or(0) as i32;
     (1..=count)

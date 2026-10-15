@@ -9,11 +9,8 @@ use ttld_shared::{STATUS_PERIOD, Status};
 
 use crate::state::{Global, Phase};
 
-/// Sends the game status to the UI, whenever it has changed, as a
-/// `TTLD_STATUS|key=value|...` message.
 #[derive(Default)]
 pub struct StatusGadget {
-    /// Shared with the command that sends the status.
     sent: Rc<SendOnChange<Status>>,
 }
 
@@ -26,8 +23,6 @@ impl Gadget<Global> for StatusGadget {
         let global = ctx.global();
         match global.phase(frame) {
             Phase::Loading => return,
-            // Every round starts with a status, even one that looks like the
-            // last round's.
             Phase::Setup => {
                 self.sent.reset();
                 return;
@@ -35,9 +30,6 @@ impl Gadget<Global> for StatusGadget {
             Phase::Running if frame % STATUS_PERIOD != 0 => return,
             Phase::Running => {}
         }
-        // Read once this frame's commands (drains, deaths, the victory) have
-        // run, and sent from there too: `send_to_unsynced` runs its receivers
-        // inside the call.
         let sent = Rc::clone(&self.sent);
         commands::run(move || {
             let status = crate::with_global(|global| read(global, frame));

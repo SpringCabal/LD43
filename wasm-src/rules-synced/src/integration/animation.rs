@@ -8,9 +8,6 @@ use crate::units::{self, PLAYER_TEAM};
 
 use super::*;
 
-/// Frames of the animation checks: a crossbowman walks, stops, then fires at
-/// the ground, and an ork of the first wave walks to the town. They exercise
-/// the real movement and weapon callins, not direct script calls.
 pub(super) const ANIMATION_SPAWN: i32 = 15;
 pub(super) const ANIMATION_WALK: i32 = 20;
 pub(super) const ANIMATION_STOP: i32 = 75;
@@ -90,8 +87,6 @@ pub(super) fn animation_checks(world: &World) {
     }
 }
 
-/// Records the crossbowman's torso while it walks, its weapon hand while it
-/// fires, and its projectiles in flight.
 pub(super) fn record_crossbowman(world: &World, unit: i32, walking: bool) {
     let piece = if walking { "Torso" } else { "Hand_Right" };
     let matrix = piece_matrix(unit, piece);

@@ -3,18 +3,17 @@ use alloc::format;
 use spring::cmd;
 use spring::commands;
 
-use crate::combat::{self, Story};
 use crate::defs::{UnitKind, defs};
+use crate::gadgets::story::behavior::{self as story, Story};
+use crate::gadgets::victory;
 use crate::state::GameEnd;
 
 use super::*;
 
-/// Brings on the final wave the way the story does, since it only comes
-/// after several minutes: the gate opens once the wave's units exist.
 pub(super) fn final_wave_checks(world: &World) {
-    combat::spawn_wave(Story::final_wave());
+    story::spawn_wave(Story::final_wave());
     world.then_track(|tracker, global| {
-        let opened = combat::open_victory(global);
+        let opened = victory::open_victory(global);
         let game_end = global.game_end.get();
         let bosses = boss_ids();
         check(
@@ -29,9 +28,6 @@ pub(super) fn final_wave_checks(world: &World) {
     });
 }
 
-/// A frame later the victory gadget has run: the living boss still stands in
-/// the way. Then the boss is killed through the engine, which runs its Killed
-/// script. It stays on the enemy team until its death sequence ends.
 pub(super) fn kill_boss_checks(world: &World) {
     let game_end = world.global.game_end.get();
     let bosses = world.track(|tracker| {
@@ -57,15 +53,12 @@ pub(super) fn kill_boss_checks(world: &World) {
     }
 }
 
-/// The victory gadget declared victory by itself once the boss's death
-/// sequence (about 1.7 s) ended.
 pub(super) fn victory_checks(world: &World) {
     let global = world.global;
     let game_end = global.game_end.get();
     let batch_empty = global.orks.access_mut().next_batch().is_empty();
     let orks = global.orks.access().units().to_vec();
     let retreating = orks.iter().filter(|unit| retreats_in_map(**unit)).count();
-    // The Loop repeats forever; once the town is saved it sends nothing.
     let loop_stops = Story::at_the_loop()
         .take_due_wave(world.frame, GameEnd::VictoryPossible)
         .is_some()
@@ -96,7 +89,6 @@ pub(super) fn victory_checks(world: &World) {
     });
 }
 
-/// The bosses on the enemy team.
 fn boss_ids() -> Vec<i32> {
     let Some(boss) = defs().id(UnitKind::OrkBoss) else {
         return Vec::new();
@@ -110,7 +102,6 @@ fn boss_ids() -> Vec<i32> {
         .collect()
 }
 
-/// Whether the unit's first order is a move to a point on the map.
 pub(super) fn retreats_in_map(unit_id: i32) -> bool {
     let Ok(map) = spring::game::get_game_map_info(0) else {
         return false;
@@ -146,6 +137,4 @@ pub(super) fn retreat_persists_checks(tracker: &mut Tracker, world: &World) {
     );
 }
 
-/// A fleeing ork's reload factor is 0, which stretches its reload to at least
-/// this many seconds.
 pub(super) const FLEEING_RELOAD: f32 = 100_000.0;

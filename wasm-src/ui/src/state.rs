@@ -1,5 +1,3 @@
-//! State the widgets share. Everything else lives in the widget that owns it.
-
 use core::cell::Cell;
 
 use spring::types::Float3;
@@ -9,25 +7,15 @@ use ttld_shared::Status;
 
 #[derive(Default)]
 pub struct Global {
-    /// The latest status from the rules.
     pub status: Resource<GameStatus>,
-    /// The RmlUi HUD: its data bindings and which screens are open. Shared
-    /// because the HUD's own buttons and the keyboard both open and close
-    /// screens.
     pub hud: Resource<Hud>,
-    /// The view size in pixels.
     pub view: Cell<(i32, i32)>,
-    /// What the cursor pointed at when this update started.
     pub cursor: Cell<Cursor>,
 }
 
-/// The rules' latest [`Status`], as the widgets read it.
 #[derive(Clone, Copy)]
 pub struct GameStatus {
-    /// Bumped whenever a message arrives, so readers can tell it changed.
     pub revision: u32,
-    /// The rules' round: 1, then one more per restart; 0 before the first
-    /// status.
     pub round: u32,
     pub player_unit: i32,
     pub player_alive: bool,
@@ -63,7 +51,6 @@ impl Default for GameStatus {
 }
 
 impl GameStatus {
-    /// Takes a new status from the rules.
     pub fn apply(&mut self, status: Status) {
         self.round = status.round;
         self.player_unit = status.player_unit;
@@ -81,7 +68,6 @@ impl GameStatus {
     }
 }
 
-/// Handles of the RmlUi data-model variables.
 #[derive(Clone, Copy, Default)]
 pub struct HudBindings {
     pub health: u64,
@@ -104,13 +90,10 @@ pub struct HudBindings {
 }
 
 pub struct Hud {
-    /// `None` until the HUD document has loaded.
     pub bindings: Option<HudBindings>,
     pub intro_open: bool,
     pub endgame_open: bool,
-    /// A restart was sent and its round hasn't started yet.
     pub restart_requested: bool,
-    /// The hovered unit and health percentage the target panel shows.
     pub target: Option<(i32, i32)>,
 }
 
@@ -127,7 +110,6 @@ impl Default for Hud {
 }
 
 impl Hud {
-    /// The intro or end screen is up and takes the input.
     pub fn modal(&self) -> bool {
         self.intro_open || self.endgame_open
     }
@@ -135,10 +117,7 @@ impl Hud {
 
 #[derive(Clone, Copy, Default)]
 pub struct Cursor {
-    /// Screen position; `None` while the cursor is off the window.
     pub screen: Option<(f32, f32)>,
-    /// The ground under the cursor.
     pub ground: Option<Float3>,
-    /// The unit under the cursor.
     pub unit: Option<i32>,
 }

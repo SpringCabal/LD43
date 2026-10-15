@@ -11,13 +11,11 @@ use crate::state::Global;
 const MUSIC_FILE: &str = "sounds/music.ogg";
 const MUSIC_VOLUME: f32 = 0.20;
 
-/// The minimap stays: the minimap widget draws the engine's.
 pub const HIDDEN_INTERFACE: u32 =
     CONSOLE | RESOURCE_BAR | TOOLTIP | CLOCK | PLAYER_INFO | UNIT_ICONS | END_GRAPH;
 
-/// Registers the widgets in the order they update and draw.
 pub fn setup(handler: &mut WidgetHandler<Global>) {
-    if springcabal::gallery::active() {
+    if springcabal::verification::world_only() {
         gallery::setup(handler);
         return;
     }

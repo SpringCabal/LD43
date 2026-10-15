@@ -6,7 +6,6 @@ use crate::unit_scripts::ScriptCall;
 
 use super::attributes::{self, Effect, Modifier};
 
-/// Adrenaline and stun effects waiting to wear off.
 #[derive(Default)]
 pub struct Statuses {
     timers: Vec<Timer>,
@@ -81,7 +80,6 @@ pub fn stun(global: &Global, unit_id: i32, duration: i32, frame: i32) {
         .schedule(unit_id, Effect::Stun, frame + duration);
 }
 
-/// Ends the effects whose time is up.
 pub fn update(global: &Global, frame: i32) {
     let expired = global.statuses.access_mut().take_expired(frame);
     for timer in expired {
@@ -96,7 +94,6 @@ struct Timer {
     end_frame: i32,
 }
 
-/// The boss and the blood mage shrug off half of every status effect.
 fn resists(unit_id: i32) -> bool {
     let Ok(unit_def_id) = spring::units_info::get_unit_def_id(unit_id) else {
         return false;

@@ -1,14 +1,7 @@
-//! The minimap's player-centred crop, as `ui_minimap_viewport.lua` computes
-//! it. Only the UI draws the minimap; this is here so its tests run on the
-//! host (the UI crate builds only for wasm32).
-
-/// How much larger than the map's own scale the crop is drawn.
 pub const MINIMAP_SCALE: f32 = 1.3;
-// The viewport is as large as the town area, x 3300..8000 and z 3400..8100.
 pub const VIEWPORT_WORLD_X: f32 = 8000.0 - 3300.0;
 pub const VIEWPORT_WORLD_Z: f32 = 8100.0 - 3400.0;
 
-/// The part of the map the minimap shows, in world coordinates.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Viewport {
     pub origin_x: f32,
@@ -18,12 +11,7 @@ pub struct Viewport {
     pub scale: f32,
 }
 
-/// The crop centred on a unit at `(position_x, position_z)`.
 pub fn viewport_for_position(position_x: f32, position_z: f32) -> Viewport {
-    // Keep the crop centered on the unit even when its origin is outside the
-    // map. The source texture is edge-clamped, so the map boundary supplies
-    // the small amount of padding needed at the edge without changing the
-    // minimap's layout or zoom.
     Viewport {
         origin_x: position_x - VIEWPORT_WORLD_X * 0.5,
         origin_z: position_z - VIEWPORT_WORLD_Z * 0.5,
@@ -33,7 +21,6 @@ pub fn viewport_for_position(position_x: f32, position_z: f32) -> Viewport {
     }
 }
 
-/// The crop centred on the map, when there is no unit to follow.
 pub fn centered_viewport(map_size_x: f32, map_size_z: f32) -> Viewport {
     Viewport {
         origin_x: (map_size_x - VIEWPORT_WORLD_X) * 0.5,

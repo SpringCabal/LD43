@@ -1,6 +1,8 @@
+mod minimap;
+
 use spring_addons::ui::Widget;
 
-use crate::minimap::Minimap;
+use self::minimap::Minimap;
 use crate::state::Global;
 
 #[derive(Default)]

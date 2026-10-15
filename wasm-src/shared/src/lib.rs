@@ -1,7 +1,3 @@
-//! Definitions the rules and UI modules must agree on, including the
-//! messages between them: [`Status`] (rules to UI) and [`Command`] (UI to
-//! rules).
-
 #![no_std]
 
 extern crate alloc;
@@ -12,22 +8,17 @@ use alloc::string::String;
 
 use springcabal::message::{Encoder, fields, key_values};
 
-/// How often, in frames, the rules check the status for changes, and the
-/// UI's fire effect checks houses for fire.
 pub const STATUS_PERIOD: i32 = 6;
 
-/// How far the story has got, as the rules publish it in [`Status`].
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub enum GameEnd {
     #[default]
     Start,
-    /// The final wave has come; killing the boss wins.
     VictoryPossible,
     Victory,
 }
 
 impl GameEnd {
-    /// The name Lua's `gameEnd` rules param used.
     pub fn name(self) -> &'static str {
         match self {
             Self::Start => "start",
@@ -48,19 +39,14 @@ impl GameEnd {
 
 const STATUS: &str = "TTLD_STATUS";
 
-/// The rules' status for the HUD, sent whenever it changes as
-/// `TTLD_STATUS|key=value|...`.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Status {
-    /// 1, then one more per restart; 0 before the first status.
     pub round: u32,
-    /// The blood mage, or -1 once it is dead.
     pub player_unit: i32,
     pub health: i32,
     pub max_health: i32,
     pub casting: bool,
     pub cast_start: i32,
-    /// How long the cast animation (and the staff glow) lasts, in frames.
     pub cast_animation_frames: i32,
     pub villagers_killed: i32,
     pub allies_drained: i32,
@@ -107,8 +93,6 @@ impl Status {
             .finish()
     }
 
-    /// A status message; `None` for any other message. Missing or malformed
-    /// fields keep their defaults.
     pub fn parse(message: &str) -> Option<Self> {
         let mut status = Self::default();
         for (key, value) in key_values(message, STATUS)? {
@@ -141,22 +125,13 @@ fn parse_into<T: core::str::FromStr>(value: &str, target: &mut T) {
     }
 }
 
-/// What the UI tells the rules.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Command {
-    /// Walk to a ground point, while the left button is held.
     Move { x: f32, z: f32 },
-    /// Attack toward a ground point, while the right button is held;
-    /// `move_to` walks there first. Neither UI sends `move_to` any more, but
-    /// the rules accept it, as Lua's did (`attmove`).
     Attack { x: f32, z: f32, move_to: bool },
-    /// The steering button is up.
     Stop,
-    /// Cast spell 1 to 5 at a ground point.
     Spell { index: i32, x: f32, y: f32, z: f32 },
-    /// Start a new round.
     Restart,
-    /// The e2e build's request for its leader-render fixture.
     LeaderRenderFixture,
 }
 
@@ -191,18 +166,18 @@ impl Command {
         }
         if let Some(mut fields) = fields(message, "movement") {
             let (x, z) = fields.xz()?;
-            return Some(Self::Move { x, z });
+            return fields.is_done().then_some(Self::Move { x, z });
         }
         for (prefix, move_to) in [("attack", false), ("attmove", true)] {
             if let Some(mut fields) = fields(message, prefix) {
                 let (x, z) = fields.xz()?;
-                return Some(Self::Attack { x, z, move_to });
+                return fields.is_done().then_some(Self::Attack { x, z, move_to });
             }
         }
         let mut fields = fields(message, "spell")?;
         let index = fields.i32()?;
         let (x, y, z) = fields.xyz()?;
-        Some(Self::Spell { index, x, y, z })
+        fields.is_done().then_some(Self::Spell { index, x, y, z })
     }
 }
 
@@ -288,6 +263,14 @@ mod tests {
         assert_eq!(Command::parse("spell|x|1|2|3"), None);
         assert_eq!(Command::parse("attack|nan|1"), None);
         assert_eq!(Command::parse("hello"), None);
+        for message in [
+            "movement|1|2|3",
+            "attack|1|2|3",
+            "attmove|1|2|3",
+            "spell|1|2|3|4|5",
+        ] {
+            assert_eq!(Command::parse(message), None);
+        }
     }
 
     #[test]

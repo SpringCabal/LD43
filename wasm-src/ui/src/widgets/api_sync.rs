@@ -3,8 +3,6 @@ use ttld_shared::Status;
 
 use crate::state::Global;
 
-/// Receives the rules' status messages, and starts a new round on the HUD
-/// when their round changes.
 #[derive(Default)]
 pub struct ApiSyncWidget;
 
@@ -34,7 +32,7 @@ impl Widget<Global> for ApiSyncWidget {
             previous != 0 && status.round != previous
         };
         if new_round {
-            crate::hud::start_round(global);
+            crate::widgets::gui_hud::hud::start_round(global);
         }
     }
 }

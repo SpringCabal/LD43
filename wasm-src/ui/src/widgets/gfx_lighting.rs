@@ -1,14 +1,15 @@
+mod deferred_lighting;
+mod lighting;
+mod lights;
+
 use core::cell::{Cell, RefCell};
 
 use spring_addons::ui::Widget;
 
-use crate::deferred_lighting::DeferredPass;
-use crate::lighting;
-use crate::lights::Lights;
+use self::deferred_lighting::DeferredPass;
+use self::lights::Lights;
 use crate::state::Global;
 
-/// The sun, the point lights (houses, staff, cursor, projectiles) and the
-/// deferred pass that draws them.
 #[derive(Default)]
 pub struct GfxLightingWidget {
     sun_applied: Cell<bool>,
@@ -17,9 +18,6 @@ pub struct GfxLightingWidget {
 }
 
 impl GfxLightingWidget {
-    /// With `still` lights, neither time (the staff flicker) nor the RNG (the
-    /// lit house windows) varies them, so captures repeat: the visual suite
-    /// and the galleries.
     pub fn new(still: bool) -> Self {
         Self {
             lights: RefCell::new(Lights::new(still)),

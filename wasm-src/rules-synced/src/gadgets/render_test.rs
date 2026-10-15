@@ -1,10 +1,3 @@
-//! Deterministic render fixtures used by the visual verification run.
-//!
-//! This is compiled only for the `e2e` build.  It puts an uncommanded boss and
-//! the non-boss large ork beside the player, so the screenshot test can compare
-//! the pixels produced by the unit draw callback without waiting for the final
-//! story wave or depending on moving enemy AI.
-
 use core::cell::Cell;
 
 use spring_addons::AddonContext;
@@ -17,7 +10,6 @@ use crate::units::{self, PLAYER_TEAM};
 
 const FIXTURE_MESSAGE: &str = "TTLD E2E leader render fixture";
 
-/// Spawns the leader render fixture when the e2e UI asks for it.
 #[derive(Default)]
 pub struct RenderTestGadget {
     spawned: Cell<bool>,
@@ -50,12 +42,6 @@ fn spawn_leader_fixture(global: &Global) {
         return;
     };
 
-    // Keep both units on the same depth band so perspective does not become
-    // the reason one silhouette is larger than the other.  OrkBig is the
-    // non-boss control: it uses the same large-ork model family, but has the
-    // ordinary 1x draw scale. They are on the player team solely to keep the
-    // fixture stationary; the draw path is the same for allied and enemy
-    // units.
     let (x, z) = (origin.x, origin.z);
     units::spawn(UnitKind::OrkBoss, x - 220.0, z - 140.0, PLAYER_TEAM, 0).then(move |boss| {
         units::spawn(UnitKind::OrkBig, x + 220.0, z - 140.0, PLAYER_TEAM, 0).then(move |orkbig| {

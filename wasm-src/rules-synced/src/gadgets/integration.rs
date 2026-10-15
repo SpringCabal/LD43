@@ -9,10 +9,8 @@ use crate::defs::{UnitKind, defs};
 use crate::integration;
 use crate::state::Global;
 
-/// Runs the headless gameplay checks.
 #[derive(Default)]
 pub struct IntegrationGadget {
-    /// Shared with the commands the checks run as.
     tracker: Rc<RefCell<integration::Tracker>>,
 }
 
@@ -23,7 +21,6 @@ impl Gadget<Global> for IntegrationGadget {
 
     fn game_frame(&self, ctx: &AddonContext<'_, Global>, frame: i32) {
         if ctx.global().running(frame) {
-            // The checks see the frame as the other gadgets' commands left it.
             let tracker = Rc::clone(&self.tracker);
             commands::run(move || {
                 crate::with_global(|global| integration::update(&tracker, global, frame));

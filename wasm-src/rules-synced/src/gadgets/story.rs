@@ -1,3 +1,5 @@
+pub(crate) mod behavior;
+
 use alloc::rc::Rc;
 use core::cell::{Cell, RefCell};
 
@@ -5,15 +7,13 @@ use spring::commands;
 use spring_addons::AddonContext;
 use spring_addons::rules::Gadget;
 
-use crate::combat::{self, Story};
+use self::behavior::Story;
+use crate::gadgets::victory;
 use crate::state::{Global, Phase};
 
-/// Sends the ork waves on schedule until the town is saved.
 #[derive(Default)]
 pub struct StoryGadget {
     story: RefCell<Story>,
-    /// The final wave has come, but victory isn't possible until its boss is
-    /// on the map. Shared with the command that checks for it.
     boss_due: Rc<Cell<bool>>,
 }
 
@@ -38,14 +38,13 @@ impl Gadget<Global> for StoryGadget {
             .borrow_mut()
             .take_due_wave(frame, global.game_end.get());
         if let Some(wave) = wave {
-            combat::spawn_wave(wave);
+            behavior::spawn_wave(wave);
             self.boss_due.set(self.boss_due.get() || wave.able_to_win);
         }
         if self.boss_due.get() {
-            // After the wave's spawns, so its boss is on the map.
             let boss_due = Rc::clone(&self.boss_due);
             commands::run(move || {
-                if crate::with_global(combat::open_victory) {
+                if crate::with_global(victory::open_victory) {
                     boss_due.set(false);
                 }
             });

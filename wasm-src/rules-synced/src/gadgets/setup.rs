@@ -5,10 +5,10 @@ use spring_addons::register_gadgets;
 use spring_addons::rules::{Gadget, GadgetHandler};
 use ttld_shared::Command;
 
+use crate::gadgets::terrain::behavior as terrain;
 #[cfg(feature = "pose-probe")]
 use crate::pose_probe::PoseProbeGadget;
 use crate::state::{Global, Phase};
-use crate::terrain;
 use crate::units;
 
 use super::combat::CombatGadget;
@@ -25,11 +25,6 @@ use super::town::TownGadget;
 use super::unit_scripts::UnitScriptsGadget;
 use super::victory::VictoryGadget;
 
-/// Starts a round, on the first game frame and on the first frame after the
-/// player asks for a restart: removes every unit, forgets the previous
-/// round, opens the map to the two player ally teams and prepares the terrain types.
-/// The town itself is built by the town gadget in the same frame; see
-/// [`Phase`].
 #[derive(Default)]
 struct SetupGadget;
 
@@ -43,10 +38,6 @@ impl Gadget<Global> for SetupGadget {
         if global.phase(frame) != Phase::Loading {
             return;
         }
-        // The destroys run once this frame's gadgets have returned, before
-        // the commands they queue: the town gadget builds the new town on the
-        // squares the old houses unblock. Their UnitDestroyed counts dead orks
-        // and villagers, so the round state is forgotten after that.
         units::destroy_all();
         commands::run(|| crate::with_global(Global::forget_round));
         global.begin_round(frame);
@@ -58,12 +49,6 @@ impl Gadget<Global> for SetupGadget {
         spring::log_info!("ttld-wasm", "round {} setup started", global.round());
     }
 
-    /// The UI's restart (the end screen's Restart button, Enter or R).
-    /// `ui_endgame.lua` reloads the Lua rules, which runs every gadget's
-    /// Initialize again: the town handler clears the map and rebuilds the
-    /// town, the storyteller and the ork AI start over, and the counters
-    /// return to zero. That command doesn't reload this module, so the
-    /// round starts over here.
     fn handle_lua_msg(
         &self,
         ctx: &AddonContext<'_, Global>,
@@ -80,12 +65,8 @@ impl Gadget<Global> for SetupGadget {
     }
 }
 
-/// `game_setup_modrules.lua` opens the map to ally teams 0 and 1 only; in
-/// the menu's two-team layout ally team 2 is Gaia.
 const ALLY_TEAMS: i32 = 2;
 
-/// Registers the gadgets. Their order is the order they run in each frame,
-/// which also fixes the order in which they draw from the synced RNG.
 pub fn setup(handler: &mut GadgetHandler<Global>) {
     register_gadgets!(
         handler,

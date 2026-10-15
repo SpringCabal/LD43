@@ -1,12 +1,8 @@
-//! The unit and weapon defs the rules refer to, resolved once, and the per-def
-//! values they read on hot paths, cached on first use.
-
 use alloc::collections::BTreeMap;
 use core::cell::RefCell;
 
 use springcabal::defs::DefCache;
 
-/// Every unit def the rules refer to by name.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum UnitKind {
     BloodMage,
@@ -55,17 +51,12 @@ impl UnitKind {
     }
 }
 
-/// Values of one unit def that the rules read per unit.
 #[derive(Clone, Copy)]
 pub struct DefInfo {
-    /// The def's movement, for mobile units only.
     pub movement: Option<Movement>,
-    /// Footprint size in elmos, for immobile units only.
     pub footprint: Option<(f32, f32)>,
 }
 
-/// A mobile unit def's unmodified movement, which the attribute effects
-/// scale (Lua's `origUnitSpeed`).
 #[derive(Clone, Copy)]
 pub struct Movement {
     pub speed: f32,
@@ -83,8 +74,6 @@ pub struct Defs {
 
 static DEFS: DefCache<Defs> = DefCache::new(Defs::resolve);
 
-/// The game's defs. Resolved on first use, which is always after the engine
-/// has loaded them.
 pub fn defs() -> &'static Defs {
     DEFS.get()
 }
@@ -154,7 +143,6 @@ fn param(def_id: i32, key: &str) -> f32 {
         .unwrap_or(0.0)
 }
 
-/// A footprint dimension in elmos.
 fn footprint(def_id: i32, key: &str) -> Option<f32> {
     const FOOTPRINT_TO_ELMOS: f32 = 4.0;
     spring::get_unit_def_param_int(def_id, key)

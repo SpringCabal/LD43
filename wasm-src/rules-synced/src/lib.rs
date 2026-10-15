@@ -7,13 +7,10 @@ mod fx;
 mod gadgets;
 #[cfg(feature = "headless-integration")]
 mod integration;
-mod player;
 #[cfg(feature = "pose-probe")]
 mod pose_probe;
 mod random;
 mod state;
-mod terrain;
-mod town;
 mod unit_scripts;
 mod units;
 

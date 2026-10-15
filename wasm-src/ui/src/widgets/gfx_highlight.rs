@@ -1,6 +1,8 @@
+mod highlight;
+
 use spring_addons::ui::Widget;
 
-use crate::highlight::Highlight;
+use self::highlight::Highlight;
 use crate::state::Global;
 
 #[derive(Default)]

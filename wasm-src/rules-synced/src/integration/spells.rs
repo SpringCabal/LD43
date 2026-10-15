@@ -1,8 +1,3 @@
-//! Every spell, cast through the input path: the `spell` rules message the
-//! UI sends for keys 1 to 5, which the player takes on its next frame. A
-//! spell sent while the blood mage is still casting is dropped, as in play,
-//! so the casts are spaced out.
-
 use alloc::format;
 use alloc::vec::Vec;
 
@@ -17,20 +12,14 @@ use crate::units::{self, ENEMY_TEAM, PLAYER_TEAM};
 use super::*;
 
 pub(super) const ADRENALINE_CAST: i32 = 120;
-/// Adrenaline's cast (8 frames) is over; Poultice's takes 18.
 pub(super) const POULTICE_CAST: i32 = 130;
 pub(super) const HEARTBURN_CAST: i32 = 150;
-/// Heartburn has drained its blood; its fireball lands about 20 frames on.
 pub(super) const HEARTBURN_ALLY: i32 = 155;
-/// The fireball has landed and Poultice's target is still in the air.
 pub(super) const SPELLS_LANDED_CHECK: i32 = 185;
 pub(super) const TRANSFUSION_CAST: i32 = 240;
 pub(super) const TRANSFUSION_CHECK: i32 = 262;
-/// Migraine is cast right after the Transfusion check.
 pub(super) const MIGRAINE_CHECK: i32 = 292;
-/// The blood mage is hurt down to this share of its health first.
 const HURT_TO: f32 = 0.5;
-/// Where the Migraine targets stand, from the blood mage.
 const MIGRAINE_OFFSET: f32 = 250.0;
 const MIGRAINE_TARGETS: usize = 2;
 const PAUSED_RELOAD: f32 = 100000.0;
@@ -144,13 +133,11 @@ pub(super) fn migraine_checks(world: &World) {
             &format!("Migraine stuns the orks around its target ({paused} of {MIGRAINE_TARGETS})"),
         )
     });
-    // Out of the way of the ork advance check.
     for unit in targets {
         units::destroy(unit);
     }
 }
 
-/// Adrenaline, cast where the blood mage stands.
 pub(super) fn cast_adrenaline(world: &World) {
     let Some((_, position)) = mage(world) else {
         world.track(|tracker| check(tracker, false, "the blood mage is there for Adrenaline"));
@@ -164,7 +151,6 @@ pub(super) fn cast_adrenaline(world: &World) {
     });
 }
 
-/// Checks Adrenaline, then casts Poultice at an ork out of Heartburn's reach.
 pub(super) fn cast_poultice(world: &World) {
     let taken = cast_taken(world, ADRENALINE_CAST);
     let drained = world.global.score.access().allies_drained;
@@ -187,8 +173,6 @@ pub(super) fn cast_poultice(world: &World) {
         world.track(|tracker| check(tracker, false, "the blood mage is there for Poultice"));
         return;
     };
-    // Outside Heartburn's 250-elmo blast, so only Poultice's delayed
-    // AddUnitImpulse moves it.
     let tracker = Rc::clone(world.tracker);
     units::spawn(
         UnitKind::OrkSmall,
@@ -212,8 +196,6 @@ pub(super) fn cast_poultice(world: &World) {
     });
 }
 
-/// Checks Poultice, then casts Heartburn at one ork, with a second one inside
-/// its blast but away from its centre.
 pub(super) fn cast_heartburn(world: &World) {
     let taken = cast_taken(world, POULTICE_CAST);
     world.track(|tracker| {
@@ -241,8 +223,6 @@ pub(super) fn cast_heartburn(world: &World) {
         (target, edge)
     })
     .then(move |(target, edge)| {
-        // They stand in the town until the fireball lands, about 20 frames
-        // on; neutral, so the villagers don't kill them first.
         for unit in [target, edge].into_iter().flatten() {
             spring::set_unit_neutral(unit, true).log_err("neutral Heartburn target");
         }
@@ -263,8 +243,6 @@ pub(super) fn cast_heartburn(world: &World) {
     });
 }
 
-/// Checks Heartburn, and puts one of the player's units inside its blast.
-/// Created after the cast, so its blood magic can't drain it.
 pub(super) fn heartburn_ally(world: &World) {
     let taken = cast_taken(world, HEARTBURN_CAST);
     world.track(|tracker| {
@@ -286,10 +264,7 @@ pub(super) fn heartburn_ally(world: &World) {
     .then(move |ally| tracker.borrow_mut().heartburn_ally = ally.unwrap_or(-1));
 }
 
-/// How far from the fireball's target the other units in its blast stand.
-/// Its area of effect is 500, so its radius is 250.
 const HEARTBURN_EDGE_OFFSET: f32 = 170.0;
-/// Where Poultice's target stands, from the blood mage (radius 720).
 const POULTICE_TARGET_OFFSET: f32 = 600.0;
 
 pub(super) fn spells_landed_checks(tracker: &mut Tracker, _world: &World) {
@@ -372,14 +347,12 @@ fn mage(world: &World) -> Option<(i32, spring::types::Float3)> {
     Some((mage, units::position(mage)?))
 }
 
-/// Spell numbers, as the UI's keys send them.
 const TRANSFUSION: i32 = 1;
 const HEARTBURN: i32 = 2;
 const ADRENALINE: i32 = 3;
 const MIGRAINE: i32 = 4;
 const POULTICE: i32 = 5;
 
-/// Sends the message the UI sends when a spell key is pressed over `target`.
 fn send_spell(index: i32, target: spring::types::Float3) -> bool {
     springcabal::message::send_to_rules(
         &Command::Spell {
@@ -392,7 +365,6 @@ fn send_spell(index: i32, target: spring::types::Float3) -> bool {
     )
 }
 
-/// Whether the player took the cast sent on frame `sent`.
 fn cast_taken(world: &World, sent: i32) -> bool {
     world.global.player.access().cast_start_frame() >= sent
 }
@@ -400,8 +372,6 @@ fn cast_taken(world: &World, sent: i32) -> bool {
 pub(super) const VICTORY_ATTACK: i32 = 405;
 pub(super) const VICTORY_ATTACK_CHECK: i32 = 420;
 
-/// After victory the UI's attack is ignored, as Lua's player controller
-/// ignores every message then.
 pub(super) fn attack_after_victory(world: &World) {
     let Some((_, position)) = mage(world) else {
         return;

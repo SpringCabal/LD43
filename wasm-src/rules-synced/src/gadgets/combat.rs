@@ -5,8 +5,6 @@ use crate::combat::{self, Effect, Modifier};
 use crate::state::Global;
 use crate::units::PLAYER_TEAM;
 
-/// Unit attribute effects: the town's permanent half speed, turning without
-/// inertia, paused weapons, and the timed effects of spells wearing off.
 #[derive(Default)]
 pub struct CombatGadget;
 
@@ -30,9 +28,6 @@ impl Gadget<Global> for CombatGadget {
         team: i32,
         _builder: i32,
     ) {
-        // A dying unit's Killed script adds its death paralysis after
-        // UnitDestroyed has already cleared its effects, so a reused unit id
-        // can still carry it.
         combat::forget(ctx.global(), unit);
         if team == PLAYER_TEAM {
             combat::add_effect(

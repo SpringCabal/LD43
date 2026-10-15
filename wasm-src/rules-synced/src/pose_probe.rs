@@ -1,10 +1,3 @@
-//! Deterministic Lua/CUS animation conformance probe.
-//!
-//! This is test-only code. It invokes the same named unit-script functions
-//! that the Lua reference fixture invokes, then samples the engine's piece
-//! matrices. The probe deliberately observes the engine boundary rather than
-//! sharing animation implementation code with the game.
-
 use alloc::format;
 use alloc::string::String;
 use core::cell::Cell;
@@ -15,7 +8,6 @@ use spring_addons::rules::Gadget;
 use crate::state::Global;
 
 const TARGET_DEF: &str = "bloodmage";
-/// The frames that start CastAnimation levels 1, 2 and 3.
 const TRIGGER_FRAMES: &[i32] = &[30, 90, 145];
 const LAST_FRAME: i32 = 195;
 const SAMPLE_FRAMES: &[i32] = &[
@@ -136,8 +128,6 @@ impl PoseProbeGadget {
         );
     }
 
-    /// Starts CastAnimation on the target, as the Lua probe does from its
-    /// GameFrame: level 1 at the first trigger frame, 2 and 3 at the others.
     fn trigger(&self, frame: i32, unit: i32, level: i32) {
         let (tx, tz) = if level == 1 {
             (0.0, 0.0)

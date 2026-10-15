@@ -1,9 +1,9 @@
+pub mod hud;
 use spring_addons::ui::Widget;
 
-use crate::hud::{self, Document};
+use self::hud::Document;
 use crate::state::Global;
 
-/// The RmlUi HUD: health, the hovered unit, the intro and end screens.
 #[derive(Default)]
 pub struct GuiHudWidget {
     document: Document,
@@ -18,6 +18,10 @@ impl GuiHudWidget {
 impl Widget<Global> for GuiHudWidget {
     fn name(&self) -> &'static str {
         "GuiHud"
+    }
+
+    fn shutdown(&self, ctx: &spring_addons::AddonContext<'_, Global>) {
+        self.document.shutdown(ctx.global());
     }
 
     fn update(&self, ctx: &spring_addons::AddonContext<'_, Global>, _dt: f32) {

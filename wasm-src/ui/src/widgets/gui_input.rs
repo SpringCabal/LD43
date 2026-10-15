@@ -1,13 +1,10 @@
 use spring_addons::event::{EventResult, KeyEvent};
 use spring_addons::ui::Widget;
 
-use crate::input;
+mod input;
 use crate::state::Global;
 
-/// Mouse and keyboard control of the blood mage. Registered before the other
-/// game widgets: it samples the cursor for them at the start of every update.
 pub struct GuiInputWidget {
-    /// The command the held mouse button steers with.
     held: input::Held,
 }
 
