@@ -23,7 +23,7 @@ pub fn setup(handler: &mut WidgetHandler<Global>) {
     register_widgets!(
         handler,
         [
-            HideDefaultInterface::new(HIDDEN_INTERFACE),
+            HideDefaultInterface::new(HIDDEN_INTERFACE & !CONSOLE),
             GuiInputWidget::new(),
             ApiSyncWidget::new(),
             GuiHudWidget::new(),
