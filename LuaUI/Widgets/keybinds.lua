@@ -48,12 +48,7 @@ local gameMode
 local function UpdateGameMode()
 	-- debug console
 	Spring.SendCommands('bind f8 toggleErrorConsole')
-	if gameMode == "play" then
-		Spring.SendCommands("unbindkeyset enter chat") --because because.
-		Spring.SendCommands("unbind enter") --because because.
-		Spring.SendCommands("unbindaction chat") --because because.
-	else
-		Spring.SendCommands("bind enter chat")
+	if gameMode ~= "play" then
 		Spring.SendCommands("bind f1 showelevation")
 		Spring.SendCommands("bind f2 showpathtraversability")
 		Spring.SendCommands("bind Alt+n debug")
