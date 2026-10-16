@@ -44,19 +44,6 @@ WG.Bindings = bindText
 WG.BindingDescription = bindDesc
 
 
-local function SetBindings()
-	local binds = { --real keybinds
-		 --"Alt+b  debug",
-		--"--Alt+v  debugcolvol",
-
-		"ctrl+q reloadforce",
-
-	}
-	 for _,binding in pairs(binds) do
-		Spring.SendCommands("bind ".. binding)
-	end
-end
-
 local gameMode
 local function UpdateGameMode()
 	-- debug console
@@ -66,21 +53,12 @@ local function UpdateGameMode()
 		Spring.SendCommands("unbind enter") --because because.
 		Spring.SendCommands("unbindaction chat") --because because.
 	else
-		Spring.SendCommands("bindkeyset enter chat")
+		Spring.SendCommands("bind enter chat")
 		Spring.SendCommands("bind f1 showelevation")
 		Spring.SendCommands("bind f2 showpathtraversability")
 		Spring.SendCommands("bind Alt+n debug")
 		Spring.SendCommands("bind Alt+b debugcolvol")
-		Spring.SendCommands("bind a fight")
-		Spring.SendCommands("bind p patrol")
-		Spring.SendCommands("bind e reclaim")
-		Spring.SendCommands("bind any+[ buildfacing inc")
-		Spring.SendCommands("bind any+] buildfacing dec")
-		Spring.SendCommands("bind w buildunit_house")
-		Spring.SendCommands("bind ` drawinmap")
-		Spring.SendCommands("bind Ctrl+d selfd")
 	end
-	SetBindings()
 end
 
 local function cheatAll()
