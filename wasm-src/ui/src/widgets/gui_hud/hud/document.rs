@@ -8,7 +8,6 @@ use super::model;
 #[derive(Default)]
 pub struct Document {
     context: Cell<u64>,
-    bindings_applied: Cell<bool>,
     shown_status: Cell<Option<u32>>,
 }
 
@@ -52,24 +51,6 @@ impl Document {
         let context = self.context.replace(0);
         if context != 0 {
             let _ = spring::remove_context(context);
-        }
-    }
-
-    pub fn apply_bindings(&self) {
-        if self.bindings_applied.replace(true) {
-            return;
-        }
-        for command in [
-            "unbindall",
-            "bind Any+pause  pause",
-            "bind f12 screenshot",
-            "unbindkeyset enter chat",
-            "unbind enter",
-            "unbindaction chat",
-        ] {
-            if let Err(error) = spring::send_commands(command, "") {
-                spring::log_warning!("ttld-ui", "key binding `{command}` failed: {error:?}");
-            }
         }
     }
 

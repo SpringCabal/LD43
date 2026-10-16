@@ -15,6 +15,7 @@ pub const HIDDEN_INTERFACE: u32 =
     CONSOLE | RESOURCE_BAR | TOOLTIP | CLOCK | PLAYER_INFO | UNIT_ICONS | END_GRAPH;
 
 pub fn setup(handler: &mut WidgetHandler<Global>) {
+    register_widgets!(handler, [springcabal::controls::GameControls::new()]);
     if springcabal::verification::world_only() {
         gallery::setup(handler);
         return;
