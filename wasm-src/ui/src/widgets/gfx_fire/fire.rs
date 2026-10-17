@@ -31,27 +31,27 @@ impl Fire {
         self.burning.retain(|house| *house != unit_id);
     }
 
-    pub fn update(&mut self, delta_seconds: f32) {
-        let frame = game::status_frame();
+    pub fn update(&mut self, spring: &spring::Spring<'_, spring::Ui>, delta_seconds: f32) {
+        let frame = game::status_frame(spring);
         if self.emitted_frame.replace(frame) != Some(frame) {
-            self.find_new_fires();
-            emit::emit(&mut self.field, &self.burning);
+            self.find_new_fires(spring);
+            emit::emit(spring, &mut self.field, &self.burning);
         }
         self.field.advance(delta_seconds);
     }
 
-    pub fn draw(&self) {
-        render::draw(&self.field);
+    pub fn draw(&self, spring: &spring::Spring<'_, spring::Ui>) {
+        render::draw(spring, &self.field);
     }
 
-    fn find_new_fires(&mut self) {
+    fn find_new_fires(&mut self, spring: &spring::Spring<'_, spring::Ui>) {
         let count = self.houses.len().min(HOUSES_CHECKED_PER_PERIOD);
         for _ in 0..count {
             if self.next_check >= self.houses.len() {
                 self.next_check = 0;
             }
             let unit_id = self.houses[self.next_check];
-            if emit::on_fire(unit_id) {
+            if emit::on_fire(spring, unit_id) {
                 self.houses.swap_remove(self.next_check);
                 self.burning.push(unit_id);
             } else {

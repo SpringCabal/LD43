@@ -16,10 +16,11 @@ impl Widget<Global> for DbgRestartWidget {
         "DbgRestart"
     }
 
-    fn update(&self, ctx: &spring_addons::AddonContext<'_, Global>, _dt: f32) {
-        if !self.sent.get() && spring::game::current_frame() >= RESTART_FRAME {
+    fn update(&self, ctx: &spring_addons::AddonContext<'_, Global, spring::Ui>, _dt: f32) {
+        let spring = ctx.spring();
+        if !self.sent.get() && spring.game().current_frame().unwrap_or(0) >= RESTART_FRAME {
             self.sent.set(true);
-            crate::widgets::gui_hud::hud::restart(ctx.global());
+            crate::widgets::gui_hud::hud::restart(spring, ctx.global());
         }
     }
 }

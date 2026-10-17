@@ -2,7 +2,6 @@ pub mod behavior;
 use alloc::rc::Rc;
 use core::cell::RefCell;
 
-use spring::commands;
 use spring_addons::AddonContext;
 use spring_addons::rules::{Gadget, UnitDestroyedEvent};
 
@@ -22,16 +21,19 @@ impl Gadget<Global> for TownGadget {
     }
 
     fn game_frame(&self, ctx: &AddonContext<'_, Global>, frame: i32) {
+        let spring = ctx.spring();
         match ctx.global().phase(frame) {
             Phase::Loading => {}
-            Phase::Setup => behavior::populate(Rc::clone(&self.villagers)),
+            Phase::Setup => behavior::populate(spring, Rc::clone(&self.villagers)),
             Phase::Running => {
                 let villagers = Rc::clone(&self.villagers);
-                commands::run(move || {
-                    let batch = villagers.borrow_mut().next_batch(VILLAGER_UPDATE_DIVISOR);
-                    for villager in batch {
-                        behavior::check_idle(villager);
-                    }
+                crate::with_addon_context(|ctx| {
+                    ctx.commands().run(move |spring| {
+                        let batch = villagers.borrow_mut().next_batch(VILLAGER_UPDATE_DIVISOR);
+                        for villager in batch {
+                            behavior::check_idle(spring, villager);
+                        }
+                    })
                 });
             }
         }

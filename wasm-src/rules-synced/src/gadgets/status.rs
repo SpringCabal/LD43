@@ -1,6 +1,5 @@
 use alloc::rc::Rc;
 
-use spring::commands;
 use spring_addons::AddonContext;
 use spring_addons::rules::Gadget;
 use springcabal::message::SendOnChange;
@@ -31,16 +30,18 @@ impl Gadget<Global> for StatusGadget {
             Phase::Running => {}
         }
         let sent = Rc::clone(&self.sent);
-        commands::run(move || {
-            let status = crate::with_global(|global| read(global, frame));
-            sent.send_if_changed(status, |status| {
-                springcabal::message::send_to_ui(&status.message())
-            });
+        crate::with_addon_context(|ctx| {
+            ctx.commands().run(move |spring| {
+                let status = crate::with_global(|global| read(spring, global, frame));
+                sent.send_if_changed(status, |status| {
+                    springcabal::message::send_to_ui(spring, &status.message())
+                });
+            })
         });
     }
 }
 
-fn read(global: &Global, frame: i32) -> Status {
+fn read(spring: &spring::Spring<'_, spring::RulesSynced>, global: &Global, frame: i32) -> Status {
     let (player_unit, casting, cast_start, cast_animation_frames) = {
         let player = global.player.access();
         (
@@ -50,7 +51,7 @@ fn read(global: &Global, frame: i32) -> Status {
             player.cast_animation_frames(),
         )
     };
-    let (health, max_health) = health(player_unit);
+    let (health, max_health) = health(spring, player_unit);
     let score = global.score.access();
     Status {
         round: global.round(),
@@ -67,12 +68,14 @@ fn read(global: &Global, frame: i32) -> Status {
     }
 }
 
-fn health(unit_id: i32) -> (i32, i32) {
+fn health(spring: &spring::Spring<'_, spring::RulesSynced>, unit_id: i32) -> (i32, i32) {
     const UNKNOWN: (i32, i32) = (0, 1000);
     if unit_id < 0 {
         return UNKNOWN;
     }
-    spring::units_info::get_unit_health(unit_id)
+    spring
+        .units_info()
+        .get_unit_health(unit_id)
         .map(|health| (health.health.max(0.0) as i32, health.max_health as i32))
         .unwrap_or(UNKNOWN)
 }

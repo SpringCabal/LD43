@@ -1,7 +1,6 @@
 use alloc::vec::Vec;
 
 use spring::cmd;
-use spring::commands;
 
 use crate::defs::defs;
 use crate::random;
@@ -18,8 +17,14 @@ pub struct OrkAi {
 }
 
 impl OrkAi {
-    pub fn created(&mut self, unit_id: i32, unit_def_id: i32, team: i32) -> bool {
-        if team != ENEMY_TEAM || !is_ork(unit_def_id) {
+    pub fn created(
+        &mut self,
+        spring: &spring::Spring<'_, spring::RulesSynced>,
+        unit_id: i32,
+        unit_def_id: i32,
+        team: i32,
+    ) -> bool {
+        if team != ENEMY_TEAM || !is_ork(spring, unit_def_id) {
             return false;
         }
         self.units.push(unit_id);
@@ -62,42 +67,46 @@ impl OrkAi {
     }
 }
 
-pub fn advance(unit_id: i32) {
-    let dx = AIM_X + random::centered(AIM_VARIANCE);
-    let dz = AIM_Z + random::centered(AIM_VARIANCE);
-    let y = units::ground_height(dx, dz);
+pub fn advance(spring: &spring::Spring<'_, spring::RulesSynced>, unit_id: i32) {
+    let dx = AIM_X + random::centered(spring, AIM_VARIANCE);
+    let dz = AIM_Z + random::centered(spring, AIM_VARIANCE);
+    let y = units::ground_height(spring, dx, dz);
     crate::engine::check(
-        spring::give_order_to_unit(unit_id, cmd::FIGHT, &[dx, y, dz], 0, 0),
+        spring,
+        spring
+            .unit_control()
+            .give_order_to_unit(unit_id, cmd::FIGHT, &[dx, y, dz], 0, 0),
         "give_order_to_unit",
         unit_id,
     );
 }
 
-pub fn check_idle(unit_id: i32) {
-    if units::has_orders(unit_id) {
+pub fn check_idle(spring: &spring::Spring<'_, spring::RulesSynced>, unit_id: i32) {
+    if units::has_orders(spring, unit_id) {
         return;
     }
-    let dx = AIM_X + random::centered(AIM_REACHED_VARIANCE);
-    let dz = AIM_Z + random::centered(AIM_REACHED_VARIANCE);
-    let y = units::ground_height(dx, dz);
-    order(unit_id, cmd::FIGHT, &[dx, y, dz]);
+    let dx = AIM_X + random::centered(spring, AIM_REACHED_VARIANCE);
+    let dz = AIM_Z + random::centered(spring, AIM_REACHED_VARIANCE);
+    let y = units::ground_height(spring, dx, dz);
+    order(spring, unit_id, cmd::FIGHT, &[dx, y, dz]);
 }
 
-pub fn flee(global: &Global, unit_id: i32) {
-    let Some(position) = units::position(unit_id) else {
+pub fn flee(spring: &spring::Spring<'_, spring::RulesSynced>, global: &Global, unit_id: i32) {
+    let Some(position) = units::position(spring, unit_id) else {
         return;
     };
     let dx = position.x - AIM_X;
     let dz = position.z - AIM_Z;
     let distance = (dx * dx + dz * dz).sqrt().max(0.1);
-    let Ok(map) = spring::game::get_game_map_info(0) else {
+    let Ok(map) = spring.game().get_game_map_info() else {
         return;
     };
     let cx = (position.x + FLEE_DISTANCE * dx / distance).clamp(1.0, map.map_size_x as f32 - 1.0);
     let cz = (position.z + FLEE_DISTANCE * dz / distance).clamp(1.0, map.map_size_z as f32 - 1.0);
-    let cy = units::ground_height(cx, cz);
-    order(unit_id, cmd::FIRE_STATE, &[0.0]);
+    let cy = units::ground_height(spring, cx, cz);
+    order(spring, unit_id, cmd::FIRE_STATE, &[0.0]);
     attributes::add_effect(
+        spring,
         global,
         unit_id,
         Effect::Flee,
@@ -106,7 +115,7 @@ pub fn flee(global: &Global, unit_id: i32) {
             reload_factor: 0.0,
         },
     );
-    order(unit_id, cmd::MOVE, &[cx, cy, cz]);
+    order(spring, unit_id, cmd::MOVE, &[cx, cy, cz]);
 }
 
 const AIM_X: f32 = units::TOWN_CENTRE_X;
@@ -116,11 +125,21 @@ const AIM_REACHED_VARIANCE: f32 = 2000.0;
 const FLEE_DISTANCE: f32 = 4000.0;
 const UPDATE_DIVISOR: usize = 80;
 
-fn is_ork(unit_def_id: i32) -> bool {
-    defs().is_ork(unit_def_id)
+fn is_ork(spring: &spring::Spring<'_, spring::RulesSynced>, unit_def_id: i32) -> bool {
+    defs(spring).is_ork(unit_def_id)
 }
 
-fn order(unit_id: i32, cmd_id: i32, params: &[f32]) {
-    commands::give_order_to_unit(unit_id, cmd_id, params, 0, 0)
-        .then(move |result| crate::engine::check(result, "give_order_to_unit", unit_id));
+fn order(
+    _spring: &spring::Spring<'_, spring::RulesSynced>,
+    unit_id: i32,
+    cmd_id: i32,
+    params: &[f32],
+) {
+    crate::with_addon_context(|ctx| {
+        ctx.commands()
+            .give_order_to_unit(unit_id, cmd_id, params, 0, 0)
+    })
+    .then(move |spring, result| {
+        crate::engine::check(spring, result, "give_order_to_unit", unit_id)
+    });
 }

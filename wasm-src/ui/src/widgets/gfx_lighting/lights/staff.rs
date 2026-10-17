@@ -3,12 +3,17 @@ use crate::state::GameStatus;
 
 use super::PointLight;
 
-pub fn light(status: &GameStatus, boost: &mut Boost, seconds: f32) -> Option<PointLight> {
+pub fn light(
+    spring: &spring::Spring<'_, spring::Ui>,
+    status: &GameStatus,
+    boost: &mut Boost,
+    seconds: f32,
+) -> Option<PointLight> {
     if status.player_unit < 0 {
         return None;
     }
-    let position = staff_position(status.player_unit)?;
-    let boost = boost.update(status);
+    let position = staff_position(spring, status.player_unit)?;
+    let boost = boost.update(spring, status);
     let flicker = (seconds * FLICKER_RATE).sin() / core::f32::consts::PI * STATIC_FLICKER_RATIO;
     let multiplier = COLOR_MULTIPLIER * boost * (1.0 + flicker);
     Some(PointLight {
@@ -18,9 +23,9 @@ pub fn light(status: &GameStatus, boost: &mut Boost, seconds: f32) -> Option<Poi
     })
 }
 
-pub fn clock_seconds() -> f32 {
+pub fn clock_seconds(spring: &spring::Spring<'_, spring::Ui>) -> f32 {
     let cycle = f64::from(core::f32::consts::TAU / FLICKER_RATE);
-    let micros = spring::get_timer_micros().unwrap_or(0);
+    let micros = spring.profiling().get_timer_micros().unwrap_or(0);
     ((micros as f64 / 1_000_000.0) % cycle) as f32
 }
 
@@ -33,9 +38,9 @@ impl Default for Boost {
 }
 
 impl Boost {
-    fn update(&mut self, status: &GameStatus) -> f32 {
+    fn update(&mut self, spring: &spring::Spring<'_, spring::Ui>, status: &GameStatus) -> f32 {
         if status.cast_animation_time > 0.0 {
-            let elapsed = (game::status_frame() - status.cast_start_frame) as f32;
+            let elapsed = (game::status_frame(spring) - status.cast_start_frame) as f32;
             let animation = status.cast_animation_time;
             if elapsed <= animation * 0.4 {
                 self.0 = (self.0 + BOOST_RISE_FAST).min(BOOST_MAXIMUM);
@@ -64,10 +69,17 @@ const BOOST_RISE_SLOW: f32 = 0.18;
 const BOOST_DECAY: f32 = 0.18;
 const STAFF_PIECE: &str = "Hand_Right";
 
-fn staff_position(unit_id: i32) -> Option<spring::types::Float3> {
-    let unit = spring::unit_rendering::get_unit_view_position(unit_id, false).ok()?;
-    let piece = spring::typed::unit_piece_position_by_name(unit_id, STAFF_PIECE)?;
-    Some(spring::types::Float3 {
+fn staff_position(spring: &spring::Spring<'_, spring::Ui>, unit_id: i32) -> Option<spring::Float3> {
+    let unit = spring
+        .unit_rendering()
+        .get_unit_view_position(unit_id, false)
+        .ok()?;
+    let piece = spring
+        .units_pieces()
+        .position_by_name(unit_id, STAFF_PIECE)
+        .ok()
+        .flatten()?;
+    Some(spring::Float3 {
         x: unit.x + piece.x,
         y: unit.y + piece.y,
         z: unit.z + piece.z,

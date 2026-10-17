@@ -1,6 +1,6 @@
 use core::cell::Cell;
 
-use spring::types::Float3;
+use spring::Float3;
 use spring_addons::Resource;
 pub use ttld_shared::GameEnd;
 use ttld_shared::Status;

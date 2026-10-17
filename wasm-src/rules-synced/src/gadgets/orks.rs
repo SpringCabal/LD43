@@ -1,6 +1,5 @@
 pub(crate) mod behavior;
 
-use spring::commands;
 use spring_addons::AddonContext;
 use spring_addons::rules::{Gadget, UnitDestroyedEvent};
 
@@ -18,11 +17,13 @@ impl Gadget<Global> for OrksGadget {
         if !ctx.global().running(frame) {
             return;
         }
-        commands::run(|| {
-            let batch = crate::with_global(|global| global.orks.access_mut().next_batch());
-            for unit_id in batch {
-                behavior::check_idle(unit_id);
-            }
+        crate::with_addon_context(|ctx| {
+            ctx.commands().run(|spring| {
+                let batch = crate::with_global(|global| global.orks.access_mut().next_batch());
+                for unit_id in batch {
+                    behavior::check_idle(spring, unit_id);
+                }
+            })
         });
     }
 
@@ -34,9 +35,13 @@ impl Gadget<Global> for OrksGadget {
         team: i32,
         _builder: i32,
     ) {
-        let registered = ctx.global().orks.access_mut().created(unit, def, team);
+        let registered = ctx
+            .global()
+            .orks
+            .access_mut()
+            .created(ctx.spring(), unit, def, team);
         if registered {
-            behavior::advance(unit);
+            behavior::advance(ctx.spring(), unit);
         }
     }
 

@@ -20,10 +20,12 @@ impl Gadget<Global> for TerrainGadget {
         _team: i32,
         _builder: i32,
     ) {
-        behavior::block(unit, def);
+        let spring = _ctx.spring();
+        behavior::block(spring, unit, def);
     }
 
     fn unit_destroyed(&self, _ctx: &AddonContext<'_, Global>, event: &UnitDestroyedEvent) {
-        behavior::unblock(event.unit_id, event.unit_def_id);
+        let spring = _ctx.spring();
+        behavior::unblock(spring, event.unit_id, event.unit_def_id);
     }
 }

@@ -1,7 +1,6 @@
 use alloc::vec::Vec;
 
 use spring::cmd;
-use spring::commands;
 
 use crate::random;
 use crate::units;
@@ -61,20 +60,25 @@ impl Villagers {
     }
 }
 
-pub fn check_idle(villager: Villager) {
+pub fn check_idle(spring: &spring::Spring<'_, spring::RulesSynced>, villager: Villager) {
     let (unit_id, area) = (villager.unit_id, villager.area);
-    if units::has_orders(unit_id) {
+    if units::has_orders(spring, unit_id) {
         return;
     }
-    let Some(position) = units::position(unit_id) else {
+    let Some(position) = units::position(spring, unit_id) else {
         return;
     };
     if (position.x - area.x).abs() < area.width && (position.z - area.z).abs() < area.height {
         return;
     }
-    let x = area.x + random::centered(area.width);
-    let z = area.z + random::centered(area.height);
-    let y = units::ground_height(x, z);
-    commands::give_order_to_unit(unit_id, cmd::FIGHT, &[x, y, z], 0, 0)
-        .then(move |result| crate::engine::check(result, "give_order_to_unit", unit_id));
+    let x = area.x + random::centered(spring, area.width);
+    let z = area.z + random::centered(spring, area.height);
+    let y = units::ground_height(spring, x, z);
+    crate::with_addon_context(|ctx| {
+        ctx.commands()
+            .give_order_to_unit(unit_id, cmd::FIGHT, &[x, y, z], 0, 0)
+    })
+    .then(move |spring, result| {
+        crate::engine::check(spring, result, "give_order_to_unit", unit_id)
+    });
 }

@@ -15,8 +15,11 @@ pub(super) enum ScriptKind {
     Swordsman,
 }
 
-pub(super) fn script_kind_for_def(def: i32) -> Option<ScriptKind> {
-    Some(match defs().kind(def)? {
+pub(super) fn script_kind_for_def(
+    spring: &spring::Spring<'_, spring::RulesSynced>,
+    def: i32,
+) -> Option<ScriptKind> {
+    Some(match defs(spring).kind(def)? {
         UnitKind::BloodMage => ScriptKind::BloodMage,
         UnitKind::House => ScriptKind::House,
         UnitKind::OrkSmall => ScriptKind::OrkSmall,

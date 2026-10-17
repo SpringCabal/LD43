@@ -1,7 +1,7 @@
 use alloc::vec;
 use core::cell::Cell;
 
-pub fn apply(applied: &Cell<bool>) {
+pub fn apply(spring: &spring::Spring<'_, spring::Ui>, applied: &Cell<bool>) {
     if applied.get() {
         return;
     }
@@ -16,9 +16,9 @@ pub fn apply(applied: &Cell<bool>) {
         ground_shadow_density: Some(GROUND_SHADOW_DENSITY),
         model_shadow_density: Some(MODEL_SHADOW_DENSITY),
     };
-    if spring::unsynced_ctrl::set_sun_lighting(params).is_ok() {
+    if spring.unsynced_ctrl().set_sun_lighting(params).is_ok() {
         applied.set(true);
-        let _ = spring::send_commands("shadows 1", "");
+        let _ = spring.messages().send_commands("shadows 1", "");
     }
 }
 

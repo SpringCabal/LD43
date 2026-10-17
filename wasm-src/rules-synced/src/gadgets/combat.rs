@@ -14,9 +14,10 @@ impl Gadget<Global> for CombatGadget {
     }
 
     fn game_frame(&self, ctx: &AddonContext<'_, Global>, frame: i32) {
-        combat::update_paused(ctx.global(), frame);
+        let spring = ctx.spring();
+        combat::update_paused(spring, ctx.global(), frame);
         if ctx.global().running(frame) {
-            combat::update_statuses(ctx.global(), frame);
+            combat::update_statuses(spring, ctx.global(), frame);
         }
     }
 
@@ -28,9 +29,11 @@ impl Gadget<Global> for CombatGadget {
         team: i32,
         _builder: i32,
     ) {
+        let spring = ctx.spring();
         combat::forget(ctx.global(), unit);
         if team == PLAYER_TEAM {
             combat::add_effect(
+                spring,
                 ctx.global(),
                 unit,
                 Effect::HalfSpeed,
@@ -40,7 +43,7 @@ impl Gadget<Global> for CombatGadget {
                 },
             );
         }
-        combat::remove_turn_inertia(unit);
+        combat::remove_turn_inertia(spring, unit);
     }
 
     fn unit_destroyed(&self, ctx: &AddonContext<'_, Global>, event: &UnitDestroyedEvent) {

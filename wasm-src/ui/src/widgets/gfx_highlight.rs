@@ -21,11 +21,13 @@ impl Widget<Global> for GfxHighlightWidget {
         "GfxHighlight"
     }
 
-    fn draw_world_pre_unit(&self, ctx: &spring_addons::AddonContext<'_, Global>) {
-        self.highlight.draw_pre_unit(ctx.global());
+    fn draw_world_pre_unit(&self, ctx: &spring_addons::AddonContext<'_, Global, spring::Ui>) {
+        let spring = ctx.spring();
+        self.highlight.draw_pre_unit(spring, ctx.global());
     }
 
-    fn draw_world_refraction(&self, ctx: &spring_addons::AddonContext<'_, Global>) {
-        self.highlight.draw_refraction(ctx.global());
+    fn draw_world_refraction(&self, ctx: &spring_addons::AddonContext<'_, Global, spring::Ui>) {
+        let spring = ctx.spring();
+        self.highlight.draw_refraction(spring, ctx.global());
     }
 }

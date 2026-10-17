@@ -1,7 +1,6 @@
 use alloc::rc::Rc;
 use core::cell::RefCell;
 
-use spring::commands;
 use spring_addons::AddonContext;
 use spring_addons::rules::{Gadget, UnitPreDamagedEvent};
 
@@ -22,8 +21,12 @@ impl Gadget<Global> for IntegrationGadget {
     fn game_frame(&self, ctx: &AddonContext<'_, Global>, frame: i32) {
         if ctx.global().running(frame) {
             let tracker = Rc::clone(&self.tracker);
-            commands::run(move || {
-                crate::with_global(|global| integration::update(&tracker, global, frame));
+            crate::with_addon_context(|ctx| {
+                ctx.commands().run(move |spring| {
+                    crate::with_global(|global| {
+                        integration::update(spring, &tracker, global, frame)
+                    });
+                })
             });
         }
     }
@@ -33,16 +36,17 @@ impl Gadget<Global> for IntegrationGadget {
         _ctx: &AddonContext<'_, Global>,
         event: &UnitPreDamagedEvent,
     ) -> Option<spring::DamageResult> {
+        let spring = _ctx.spring();
         let mut tracker = self.tracker.borrow_mut();
-        if defs().fireball == Some(event.weapon_def_id) {
+        if defs(spring).fireball == Some(event.weapon_def_id) {
             integration::fireball_hit(&mut tracker, event.unit_id, event.damage);
         }
-        if event.attacker_id >= 0 && defs().is(event.attacker_def_id, UnitKind::OrkSmall) {
+        if event.attacker_id >= 0 && defs(spring).is(event.attacker_def_id, UnitKind::OrkSmall) {
             integration::bite(
                 &mut tracker,
                 integration::Bite {
                     attacker: event.attacker_id,
-                    frame: spring::game::current_frame(),
+                    frame: spring.game().current_frame().unwrap_or(0),
                 },
             );
         }

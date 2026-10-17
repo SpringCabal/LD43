@@ -1,5 +1,5 @@
 use spring::ResultExt;
-use spring::commands;
+
 use spring_addons::AddonContext;
 use spring_addons::register_gadgets;
 use spring_addons::rules::{Gadget, GadgetHandler};
@@ -34,19 +34,33 @@ impl Gadget<Global> for SetupGadget {
     }
 
     fn game_frame(&self, ctx: &AddonContext<'_, Global>, frame: i32) {
+        let spring = ctx.spring();
         let global = ctx.global();
         if global.phase(frame) != Phase::Loading {
             return;
         }
-        units::destroy_all();
-        commands::run(|| crate::with_global(Global::forget_round));
+        units::destroy_all(spring);
+        crate::with_addon_context(|ctx| {
+            ctx.commands()
+                .run(|_spring| crate::with_global(Global::forget_round))
+        });
         global.begin_round(frame);
         for ally_team in 0..ALLY_TEAMS {
-            spring::team_control::set_global_los(ally_team, true)
-                .log_err(&alloc::format!("global LOS for ally team {ally_team}"));
+            spring
+                .team_control()
+                .set_global_los(ally_team, true)
+                .log_err(
+                    spring,
+                    &alloc::format!("global LOS for ally team {ally_team}"),
+                );
         }
-        terrain::initialize();
-        spring::log_info!("ttld-wasm", "round {} setup started", global.round());
+        terrain::initialize(spring);
+        spring::log_info!(
+            spring,
+            "ttld-wasm",
+            "round {} setup started",
+            global.round()
+        );
     }
 
     fn handle_lua_msg(
@@ -57,9 +71,10 @@ impl Gadget<Global> for SetupGadget {
         _mode: i32,
         data: &[u8],
     ) {
+        let spring = ctx.spring();
         let command = core::str::from_utf8(data).ok().and_then(Command::parse);
         if command == Some(Command::Restart) {
-            spring::log_info!("ttld-wasm", "restart requested");
+            spring::log_info!(spring, "ttld-wasm", "restart requested");
             ctx.global().restart();
         }
     }
@@ -67,7 +82,10 @@ impl Gadget<Global> for SetupGadget {
 
 const ALLY_TEAMS: i32 = 2;
 
-pub fn setup(handler: &mut GadgetHandler<Global>) {
+pub fn setup(
+    handler: &mut GadgetHandler<Global>,
+    _spring: &spring::Spring<'_, spring::RulesSynced>,
+) {
     register_gadgets!(
         handler,
         [

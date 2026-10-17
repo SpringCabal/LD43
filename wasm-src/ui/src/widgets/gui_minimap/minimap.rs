@@ -32,43 +32,49 @@ struct Resources {
 }
 
 impl Minimap {
-    pub fn draw(&self, player_unit: i32, width: i32, height: i32) {
+    pub fn draw(
+        &self,
+        spring: &spring::Spring<'_, spring::Ui>,
+        player_unit: i32,
+        width: i32,
+        height: i32,
+    ) {
         if width <= 0 || height <= 0 {
             return;
         }
 
         if !self.configured.replace(true) {
-            configure(height);
+            configure(spring, height);
         }
 
         if !self.slaved.get() {
-            if gfx::slave_mini_map(true).is_err() {
+            if spring.gfx().slave_mini_map(true).is_err() {
                 return;
             }
             self.slaved.set(true);
         }
 
-        push_lua_state();
-        self.ensure_resources(width, height);
+        push_lua_state(spring);
+        self.ensure_resources(spring, width, height);
         if let Some(resources) = self.resources.borrow().as_ref() {
-            draw_composed(resources, player_unit);
+            draw_composed(spring, resources, player_unit);
         } else {
-            let _ = gfx::draw_mini_map(true);
+            let _ = spring.gfx().draw_mini_map(true);
         }
-        pop_lua_state();
+        pop_lua_state(spring);
     }
 
-    pub fn shutdown(&self) {
+    pub fn shutdown(&self, spring: &spring::Spring<'_, spring::Ui>) {
         if self.slaved.replace(false) {
-            let _ = gfx::slave_mini_map(false);
+            let _ = spring.gfx().slave_mini_map(false);
         }
         if let Some(resources) = self.resources.borrow_mut().take() {
-            destroy(resources);
+            destroy(spring, resources);
         }
         self.configured.set(false);
     }
 
-    fn ensure_resources(&self, width: i32, height: i32) {
+    fn ensure_resources(&self, spring: &spring::Spring<'_, spring::Ui>, width: i32, height: i32) {
         let mut slot = self.resources.borrow_mut();
         if slot
             .as_ref()
@@ -77,47 +83,57 @@ impl Minimap {
             return;
         }
         if let Some(old) = slot.take() {
-            destroy(old);
+            destroy(spring, old);
         }
-        *slot = create_resources(width, height);
+        *slot = create_resources(spring, width, height);
     }
 }
 
-fn configure(height: i32) {
+fn configure(spring: &spring::Spring<'_, spring::Ui>, height: i32) {
     if let (Ok(geometry), Ok(view)) = (
-        spring::display::get_mini_map_geometry(0),
-        spring::display::get_view_geometry(0),
+        spring.display().get_mini_map_geometry(),
+        spring.display().get_view_geometry(),
     ) {
         let top_y = view.view_size_y - geometry.pos_y - geometry.size_y;
         let command = format!(
             "minimap geo {} {} {} {}",
             geometry.pos_x, top_y, geometry.size_x, geometry.size_y
         );
-        let _ = spring::send_commands(&command, "");
+        let _ = spring.messages().send_commands(&command, "");
     }
-    let _ = spring::send_commands("minimap minimize 0", "");
-    let _ = spring::send_commands("minimap simplecolors 1", "");
-    let _ = spring::send_commands("minimap unitexp 0.3", "");
-    let _ = spring::send_commands("minimap unitsize 1.2", "");
-    let _ = spring::send_commands("minimap fullproxy 0", "");
-    let _ = gfx::config_mini_map(0, height / 2, SOURCE_SIZE, SOURCE_SIZE);
+    let _ = spring.messages().send_commands("minimap minimize 0", "");
+    let _ = spring
+        .messages()
+        .send_commands("minimap simplecolors 1", "");
+    let _ = spring.messages().send_commands("minimap unitexp 0.3", "");
+    let _ = spring.messages().send_commands("minimap unitsize 1.2", "");
+    let _ = spring.messages().send_commands("minimap fullproxy 0", "");
+    let _ = spring
+        .gfx()
+        .config_mini_map(0, height / 2, SOURCE_SIZE, SOURCE_SIZE);
 }
 
-fn create_resources(width: i32, height: i32) -> Option<Resources> {
-    let source = spring::create_texture(
-        width,
-        height,
-        0,
-        spring::TextureCreateParams {
-            min_filter: gl::LINEAR,
-            mag_filter: gl::LINEAR,
-            wrap_s: gl::CLAMP,
-            wrap_t: gl::CLAMP,
-            fbo: true,
-            ..Default::default()
-        },
-    )
-    .ok()?;
+fn create_resources(
+    spring: &spring::Spring<'_, spring::Ui>,
+    width: i32,
+    height: i32,
+) -> Option<Resources> {
+    let source = spring
+        .gfx()
+        .create_texture(
+            width,
+            height,
+            0,
+            spring::gfx::GfxTextureParams {
+                min_filter: gl::LINEAR,
+                mag_filter: gl::LINEAR,
+                wrap_s: gl::CLAMP,
+                wrap_t: gl::CLAMP,
+                fbo: true,
+                ..Default::default()
+            },
+        )
+        .ok()?;
 
     let attachment = gfx::GfxFBOAttachment {
         attachment: gl::COLOR_ATTACHMENT0,
@@ -127,53 +143,78 @@ fn create_resources(width: i32, height: i32) -> Option<Resources> {
         rbo_id: 0,
         use_rbo: false,
     };
-    let fbo = gfx::create_fbo(gl::FRAMEBUFFER, &[attachment], &[gl::COLOR_ATTACHMENT0], 0)
+    let fbo = spring
+        .gfx()
+        .create_fbo(gl::FRAMEBUFFER, &[attachment], &[gl::COLOR_ATTACHMENT0], 0)
         .ok()?
         .fbo_id;
 
-    let shader = gfx::create_shader(gfx::ShaderCreateParams {
-        vertex: MINIMAP_VERTEX,
-        fragment: MINIMAP_FRAGMENT,
-        ..Default::default()
-    })
-    .ok()?
-    .shader_id;
+    let shader = spring
+        .gfx()
+        .create_shader(
+            "",
+            MINIMAP_VERTEX,
+            "",
+            "",
+            "",
+            MINIMAP_FRAGMENT,
+            "",
+            Default::default(),
+        )
+        .and_then(|shader| {
+            spring.gfx().use_shader(shader.shader_id)?;
+            spring.gfx().use_shader(0)?;
+            Ok(shader)
+        })
+        .ok()?
+        .shader_id;
 
     let resources = Resources {
         source,
         fbo,
         shader,
-        alpha: gl_uniforms::location(shader, "alpha")?,
-        source_bounds: gl_uniforms::location(shader, "sourceBounds")?,
-        screen_rect: gl_uniforms::location(shader, "screenRect")?,
-        screen: gl_uniforms::location(shader, "screen")?,
+        alpha: gl_uniforms::location(spring, shader, "alpha")?,
+        source_bounds: gl_uniforms::location(spring, shader, "sourceBounds")?,
+        screen_rect: gl_uniforms::location(spring, shader, "screenRect")?,
+        screen: gl_uniforms::location(spring, shader, "screen")?,
         width,
         height,
     };
 
-    let _ = gfx::use_shader(shader);
-    let _ = gl_uniforms::set_int(shader, "tex0", 0);
-    let _ = gfx::use_shader(0);
+    let _ = spring.gfx().use_shader(shader);
+    let _ = gl_uniforms::set_int(spring, shader, "tex0", 0);
+    let _ = spring.gfx().use_shader(0);
     Some(resources)
 }
 
-fn destroy(resources: Resources) {
-    let _ = gfx::use_shader(0);
-    let _ = gfx::delete_shader(resources.shader);
-    let _ = gfx::delete_fbo(resources.fbo);
-    let _ = gfx::delete_texture_fbo(&resources.source);
+fn destroy(spring: &spring::Spring<'_, spring::Ui>, resources: Resources) {
+    let _ = spring.gfx().use_shader(0);
+    let _ = spring.gfx().delete_shader(resources.shader);
+    let _ = spring.gfx().delete_fbo(resources.fbo);
+    let _ = spring.gfx().delete_texture_fbo(&resources.source);
 }
 
-fn draw_composed(resources: &Resources, player_unit: i32) {
-    if gfx::active_fbo(resources.fbo, gl::FRAMEBUFFER, false, draw_source).is_err() {
+fn draw_composed(spring: &spring::Spring<'_, spring::Ui>, resources: &Resources, player_unit: i32) {
+    if spring
+        .gfx()
+        .active_fbo(resources.fbo, gl::FRAMEBUFFER, false, |spring| {
+            draw_source(spring)
+        })
+        .is_err()
+    {
         return;
     }
 
-    let Some(map) = spring::game::get_game_map_info(0).ok() else {
+    let Some(map) = spring.game().get_game_map_info().ok() else {
         return;
     };
-    let viewport = player_viewport(player_unit, map.map_size_x as f32, map.map_size_z as f32);
-    let Some(geometry) = spring::display::get_mini_map_geometry(0).ok() else {
+    let viewport = player_viewport(
+        spring,
+        player_unit,
+        map.map_size_x as f32,
+        map.map_size_z as f32,
+    );
+    let Some(geometry) = spring.display().get_mini_map_geometry().ok() else {
         return;
     };
     let source_width = resources.width as f32;
@@ -193,11 +234,13 @@ fn draw_composed(resources: &Resources, player_unit: i32) {
     let screen_width = minimap_width * viewport.width / map_width * viewport.scale;
     let screen_height = minimap_height * viewport.height / map_height * viewport.scale;
 
-    let _ = gfx::blending(true);
-    let _ = gfx::bind_texture(&resources.source, 0, true);
-    let _ = gfx::use_shader(resources.shader);
-    let _ = gfx::uniform(resources.alpha, &[MINIMAP_ALPHA * 3.0], 1);
-    let _ = gfx::uniform(
+    let _ = spring.gfx().blending(true);
+    let _ = spring.gfx().bind_texture(&resources.source, 0, true);
+    let _ = spring.gfx().use_shader(resources.shader);
+    let _ = spring
+        .gfx()
+        .uniform(resources.alpha, &[MINIMAP_ALPHA * 3.0], 1);
+    let _ = spring.gfx().uniform(
         resources.source_bounds,
         &[
             source_left,
@@ -207,7 +250,7 @@ fn draw_composed(resources: &Resources, player_unit: i32) {
         ],
         4,
     );
-    let _ = gfx::uniform(
+    let _ = spring.gfx().uniform(
         resources.screen_rect,
         &[
             SCREEN_X * resources.width as f32,
@@ -217,15 +260,24 @@ fn draw_composed(resources: &Resources, player_unit: i32) {
         ],
         4,
     );
-    let _ = gfx::uniform(resources.screen, &[source_width, source_height], 2);
-    let _ = gfx::tex_rect(-1.0, 1.0, 1.0, -1.0, 0.0, 1.0, 1.0, 0.0);
-    let _ = gfx::use_shader(0);
-    let _ = gfx::bind_texture(&resources.source, 0, false);
-    let _ = gfx::blending(false);
+    let _ = spring
+        .gfx()
+        .uniform(resources.screen, &[source_width, source_height], 2);
+    let _ = spring
+        .gfx()
+        .tex_rect(-1.0, 1.0, 1.0, -1.0, 0.0, 1.0, 1.0, 0.0);
+    let _ = spring.gfx().use_shader(0);
+    let _ = spring.gfx().bind_texture(&resources.source, 0, false);
+    let _ = spring.gfx().blending(false);
 }
 
-fn player_viewport(unit_id: i32, map_size_x: f32, map_size_z: f32) -> Viewport {
-    let Ok(position) = spring::units_info::get_unit_position(
+fn player_viewport(
+    spring: &spring::Spring<'_, spring::Ui>,
+    unit_id: i32,
+    map_size_x: f32,
+    map_size_z: f32,
+) -> Viewport {
+    let Ok(position) = spring.units_info().get_unit_position(
         unit_id,
         spring::units_info::GetUnitPositionOptions {
             mid_pos: false,
@@ -238,25 +290,27 @@ fn player_viewport(unit_id: i32, map_size_x: f32, map_size_z: f32) -> Viewport {
     viewport_for_position(position.x, position.z)
 }
 
-fn draw_source() {
-    let _ = gfx::clear(gl::COLOR_BUFFER_BIT, &[0.0, 0.0, 0.0, 0.0], 4);
-    let _ = gfx::draw_mini_map(true);
+fn draw_source(spring: &spring::Spring<'_, spring::Ui>) {
+    let _ = spring
+        .gfx()
+        .clear(gl::COLOR_BUFFER_BIT, &[0.0, 0.0, 0.0, 0.0], 4);
+    let _ = spring.gfx().draw_mini_map(true);
 }
 
-fn push_lua_state() {
-    let _ = gfx::push_attrib(gl::ALL_ATTRIB_BITS);
-    let _ = gfx::matrix_mode(gl::PROJECTION);
-    let _ = gfx::push_matrix(0);
-    let _ = gfx::matrix_mode(gl::MODELVIEW);
-    let _ = gfx::push_matrix(0);
+fn push_lua_state(spring: &spring::Spring<'_, spring::Ui>) {
+    let _ = spring.gfx().push_attrib(gl::ALL_ATTRIB_BITS);
+    let _ = spring.gfx().matrix_mode(gl::PROJECTION);
+    let _ = spring.gfx().push_matrix();
+    let _ = spring.gfx().matrix_mode(gl::MODELVIEW);
+    let _ = spring.gfx().push_matrix();
 }
 
-fn pop_lua_state() {
-    let _ = gfx::matrix_mode(gl::PROJECTION);
-    let _ = gfx::pop_matrix(0);
-    let _ = gfx::matrix_mode(gl::MODELVIEW);
-    let _ = gfx::pop_matrix(0);
-    let _ = gfx::pop_attrib(0);
+fn pop_lua_state(spring: &spring::Spring<'_, spring::Ui>) {
+    let _ = spring.gfx().matrix_mode(gl::PROJECTION);
+    let _ = spring.gfx().pop_matrix();
+    let _ = spring.gfx().matrix_mode(gl::MODELVIEW);
+    let _ = spring.gfx().pop_matrix();
+    let _ = spring.gfx().pop_attrib();
 }
 
 const MINIMAP_VERTEX: &str = r#"

@@ -1,7 +1,6 @@
 use alloc::vec::Vec;
 
-use spring::commands;
-use spring::types::Float3;
+use spring::Float3;
 use spring::units_info;
 
 use crate::defs::{UnitKind, defs};
@@ -19,13 +18,17 @@ const CEG_FLAMES: &str = "feature_poof_spawner";
 const SOUND_DRAIN: &str = "sounds/blooddrain.wav";
 const SOUND_DRAIN_VOLUME: f32 = 30.0;
 
-pub(super) fn drain_for_transfusion(global: &Global, unit_id: i32) -> Option<Option<f32>> {
-    let health = health(unit_id)?;
+pub(super) fn drain_for_transfusion(
+    spring: &spring::Spring<'_, spring::RulesSynced>,
+    global: &Global,
+    unit_id: i32,
+) -> Option<Option<f32>> {
+    let health = health(spring, unit_id)?;
     if health.current >= health.max {
         return None;
     }
     let required = LIFE_BONUS + health.max - health.current;
-    let (found, shortfall) = drain(global, unit_id, required, true);
+    let (found, shortfall) = drain(spring, global, unit_id, required, true);
     if !found && shortfall.is_none() {
         return None;
     }
@@ -33,62 +36,71 @@ pub(super) fn drain_for_transfusion(global: &Global, unit_id: i32) -> Option<Opt
 }
 
 pub(super) fn drain(
+    spring: &spring::Spring<'_, spring::RulesSynced>,
     global: &Global,
     collector_id: i32,
     required: f32,
     allow_partial: bool,
 ) -> (bool, Option<f32>) {
-    let Some(origin) = units::position(collector_id) else {
+    let Some(origin) = units::position(spring, collector_id) else {
         return (false, None);
     };
-    let house = defs().id(UnitKind::House);
+    let house = defs(spring).id(UnitKind::House);
     let mut remaining = required;
     let mut to_kill: Vec<i32> = Vec::new();
     let mut to_restore: Vec<i32> = Vec::new();
-    for target in nearest_allies(collector_id, origin)
+    for target in nearest_allies(spring, collector_id, origin)
         .into_iter()
         .take(DRAIN_SEARCH_LIMIT)
     {
-        if def_of(target) == house {
-            transfer(target, NEUTRAL_TEAM);
+        if def_of(spring, target) == house {
+            transfer(spring, target, NEUTRAL_TEAM);
             to_restore.push(target);
             continue;
         }
-        let Some(health) = health(target) else {
+        let Some(health) = health(spring, target) else {
             break;
         };
         let available = health.current + LIFE_BONUS;
         if available > remaining {
-            drain_effect(target);
-            blood_trail(origin, target);
+            drain_effect(spring, target);
+            blood_trail(spring, origin, target);
             crate::engine::check(
-                spring::set_unit_health(target, health_value(available - remaining)),
+                spring,
+                spring
+                    .unit_control()
+                    .set_unit_health(target, health_value(available - remaining)),
                 "set_unit_health",
                 target,
             );
-            restore(&to_restore);
-            record_drained(global, consume(&to_kill, origin));
+            restore(spring, &to_restore);
+            record_drained(global, consume(spring, &to_kill, origin));
             return (true, None);
         }
         to_kill.push(target);
-        transfer(target, NEUTRAL_TEAM);
+        transfer(spring, target, NEUTRAL_TEAM);
         remaining -= available;
     }
-    restore(&to_restore);
+    restore(spring, &to_restore);
     if allow_partial && !to_kill.is_empty() {
-        record_drained(global, consume(&to_kill, origin));
+        record_drained(global, consume(spring, &to_kill, origin));
         return (false, Some(remaining));
     }
-    restore(&to_kill);
+    restore(spring, &to_kill);
     (false, None)
 }
 
-fn nearest_allies(collector_id: i32, origin: Float3) -> Vec<i32> {
-    let Ok(ally_team) = units_info::get_unit_ally_team(collector_id) else {
+fn nearest_allies(
+    spring: &spring::Spring<'_, spring::RulesSynced>,
+    collector_id: i32,
+    origin: Float3,
+) -> Vec<i32> {
+    let Ok(ally_team) = spring.units_info().get_unit_ally_team(collector_id) else {
         return Vec::new();
     };
     let range_squared = BLOOD_MAGIC_RANGE * BLOOD_MAGIC_RANGE;
     let mut allies: Vec<(f32, i32)> = units::units_in_cylinder(
+        spring,
         origin.x,
         origin.z,
         BLOOD_MAGIC_RANGE + MIDDLE_MARGIN,
@@ -96,17 +108,20 @@ fn nearest_allies(collector_id: i32, origin: Float3) -> Vec<i32> {
     )
     .into_iter()
     .filter(|unit_id| {
-        *unit_id != collector_id && units_info::get_unit_ally_team(*unit_id).ok() == Some(ally_team)
+        *unit_id != collector_id
+            && spring.units_info().get_unit_ally_team(*unit_id).ok() == Some(ally_team)
     })
     .filter_map(|unit_id| {
-        let middle = units_info::get_unit_position(
-            unit_id,
-            units_info::GetUnitPositionOptions {
-                mid_pos: true,
-                aim_pos: false,
-            },
-        )
-        .ok()?;
+        let middle = spring
+            .units_info()
+            .get_unit_position(
+                unit_id,
+                units_info::GetUnitPositionOptions {
+                    mid_pos: true,
+                    aim_pos: false,
+                },
+            )
+            .ok()?;
         let dx = origin.x - middle.x;
         let dz = origin.z - middle.z;
         let distance_squared = dx * dx + dz * dz;
@@ -117,47 +132,48 @@ fn nearest_allies(collector_id: i32, origin: Float3) -> Vec<i32> {
     allies.into_iter().map(|(_, unit_id)| unit_id).collect()
 }
 
-fn consume(units: &[i32], origin: Float3) -> i32 {
+fn consume(spring: &spring::Spring<'_, spring::RulesSynced>, units: &[i32], origin: Float3) -> i32 {
     let mut drained = 0;
     for unit_id in units {
         let unit_id = *unit_id;
-        drain_effect(unit_id);
-        blood_trail(origin, unit_id);
-        let options = spring::generated::owned::unit_control::DestroyUnitOptions {
+        drain_effect(spring, unit_id);
+        blood_trail(spring, origin, unit_id);
+        let options = spring::unit_control::DestroyUnitOptions {
             selfd: true,
             reclaimed: false,
             attacker_id: -1,
             recycle_id: false,
         };
-        commands::destroy_unit(unit_id, options)
-            .then(move |result| crate::engine::check(result, "destroy_unit", unit_id));
+        crate::with_addon_context(|ctx| ctx.commands().destroy_unit(unit_id, options)).then(
+            move |spring, result| crate::engine::check(spring, result, "destroy_unit", unit_id),
+        );
         drained += 1;
     }
     drained
 }
 
-fn drain_effect(unit_id: i32) {
-    spawn_effect(unit_id, CEG_FLAMES);
-    play_sound(SOUND_DRAIN, SOUND_DRAIN_VOLUME, unit_id);
+fn drain_effect(spring: &spring::Spring<'_, spring::RulesSynced>, unit_id: i32) {
+    spawn_effect(spring, unit_id, CEG_FLAMES);
+    play_sound(spring, SOUND_DRAIN, SOUND_DRAIN_VOLUME, unit_id);
 }
 
 fn record_drained(global: &Global, count: i32) {
     global.score.access_mut().allies_drained += count;
 }
 
-fn restore(units: &[i32]) {
+fn restore(spring: &spring::Spring<'_, spring::RulesSynced>, units: &[i32]) {
     for unit_id in units {
-        transfer(*unit_id, PLAYER_TEAM);
+        transfer(spring, *unit_id, PLAYER_TEAM);
     }
 }
 
-fn transfer(unit_id: i32, team: i32) {
-    commands::transfer_unit(unit_id, team, false, false)
-        .then(move |result| crate::engine::check(result, "transfer_unit", unit_id));
+fn transfer(_spring: &spring::Spring<'_, spring::RulesSynced>, unit_id: i32, team: i32) {
+    crate::with_addon_context(|ctx| ctx.commands().transfer_unit(unit_id, team, false, false))
+        .then(move |spring, result| crate::engine::check(spring, result, "transfer_unit", unit_id));
 }
 
-fn blood_trail(origin: Float3, target_id: i32) {
-    let Some(target) = units::position(target_id) else {
+fn blood_trail(spring: &spring::Spring<'_, spring::RulesSynced>, origin: Float3, target_id: i32) {
+    let Some(target) = units::position(spring, target_id) else {
         return;
     };
     let dx = origin.x - target.x;
@@ -173,6 +189,7 @@ fn blood_trail(origin: Float3, target_id: i32) {
     let mut travelled = 10.0;
     while travelled < distance {
         spawn_ceg(
+            spring,
             Float3 {
                 x: target.x + step.x * travelled,
                 y: target.y + step.y * travelled,

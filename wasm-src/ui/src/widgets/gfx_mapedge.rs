@@ -20,11 +20,13 @@ impl Widget<Global> for GfxMapEdgeWidget {
         "GfxMapEdge"
     }
 
-    fn draw_world_pre_unit(&self, _ctx: &spring_addons::AddonContext<'_, Global>) {
-        self.edge.draw();
+    fn draw_world_pre_unit(&self, _ctx: &spring_addons::AddonContext<'_, Global, spring::Ui>) {
+        let spring = _ctx.spring();
+        self.edge.draw(spring);
     }
 
-    fn draw_world_refraction(&self, _ctx: &spring_addons::AddonContext<'_, Global>) {
-        self.edge.draw();
+    fn draw_world_refraction(&self, _ctx: &spring_addons::AddonContext<'_, Global, spring::Ui>) {
+        let spring = _ctx.spring();
+        self.edge.draw(spring);
     }
 }

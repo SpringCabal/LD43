@@ -5,7 +5,7 @@ use super::*;
 use crate::cursor;
 use crate::state::{Cursor, Global};
 
-pub fn setup(handler: &mut WidgetHandler<Global>) {
+pub fn setup(spring: &spring::Spring<'_, spring::Ui>, handler: &mut WidgetHandler<Global>) {
     WorldWidgets::new(handler)
         .widget(HideDefaultInterface::new(setup::HIDDEN_INTERFACE))
         .widget(GalleryPointerWidget)
@@ -14,7 +14,7 @@ pub fn setup(handler: &mut WidgetHandler<Global>) {
         .widget(GfxFireWidget::new())
         .widget(GfxMapEdgeWidget::new())
         .widget(GfxHighlightWidget::new())
-        .announce("ttld-ui");
+        .announce(spring, "ttld-ui");
 }
 
 struct GalleryPointerWidget;
@@ -24,8 +24,9 @@ impl Widget<Global> for GalleryPointerWidget {
         "GalleryPointer"
     }
 
-    fn update(&self, ctx: &spring_addons::AddonContext<'_, Global>, _dt: f32) {
-        let Ok(geometry) = spring::display::get_view_geometry(0) else {
+    fn update(&self, ctx: &spring_addons::AddonContext<'_, Global, spring::Ui>, _dt: f32) {
+        let spring = ctx.spring();
+        let Ok(geometry) = spring.display().get_view_geometry() else {
             return;
         };
         let (width, height) = (geometry.view_size_x, geometry.view_size_y);
@@ -34,8 +35,8 @@ impl Widget<Global> for GalleryPointerWidget {
         global.view.set((width, height));
         global.cursor.set(Cursor {
             screen: Some((x, y)),
-            ground: cursor::ground_at(x, y),
-            unit: cursor::unit_at(x, y),
+            ground: cursor::ground_at(spring, x, y),
+            unit: cursor::unit_at(spring, x, y),
         });
     }
 }

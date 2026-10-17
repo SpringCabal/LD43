@@ -95,19 +95,19 @@ impl DbgE2eWidget {
         Self::default()
     }
 
-    fn request_pauses(&self) {
+    fn request_pauses(&self, spring: &spring::Spring<'_, spring::Ui>) {
         if self.pauses_requested.replace(true) {
             return;
         }
         for (frame, when, _) in STEPS {
             if *when == When::Paused {
-                command(&alloc::format!("pauseatframe {frame}"));
+                command(spring, &alloc::format!("pauseatframe {frame}"));
             }
         }
     }
 
-    fn settled_in_pause(&self) -> bool {
-        if !paused() {
+    fn settled_in_pause(&self, spring: &spring::Spring<'_, spring::Ui>) -> bool {
+        if !paused(spring) {
             self.paused_updates.set(0);
             return false;
         }
@@ -116,7 +116,7 @@ impl DbgE2eWidget {
         updates > SETTLE_UPDATES
     }
 
-    fn resume_when_due(&self) -> bool {
+    fn resume_when_due(&self, spring: &spring::Spring<'_, spring::Ui>) -> bool {
         let Some(updates) = self.resume_in.get() else {
             return false;
         };
@@ -125,47 +125,61 @@ impl DbgE2eWidget {
         } else {
             self.resume_in.set(None);
             self.paused_updates.set(0);
-            command("pause 0");
+            command(spring, "pause 0");
         }
         true
     }
 
-    fn run(&self, ctx: &spring_addons::AddonContext<'_, Global>, step: Step) {
+    fn run(&self, ctx: &spring_addons::AddonContext<'_, Global, spring::Ui>, step: Step) {
+        let spring = ctx.spring();
         match step {
-            Step::CloseIntro => hud::close_intro(ctx.global()),
+            Step::CloseIntro => hud::close_intro(spring, ctx.global()),
             Step::LeaderFixture => {
-                springcabal::message::send_to_rules(&Command::LeaderRenderFixture.message());
+                springcabal::message::send_to_rules(
+                    spring,
+                    &Command::LeaderRenderFixture.message(),
+                );
             }
-            Step::ReportLeaderFixture => report_leader_fixture(),
-            Step::Heartburn => send_spell(2, 1000.0),
-            Step::Hover(def_name) => self.hovered.set(hover_fixture(def_name)),
-            Step::CheckHover(def_name) => report_hover(ctx.global(), def_name, self.hovered.get()),
+            Step::ReportLeaderFixture => report_leader_fixture(spring),
+            Step::Heartburn => send_spell(spring, 2, 1000.0),
+            Step::Hover(def_name) => self.hovered.set(hover_fixture(spring, def_name)),
+            Step::CheckHover(def_name) => {
+                report_hover(spring, ctx.global(), def_name, self.hovered.get())
+            }
             Step::SeedSelection => {
-                let _ = spring::selection::select_unit_array(&[player_unit()], false);
-                let count = spring::selection::get_selected_units_count(0).unwrap_or(0);
-                echo(&alloc::format!("TTLD E2E selection seeded={count}"));
+                let _ = spring
+                    .selection()
+                    .select_unit_array(&[player_unit()], false);
+                let count = spring.selection().get_selected_units_count().unwrap_or(0);
+                echo(spring, &alloc::format!("TTLD E2E selection seeded={count}"));
             }
             Step::CheckSelection => {
-                let count = spring::selection::get_selected_units_count(0).unwrap_or(u32::MAX);
-                echo(&alloc::format!("TTLD E2E selection cleared={count}"));
+                let count = spring
+                    .selection()
+                    .get_selected_units_count()
+                    .unwrap_or(u32::MAX);
+                echo(
+                    spring,
+                    &alloc::format!("TTLD E2E selection cleared={count}"),
+                );
             }
-            Step::MouseWheel => report_wheel_capture(),
+            Step::MouseWheel => report_wheel_capture(spring),
             Step::MovePlayer => {
-                report_tracking("before_move");
-                move_player(500.0, -7000.0);
+                report_tracking(spring, "before_move");
+                move_player(spring, 500.0, -7000.0);
             }
-            Step::RememberPoultice => self.remember_poultice_target(),
-            Step::Poultice => send_spell(5, 0.0),
-            Step::ReportPoultice => self.report_poultice(),
-            Step::Track(label) => report_tracking(label),
+            Step::RememberPoultice => self.remember_poultice_target(spring),
+            Step::Poultice => send_spell(spring, 5, 0.0),
+            Step::ReportPoultice => self.report_poultice(spring),
+            Step::Track(label) => report_tracking(spring, label),
             Step::Shot(label) => {
                 let shot = self.shots.get() + 1;
                 self.shots.set(shot);
-                let frame = spring::game::current_frame();
-                screenshot(&alloc::format!("{shot} ({label}) at frame {frame}"));
-                report_projectiles();
+                let frame = spring.game().current_frame().unwrap_or(0);
+                screenshot(spring, &alloc::format!("{shot} ({label}) at frame {frame}"));
+                report_projectiles(spring);
             }
-            Step::Done => echo(DONE_MARKER),
+            Step::Done => echo(spring, DONE_MARKER),
         }
     }
 }
@@ -175,13 +189,14 @@ impl Widget<Global> for DbgE2eWidget {
         "DbgE2e"
     }
 
-    fn update(&self, ctx: &spring_addons::AddonContext<'_, Global>, _dt: f32) {
-        let frame = spring::game::current_frame();
+    fn update(&self, ctx: &spring_addons::AddonContext<'_, Global, spring::Ui>, _dt: f32) {
+        let spring = ctx.spring();
+        let frame = spring.game().current_frame().unwrap_or(0);
         if frame < 0 {
             return;
         }
-        self.request_pauses();
-        if self.resume_when_due() {
+        self.request_pauses(spring);
+        if self.resume_when_due(spring) {
             return;
         }
         let mut running = None;
@@ -191,13 +206,14 @@ impl Widget<Global> for DbgE2eWidget {
             }
             running = Some(due);
             if when == When::Paused {
-                if frame == due && !self.settled_in_pause() {
+                if frame == due && !self.settled_in_pause(spring) {
                     return;
                 }
                 if frame > due {
-                    echo(&alloc::format!(
-                        "TTLD E2E missed the pause at frame {due} (now {frame})"
-                    ));
+                    echo(
+                        spring,
+                        &alloc::format!("TTLD E2E missed the pause at frame {due} (now {frame})"),
+                    );
                 } else {
                     self.resume_in.set(Some(PAUSED_UPDATES));
                 }
@@ -208,66 +224,87 @@ impl Widget<Global> for DbgE2eWidget {
     }
 }
 
-fn report_projectiles() {
-    let projectiles =
-        spring::projectiles::get_all_projectiles(spring::projectiles::GetAllProjectilesOptions {
+fn report_projectiles(spring: &spring::Spring<'_, spring::Ui>) {
+    let projectiles = spring
+        .projectiles()
+        .get_all_projectiles(spring::projectiles::GetAllProjectilesOptions {
             exclude_weapon_projectiles: false,
             exclude_piece_projectiles: true,
         })
         .unwrap_or_default();
     for projectile in projectiles {
-        if let Ok(position) = spring::projectiles::get_projectile_position(projectile) {
-            echo(&alloc::format!(
-                "TTLD E2E projectile {projectile} at ({:.1},{:.1},{:.1})",
-                position.x,
-                position.y,
-                position.z
-            ));
+        if let Ok(position) = spring.projectiles().get_projectile_position(projectile) {
+            echo(
+                spring,
+                &alloc::format!(
+                    "TTLD E2E projectile {projectile} at ({:.1},{:.1},{:.1})",
+                    position.x,
+                    position.y,
+                    position.z
+                ),
+            );
         }
     }
 }
 
-fn paused() -> bool {
-    spring::display::get_game_speed(0).is_ok_and(|speed| speed.paused)
+fn paused(spring: &spring::Spring<'_, spring::Ui>) -> bool {
+    spring
+        .display()
+        .get_game_speed()
+        .is_ok_and(|speed| speed.paused)
 }
 
-fn command(command: &str) {
-    spring::send_commands(command, "").log_err(command);
+fn command(spring: &spring::Spring<'_, spring::Ui>, command: &str) {
+    spring
+        .messages()
+        .send_commands(command, "")
+        .log_err(spring, command);
 }
 
-fn echo(line: &str) {
-    spring::echo(line, "").log_err("e2e report");
+fn echo(spring: &spring::Spring<'_, spring::Ui>, line: &str) {
+    spring
+        .messages()
+        .echo(line, "")
+        .log_err(spring, "e2e report");
 }
 
-fn report_hover(global: &Global, def_name: &str, unit: Option<i32>) {
+fn report_hover(
+    spring: &spring::Spring<'_, spring::Ui>,
+    global: &Global,
+    def_name: &str,
+    unit: Option<i32>,
+) {
     let target = global.hud.access().target.map(|(unit, _)| unit);
     let cursor = global.cursor.get().unit;
-    echo(&alloc::format!(
-        "TTLD E2E hover check fixture={def_name} unit={} hud_target={} cursor={}",
-        unit.unwrap_or(-1),
-        target.unwrap_or(-1),
-        cursor.unwrap_or(-1),
-    ));
+    echo(
+        spring,
+        &alloc::format!(
+            "TTLD E2E hover check fixture={def_name} unit={} hud_target={} cursor={}",
+            unit.unwrap_or(-1),
+            target.unwrap_or(-1),
+            cursor.unwrap_or(-1),
+        ),
+    );
 }
 
 fn player_unit() -> i32 {
     crate::with_global(|global| global.status.access().player_unit)
 }
 
-fn report_leader_fixture() {
+fn report_leader_fixture(spring: &spring::Spring<'_, spring::Ui>) {
     let player_id = player_unit();
-    let Some(player) = unit_position(player_id) else {
+    let Some(player) = unit_position(spring, player_id) else {
         return;
     };
-    let leader_def = spring::get_unit_def_id_by_name("orkboss").ok();
-    let orkbig_def = spring::get_unit_def_id_by_name("orkbig").ok();
+    let leader_def = spring.unit_defs().get_unit_def_id_by_name("orkboss").ok();
+    let orkbig_def = spring.unit_defs().get_unit_def_id_by_name("orkbig").ok();
     let mut leader = None;
     let mut orkbig = None;
-    for unit_id in spring::get_all_units().unwrap_or_default() {
-        let Ok(def_id) = spring::units_info::get_unit_def_id(unit_id) else {
+    for unit_id in spring.units_query().get_all_units().unwrap_or_default() {
+        let Ok(def_id) = spring.units_info().get_unit_def_id(unit_id) else {
             continue;
         };
-        let Some(position) = unit_position(unit_id) else {
+        let Some(position) = unit_position(spring, unit_id) else {
             continue;
         };
         let dx = position.x - player.x;
@@ -275,7 +312,7 @@ fn report_leader_fixture() {
         if dx * dx + dz * dz > 700.0 * 700.0 {
             continue;
         }
-        let Ok(screen) = spring::camera::world_to_screen_coords(position) else {
+        let Ok(screen) = spring.camera().world_to_screen_coords(position) else {
             continue;
         };
         if Some(def_id) == leader_def {
@@ -284,16 +321,16 @@ fn report_leader_fixture() {
             orkbig = Some((unit_id, screen.screen_pos.x, screen.screen_pos.y));
         }
     }
-    let _ = spring::echo(
+    let _ = spring.messages().echo(
         &alloc::format!("TTLD E2E leader render pixels: leader={leader:?} orkbig={orkbig:?}"),
         "",
     );
 }
 
-fn unit_position(unit_id: i32) -> Option<spring::types::Float3> {
+fn unit_position(spring: &spring::Spring<'_, spring::Ui>, unit_id: i32) -> Option<spring::Float3> {
     (unit_id >= 0)
         .then(|| {
-            spring::units_info::get_unit_position(
+            spring.units_info().get_unit_position(
                 unit_id,
                 spring::units_info::GetUnitPositionOptions {
                     mid_pos: false,
@@ -304,9 +341,9 @@ fn unit_position(unit_id: i32) -> Option<spring::types::Float3> {
         .ok()
 }
 
-fn send_spell(index: i32, z_offset: f32) {
+fn send_spell(spring: &spring::Spring<'_, spring::Ui>, index: i32, z_offset: f32) {
     let unit_id = player_unit();
-    if let Ok(position) = spring::units_info::get_unit_position(
+    if let Ok(position) = spring.units_info().get_unit_position(
         unit_id,
         spring::units_info::GetUnitPositionOptions {
             mid_pos: false,
@@ -320,20 +357,22 @@ fn send_spell(index: i32, z_offset: f32) {
             z: position.z + z_offset,
         }
         .message();
-        let accepted = springcabal::message::send_to_rules(&message);
+        let accepted = springcabal::message::send_to_rules(spring, &message);
         let name = if index == 5 { "poultice" } else { "heartburn" };
-        let _ = spring::echo(&alloc::format!("TTLD E2E {name} sent: {accepted}"), "");
+        let _ = spring
+            .messages()
+            .echo(&alloc::format!("TTLD E2E {name} sent: {accepted}"), "");
     } else {
-        let _ = spring::echo(
+        let _ = spring.messages().echo(
             &alloc::format!("TTLD E2E spell {index} skipped: no player unit"),
             "",
         );
     }
 }
 
-fn move_player(x_offset: f32, z_offset: f32) {
+fn move_player(spring: &spring::Spring<'_, spring::Ui>, x_offset: f32, z_offset: f32) {
     let unit_id = player_unit();
-    let Ok(position) = spring::units_info::get_unit_position(
+    let Ok(position) = spring.units_info().get_unit_position(
         unit_id,
         spring::units_info::GetUnitPositionOptions {
             mid_pos: false,
@@ -347,12 +386,12 @@ fn move_player(x_offset: f32, z_offset: f32) {
         z: position.z + z_offset,
     }
     .message();
-    springcabal::message::send_to_rules(&message);
+    springcabal::message::send_to_rules(spring, &message);
 }
 
-fn report_tracking(label: &str) {
+fn report_tracking(spring: &spring::Spring<'_, spring::Ui>, label: &str) {
     let unit_id = player_unit();
-    let Ok(unit) = spring::units_info::get_unit_position(
+    let Ok(unit) = spring.units_info().get_unit_position(
         unit_id,
         spring::units_info::GetUnitPositionOptions {
             mid_pos: true,
@@ -361,13 +400,13 @@ fn report_tracking(label: &str) {
     ) else {
         return;
     };
-    let Ok(camera) = spring::camera::get_camera_state(true) else {
+    let Ok(camera) = spring.camera().get_camera_state(true) else {
         return;
     };
     let dx = camera.pos.x - unit.x;
     let dz = camera.pos.z - unit.z;
     let error = (dx * dx + dz * dz).sqrt();
-    let _ = spring::echo(
+    let _ = spring.messages().echo(
         &alloc::format!(
             "TTLD E2E tracking {label}: unit=({:.0},{:.0}) camera=({:.0},{:.0}) error={error:.1}",
             unit.x,
@@ -379,17 +418,17 @@ fn report_tracking(label: &str) {
     );
 }
 
-fn report_wheel_capture() {
-    let Ok(before) = spring::camera::get_camera_state(true) else {
+fn report_wheel_capture(spring: &spring::Spring<'_, spring::Ui>) {
+    let Ok(before) = spring.camera().get_camera_state(true) else {
         return;
     };
-    let accepted = spring::debug_input::emulate_mouse_wheel(1.0).is_ok();
-    let Ok(after) = spring::camera::get_camera_state(true) else {
+    let accepted = spring.debug_input().emulate_mouse_wheel(1.0).is_ok();
+    let Ok(after) = spring.camera().get_camera_state(true) else {
         return;
     };
     let delta = after.dist - before.dist;
     let captured = delta.abs() < 0.01;
-    let _ = spring::echo(
+    let _ = spring.messages().echo(
         &alloc::format!(
             "TTLD E2E mouse wheel accepted={accepted} before_dist={:.2} after_dist={:.2} delta={delta:.2} captured={captured}",
             before.dist,
@@ -400,9 +439,9 @@ fn report_wheel_capture() {
 }
 
 impl DbgE2eWidget {
-    fn remember_poultice_target(&self) {
+    fn remember_poultice_target(&self, spring: &spring::Spring<'_, spring::Ui>) {
         let unit_id = player_unit();
-        let Ok(origin) = spring::units_info::get_unit_position(
+        let Ok(origin) = spring.units_info().get_unit_position(
             unit_id,
             spring::units_info::GetUnitPositionOptions {
                 mid_pos: false,
@@ -411,23 +450,23 @@ impl DbgE2eWidget {
         ) else {
             return;
         };
-        let mut output = [0i32; 512];
-        let Ok(spring::BufferFill::Complete(count)) =
-            spring::get_units_in_cylinder_into(origin.x, origin.z, 720.0, 1, &mut output)
+        let Ok(output) = spring
+            .units()
+            .get_units_in_cylinder(origin.x, origin.z, 720.0, 1)
         else {
             return;
         };
-        for target in output.into_iter().take(count) {
-            let Ok(team) = spring::units_info::get_unit_team(target) else {
+        for target in output {
+            let Ok(team) = spring.units_info().get_unit_team(target) else {
                 continue;
             };
-            let Ok(def) = spring::units_info::get_unit_def_id(target) else {
+            let Ok(def) = spring.units_info().get_unit_def_id(target) else {
                 continue;
             };
             if team != 1 {
                 continue;
             }
-            let Ok(position) = spring::units_info::get_unit_position(
+            let Ok(position) = spring.units_info().get_unit_position(
                 target,
                 spring::units_info::GetUnitPositionOptions {
                     mid_pos: false,
@@ -439,7 +478,7 @@ impl DbgE2eWidget {
             self.poultice_target.set(target);
             self.poultice_x.set(position.x);
             self.poultice_z.set(position.z);
-            let _ = spring::echo(
+            let _ = spring.messages().echo(
                 &alloc::format!(
                     "TTLD E2E poultice target={target} team={} def={} before=({:.0},{:.0})",
                     team,
@@ -453,13 +492,15 @@ impl DbgE2eWidget {
         }
     }
 
-    fn report_poultice(&self) {
+    fn report_poultice(&self, spring: &spring::Spring<'_, spring::Ui>) {
         let target = self.poultice_target.get();
         if target < 0 {
-            let _ = spring::echo("TTLD E2E poultice target missing", "");
+            let _ = spring
+                .messages()
+                .echo("TTLD E2E poultice target missing", "");
             return;
         }
-        let position = match spring::units_info::get_unit_position(
+        let position = match spring.units_info().get_unit_position(
             target,
             spring::units_info::GetUnitPositionOptions {
                 mid_pos: false,
@@ -468,7 +509,7 @@ impl DbgE2eWidget {
         ) {
             Ok(position) => position,
             Err(_) => {
-                let _ = spring::echo(
+                let _ = spring.messages().echo(
                     &alloc::format!("TTLD E2E poultice target={target} no longer queryable"),
                     "",
                 );
@@ -478,8 +519,11 @@ impl DbgE2eWidget {
         let dx = position.x - self.poultice_x.get();
         let dz = position.z - self.poultice_z.get();
         let distance = (dx * dx + dz * dz).sqrt();
-        let velocity = spring::units_info::get_unit_velocity(target).unwrap_or_default();
-        let _ = spring::echo(
+        let velocity = spring
+            .units_info()
+            .get_unit_velocity(target)
+            .unwrap_or_default();
+        let _ = spring.messages().echo(
             &alloc::format!(
                 "TTLD E2E poultice target={target} after=({:.0},{:.0}) moved={distance:.1} velocity=({:.1},{:.1},{:.1})",
                 position.x,
@@ -493,22 +537,22 @@ impl DbgE2eWidget {
     }
 }
 
-fn hover_fixture(def_name: &str) -> Option<i32> {
+fn hover_fixture(spring: &spring::Spring<'_, spring::Ui>, def_name: &str) -> Option<i32> {
     let label = def_name;
-    let Some(def_id) = spring::get_unit_def_id_by_name(def_name).ok() else {
-        let _ = spring::echo(
+    let Some(def_id) = spring.unit_defs().get_unit_def_id_by_name(def_name).ok() else {
+        let _ = spring.messages().echo(
             &alloc::format!("TTLD E2E hover fixture={label} skipped: no def"),
             "",
         );
         return None;
     };
-    let player_position = unit_position(player_unit())?;
+    let player_position = unit_position(spring, player_unit())?;
     let mut target = None;
-    for unit_id in spring::get_all_units().unwrap_or_default() {
-        if spring::units_info::get_unit_def_id(unit_id).ok() != Some(def_id) {
+    for unit_id in spring.units_query().get_all_units().unwrap_or_default() {
+        if spring.units_info().get_unit_def_id(unit_id).ok() != Some(def_id) {
             continue;
         }
-        let Some(position) = unit_position(unit_id) else {
+        let Some(position) = unit_position(spring, unit_id) else {
             continue;
         };
         let dx = position.x - player_position.x;
@@ -518,18 +562,18 @@ fn hover_fixture(def_name: &str) -> Option<i32> {
         }
     }
     let Some((unit_id, position)) = target else {
-        let _ = spring::echo(
+        let _ = spring.messages().echo(
             &alloc::format!("TTLD E2E hover fixture={label} skipped: no unit"),
             "",
         );
         return None;
     };
-    let position = spring::types::Float3 {
+    let position = spring::Float3 {
         x: position.x,
         y: position.y + 40.0,
         z: position.z,
     };
-    let Ok(screen) = spring::camera::world_to_screen_coords(position) else {
+    let Ok(screen) = spring.camera().world_to_screen_coords(position) else {
         return None;
     };
     let height = crate::with_global(|global| global.view.get().1);
@@ -541,23 +585,25 @@ fn hover_fixture(def_name: &str) -> Option<i32> {
     let mut hover = None;
     'search: for dx in (-100..=100).step_by(10) {
         for dy in (-100..=100).step_by(10) {
-            if trace_unit(x + dx, bottom_y + dy) == Some(unit_id) {
+            if trace_unit(spring, x + dx, bottom_y + dy) == Some(unit_id) {
                 hover = Some((x + dx, bottom_y + dy));
                 break 'search;
             }
         }
     }
     let Some((hover_x, hover_bottom_y)) = hover else {
-        let _ = spring::echo(
+        let _ = spring.messages().echo(
             &alloc::format!("TTLD E2E hover fixture={label} unit={unit_id} skipped: trace miss"),
             "",
         );
         return None;
     };
     let hover_top_y = height - 1 - hover_bottom_y;
-    let result = spring::debug_input::emulate_mouse_move(hover_x, hover_top_y);
-    let hit = trace_hit(hover_x, hover_bottom_y);
-    let _ = spring::echo(
+    let result = spring
+        .debug_input()
+        .emulate_mouse_move(hover_x, hover_top_y);
+    let hit = trace_hit(spring, hover_x, hover_bottom_y);
+    let _ = spring.messages().echo(
         &alloc::format!(
             "TTLD E2E hover fixture={label} unit={unit_id} mouse=({hover_x},{hover_bottom_y}) trace={hit} move_ok={}",
             result.is_ok(),
@@ -567,23 +613,25 @@ fn hover_fixture(def_name: &str) -> Option<i32> {
     Some(unit_id)
 }
 
-fn trace_unit(x: i32, y: i32) -> Option<i32> {
-    crate::cursor::unit_at(x as f32, y as f32)
+fn trace_unit(spring: &spring::Spring<'_, spring::Ui>, x: i32, y: i32) -> Option<i32> {
+    crate::cursor::unit_at(spring, x as f32, y as f32)
 }
 
-fn trace_hit(x: i32, y: i32) -> alloc::string::String {
-    spring::camera::trace_screen_ray(
-        x as f32,
-        y as f32,
-        spring::camera::TraceScreenRayOptions {
-            only_coords: false,
-            use_minimap: false,
-            include_sky: false,
-            ignore_water: false,
-            height_offset: 0.0,
-        },
-    )
-    .ok()
-    .map(|trace| alloc::format!("{}:{}", trace.hit_type, trace.hit_id))
-    .unwrap_or_else(|| "none".into())
+fn trace_hit(spring: &spring::Spring<'_, spring::Ui>, x: i32, y: i32) -> alloc::string::String {
+    spring
+        .camera()
+        .trace_screen_ray(
+            x as f32,
+            y as f32,
+            spring::camera::TraceScreenRayOptions {
+                only_coords: false,
+                use_minimap: false,
+                include_sky: false,
+                ignore_water: false,
+                height_offset: 0.0,
+            },
+        )
+        .ok()
+        .map(|trace| alloc::format!("{}:{}", trace.hit_type, trace.hit_id))
+        .unwrap_or_else(|| "none".into())
 }

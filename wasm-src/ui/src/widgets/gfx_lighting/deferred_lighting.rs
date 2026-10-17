@@ -1,7 +1,7 @@
 use alloc::string::String;
 use core::cell::{Cell, RefCell};
 
-use spring::{gfx, gl};
+use spring::gl;
 
 use super::lights::{Lights, PointLight};
 use crate::{game, gl_uniforms};
@@ -72,62 +72,78 @@ pub struct DeferredPass {
 }
 
 impl DeferredPass {
-    pub fn draw(&self, lights: &Lights, player_unit: i32, width: i32, height: i32) {
+    pub fn draw(
+        &self,
+        spring: &spring::Spring<'_, spring::Ui>,
+        lights: &Lights,
+        player_unit: i32,
+        width: i32,
+        height: i32,
+    ) {
         if width <= 1 || height <= 1 {
             return;
         }
-        if !self.ensure_resources(width, height) {
+        if !self.ensure_resources(spring, width, height) {
             return;
         }
         let resources = self.resources.borrow();
         let Some(resources) = resources.as_ref() else {
             return;
         };
-        self.report(lights, player_unit);
+        self.report(spring, lights, player_unit);
 
-        if gfx::copy_to_texture(&resources.screen_hdr, 0, 0, 0, 0, width, height, 0, 0).is_err() {
+        if spring
+            .gfx()
+            .copy_to_texture(&resources.screen_hdr, 0, 0, 0, 0, width, height, 0, 0)
+            .is_err()
+        {
             return;
         }
 
         if lights.iter().next().is_some() {
-            let Ok(camera) = spring::camera::get_camera_position(0) else {
+            let Ok(camera) = spring.camera().get_camera_position() else {
                 return;
             };
-            let Ok(view_projection_inverse) = gfx::get_view_projection_matrix_inverse() else {
+            let Ok(view_projection_inverse) = spring.gfx().get_view_projection_matrix_inverse()
+            else {
                 return;
             };
             let screen_ratio = height as f32 / width as f32;
-            let _ = gfx::render_to_texture(&resources.screen_hdr, || {
-                draw_light_pass(
-                    &resources.light,
-                    lights,
-                    &camera,
-                    width,
-                    height,
-                    screen_ratio,
-                    &view_projection_inverse,
-                );
-            });
+            let _ = spring
+                .gfx()
+                .render_to_texture(&resources.screen_hdr, |spring| {
+                    draw_light_pass(
+                        spring,
+                        &resources.light,
+                        lights,
+                        &camera,
+                        width,
+                        height,
+                        screen_ratio,
+                        &view_projection_inverse,
+                    );
+                });
         }
 
-        draw_bloom(resources);
+        draw_bloom(spring, resources);
     }
 
-    pub fn shutdown(&self) {
+    pub fn shutdown(&self, spring: &spring::Spring<'_, spring::Ui>) {
         if let Some(resources) = self.resources.borrow_mut().take() {
-            destroy_resources(&resources);
+            destroy_resources(spring, &resources);
         }
         self.failed_size.set(None);
         self.reported.set(false);
     }
 
-    fn report(&self, lights: &Lights, player_unit: i32) {
-        let frame = game::status_frame();
+    fn report(&self, spring: &spring::Spring<'_, spring::Ui>, lights: &Lights, player_unit: i32) {
+        let frame = game::status_frame(spring);
         if self.reported.get() || frame <= 0 {
             return;
         }
         let (staff, mouse, projectiles) = lights.summary();
         spring::log_info!(
+            spring,
             "ttld-ui",
             "deferred light pass active: {} lights at game frame {}, player={}, staff={}, mouse={}, projectiles={}",
             lights.len(),
@@ -140,7 +156,12 @@ impl DeferredPass {
         self.reported.set(true);
     }
 
-    fn ensure_resources(&self, width: i32, height: i32) -> bool {
+    fn ensure_resources(
+        &self,
+        spring: &spring::Spring<'_, spring::Ui>,
+        width: i32,
+        height: i32,
+    ) -> bool {
         let mut slot = self.resources.borrow_mut();
         if slot
             .as_ref()
@@ -152,11 +173,12 @@ impl DeferredPass {
             return false;
         }
         if let Some(old) = slot.take() {
-            destroy_resources(&old);
+            destroy_resources(spring, &old);
         }
-        *slot = create_resources(width, height);
+        *slot = create_resources(spring, width, height);
         if slot.is_none() {
             spring::log_warning!(
+                spring,
                 "ttld-ui",
                 "deferred lighting is off: its shaders or targets could not be made for {width}x{height}"
             );
@@ -166,74 +188,96 @@ impl DeferredPass {
     }
 }
 
-fn create_resources(width: i32, height: i32) -> Option<Resources> {
-    let clip_control = gfx::has_extension("GL_ARB_clip_control").unwrap_or(false);
+fn create_resources(
+    spring: &spring::Spring<'_, spring::Ui>,
+    width: i32,
+    height: i32,
+) -> Option<Resources> {
+    let clip_control = spring
+        .gfx()
+        .has_extension("GL_ARB_clip_control")
+        .unwrap_or(false);
     let definitions = if clip_control {
         "#version 120\n#define BEAM_LIGHT 0\n#define CLIP_CONTROL 1\n"
     } else {
         "#version 120\n#define BEAM_LIGHT 0\n#define CLIP_CONTROL 0\n"
     };
-    let light_shader = gfx::create_shader(gfx::ShaderCreateParams {
-        definitions,
-        vertex: VERTEX,
-        fragment: FRAGMENT,
-        ..Default::default()
-    })
-    .ok()?
-    .shader_id;
+    let light_shader = spring
+        .gfx()
+        .create_shader(
+            definitions,
+            VERTEX,
+            "",
+            "",
+            "",
+            FRAGMENT,
+            "",
+            Default::default(),
+        )
+        .and_then(|shader| {
+            spring.gfx().use_shader(shader.shader_id)?;
+            spring.gfx().use_shader(0)?;
+            Ok(shader)
+        })
+        .ok()?
+        .shader_id;
     let light = LightResources {
         shader: light_shader,
-        light_position: gl_uniforms::location(light_shader, "lightpos")?,
-        light_color: gl_uniforms::location(light_shader, "lightcolor")?,
-        eye_position: gl_uniforms::location(light_shader, "eyePos")?,
-        view_projection_inverse: gl_uniforms::location(light_shader, "viewProjectionInv")?,
+        light_position: gl_uniforms::location(spring, light_shader, "lightpos")?,
+        light_color: gl_uniforms::location(spring, light_shader, "lightcolor")?,
+        eye_position: gl_uniforms::location(spring, light_shader, "eyePos")?,
+        view_projection_inverse: gl_uniforms::location(spring, light_shader, "viewProjectionInv")?,
     };
 
-    let _ = gfx::use_shader(light_shader);
-    let _ = gl_uniforms::set_int(light_shader, "modelnormals", 0);
-    let _ = gl_uniforms::set_int(light_shader, "modeldepths", 1);
-    let _ = gl_uniforms::set_int(light_shader, "mapnormals", 2);
-    let _ = gl_uniforms::set_int(light_shader, "mapdepths", 3);
-    let _ = gl_uniforms::set_int(light_shader, "modelExtra", 4);
-    let _ = gfx::use_shader(0);
+    let _ = spring.gfx().use_shader(light_shader);
+    let _ = gl_uniforms::set_int(spring, light_shader, "modelnormals", 0);
+    let _ = gl_uniforms::set_int(spring, light_shader, "modeldepths", 1);
+    let _ = gl_uniforms::set_int(spring, light_shader, "mapnormals", 2);
+    let _ = gl_uniforms::set_int(spring, light_shader, "mapdepths", 3);
+    let _ = gl_uniforms::set_int(spring, light_shader, "modelExtra", 4);
+    let _ = spring.gfx().use_shader(0);
 
-    let screen_hdr = create_texture(width, height, gl::RGBA32F_ARB, true)?;
-    let bright_texture = create_texture(width / 2, height / 2, gl::RGBA8, true)?;
-    let blur_texture = create_texture(width / 2, height / 2, gl::RGBA8, true)?;
+    let screen_hdr = create_texture(spring, width, height, gl::RGBA32F_ARB, true)?;
+    let bright_texture = create_texture(spring, width / 2, height / 2, gl::RGBA8, true)?;
+    let blur_texture = create_texture(spring, width / 2, height / 2, gl::RGBA8, true)?;
 
-    let bright_shader = effect_shader(BLOOM_BRIGHT_FRAGMENT)?;
+    let bright_shader = effect_shader(spring, BLOOM_BRIGHT_FRAGMENT)?;
     let bright = BrightResources {
         shader: bright_shader,
-        illumination_threshold: gl_uniforms::location(bright_shader, "illuminationThreshold")?,
+        illumination_threshold: gl_uniforms::location(
+            spring,
+            bright_shader,
+            "illuminationThreshold",
+        )?,
     };
-    let blur_h_shader = effect_shader(BLOOM_BLUR_H_FRAGMENT)?;
+    let blur_h_shader = effect_shader(spring, BLOOM_BLUR_H_FRAGMENT)?;
     let blur_h = BlurResources {
         shader: blur_h_shader,
-        inverse_resolution: gl_uniforms::location(blur_h_shader, "inverseRX")?,
-        kernel_radius: gl_uniforms::location(blur_h_shader, "fragKernelRadius")?,
+        inverse_resolution: gl_uniforms::location(spring, blur_h_shader, "inverseRX")?,
+        kernel_radius: gl_uniforms::location(spring, blur_h_shader, "fragKernelRadius")?,
     };
-    let blur_v_shader = effect_shader(BLOOM_BLUR_V_FRAGMENT)?;
+    let blur_v_shader = effect_shader(spring, BLOOM_BLUR_V_FRAGMENT)?;
     let blur_v = BlurResources {
         shader: blur_v_shader,
-        inverse_resolution: gl_uniforms::location(blur_v_shader, "inverseRY")?,
-        kernel_radius: gl_uniforms::location(blur_v_shader, "fragKernelRadius")?,
+        inverse_resolution: gl_uniforms::location(spring, blur_v_shader, "inverseRY")?,
+        kernel_radius: gl_uniforms::location(spring, blur_v_shader, "fragKernelRadius")?,
     };
-    let combine_shader = effect_shader(BLOOM_COMBINE_FRAGMENT)?;
+    let combine_shader = effect_shader(spring, BLOOM_COMBINE_FRAGMENT)?;
     let combine = CombineResources {
         shader: combine_shader,
-        max_brightness: gl_uniforms::location(combine_shader, "fragMaxBrightness")?,
+        max_brightness: gl_uniforms::location(spring, combine_shader, "fragMaxBrightness")?,
     };
 
-    let _ = gfx::use_shader(bright_shader);
-    let _ = gl_uniforms::set_int(bright_shader, "texture0", 0);
-    let _ = gfx::use_shader(blur_h_shader);
-    let _ = gl_uniforms::set_int(blur_h_shader, "texture0", 0);
-    let _ = gfx::use_shader(blur_v_shader);
-    let _ = gl_uniforms::set_int(blur_v_shader, "texture0", 0);
-    let _ = gfx::use_shader(combine_shader);
-    let _ = gl_uniforms::set_int(combine_shader, "texture0", 0);
-    let _ = gl_uniforms::set_int(combine_shader, "texture1", 1);
-    let _ = gfx::use_shader(0);
+    let _ = spring.gfx().use_shader(bright_shader);
+    let _ = gl_uniforms::set_int(spring, bright_shader, "texture0", 0);
+    let _ = spring.gfx().use_shader(blur_h_shader);
+    let _ = gl_uniforms::set_int(spring, blur_h_shader, "texture0", 0);
+    let _ = spring.gfx().use_shader(blur_v_shader);
+    let _ = gl_uniforms::set_int(spring, blur_v_shader, "texture0", 0);
+    let _ = spring.gfx().use_shader(combine_shader);
+    let _ = gl_uniforms::set_int(spring, combine_shader, "texture0", 0);
+    let _ = gl_uniforms::set_int(spring, combine_shader, "texture1", 1);
+    let _ = spring.gfx().use_shader(0);
 
     let resources = Resources {
         light,
@@ -251,42 +295,57 @@ fn create_resources(width: i32, height: i32) -> Option<Resources> {
 }
 
 fn create_texture(
+    spring: &spring::Spring<'_, spring::Ui>,
     width: i32,
     height: i32,
     format: u32,
     fbo: bool,
 ) -> Option<alloc::string::String> {
     (width > 0 && height > 0).then(|| {
-        spring::create_texture(
-            width,
-            height,
-            0,
-            spring::TextureCreateParams {
-                format,
-                min_filter: gl::LINEAR,
-                mag_filter: gl::LINEAR,
-                wrap_s: gl::CLAMP,
-                wrap_t: gl::CLAMP,
-                fbo,
-                ..Default::default()
-            },
-        )
-        .ok()
+        spring
+            .gfx()
+            .create_texture(
+                width,
+                height,
+                0,
+                spring::gfx::GfxTextureParams {
+                    format,
+                    min_filter: gl::LINEAR,
+                    mag_filter: gl::LINEAR,
+                    wrap_s: gl::CLAMP,
+                    wrap_t: gl::CLAMP,
+                    fbo,
+                    ..Default::default()
+                },
+            )
+            .ok()
     })?
 }
 
-fn effect_shader(fragment: &str) -> Option<u32> {
-    let shader = gfx::create_shader(gfx::ShaderCreateParams {
-        definitions: "#version 120\n",
-        fragment,
-        ..Default::default()
-    })
-    .ok()?
-    .shader_id;
+fn effect_shader(spring: &spring::Spring<'_, spring::Ui>, fragment: &str) -> Option<u32> {
+    let shader = spring
+        .gfx()
+        .create_shader(
+            "#version 120\n",
+            "",
+            "",
+            "",
+            "",
+            fragment,
+            "",
+            Default::default(),
+        )
+        .and_then(|shader| {
+            spring.gfx().use_shader(shader.shader_id)?;
+            spring.gfx().use_shader(0)?;
+            Ok(shader)
+        })
+        .ok()?
+        .shader_id;
     (shader != 0).then_some(shader)
 }
 
-fn destroy_resources(resources: &Resources) {
+fn destroy_resources(spring: &spring::Spring<'_, spring::Ui>, resources: &Resources) {
     for shader in [
         resources.light.shader,
         resources.bright.shader,
@@ -294,14 +353,14 @@ fn destroy_resources(resources: &Resources) {
         resources.blur_v.shader,
         resources.combine.shader,
     ] {
-        let _ = gfx::delete_shader(shader);
+        let _ = spring.gfx().delete_shader(shader);
     }
-    let _ = gfx::delete_texture_fbo(&resources.screen_hdr);
-    let _ = gfx::delete_texture_fbo(&resources.bright_texture);
-    let _ = gfx::delete_texture_fbo(&resources.blur_texture);
+    let _ = spring.gfx().delete_texture_fbo(&resources.screen_hdr);
+    let _ = spring.gfx().delete_texture_fbo(&resources.bright_texture);
+    let _ = spring.gfx().delete_texture_fbo(&resources.blur_texture);
 }
 
-fn bind_gbuffers() -> bool {
+fn bind_gbuffers(spring: &spring::Spring<'_, spring::Ui>) -> bool {
     let names = [
         "$model_gbuffer_normtex",
         "$model_gbuffer_zvaltex",
@@ -309,13 +368,15 @@ fn bind_gbuffers() -> bool {
         "$map_gbuffer_zvaltex",
         "$model_gbuffer_spectex",
     ];
-    names
-        .iter()
-        .enumerate()
-        .all(|(unit, name)| gfx::bind_texture(name, unit as i32, true).unwrap_or(false))
+    names.iter().enumerate().all(|(unit, name)| {
+        spring
+            .gfx()
+            .bind_texture(name, unit as i32, true)
+            .unwrap_or(false)
+    })
 }
 
-fn unbind_gbuffers() {
+fn unbind_gbuffers(spring: &spring::Spring<'_, spring::Ui>) {
     for (unit, name) in [
         "$model_gbuffer_normtex",
         "$model_gbuffer_zvaltex",
@@ -326,56 +387,68 @@ fn unbind_gbuffers() {
     .iter()
     .enumerate()
     {
-        let _ = gfx::bind_texture(name, unit as i32, false);
+        let _ = spring.gfx().bind_texture(name, unit as i32, false);
     }
 }
 
 fn draw_light_pass(
+    spring: &spring::Spring<'_, spring::Ui>,
     resources: &LightResources,
     lights: &Lights,
-    camera: &spring::types::Float3,
+    camera: &spring::Float3,
     width: i32,
     height: i32,
     screen_ratio: f32,
     view_projection_inverse: &[f32; 16],
 ) {
-    if !bind_gbuffers() {
+    if !bind_gbuffers(spring) {
         return;
     }
 
-    let _ = gfx::blending(true);
-    let _ = gfx::blend_func(gl::DST_COLOR, gl::ONE);
-    let _ = gfx::use_shader(resources.shader);
-    let _ = gfx::uniform(resources.eye_position, &[camera.x, camera.y, camera.z], 3);
-    let _ = gfx::uniform_matrix(
+    let _ = spring.gfx().blending(true);
+    let _ = spring.gfx().blend_func(gl::DST_COLOR, gl::ONE);
+    let _ = spring.gfx().use_shader(resources.shader);
+    let _ = spring
+        .gfx()
+        .uniform(resources.eye_position, &[camera.x, camera.y, camera.z], 3);
+    let _ = spring.gfx().uniform_matrix(
         resources.view_projection_inverse,
         view_projection_inverse,
         false,
     );
 
     for light in lights.iter() {
-        draw_point_light(resources, light, camera, width, height, screen_ratio);
+        draw_point_light(
+            spring,
+            resources,
+            light,
+            camera,
+            width,
+            height,
+            screen_ratio,
+        );
     }
 
-    let _ = gfx::use_shader(0);
-    let _ = gfx::blending(false);
-    unbind_gbuffers();
+    let _ = spring.gfx().use_shader(0);
+    let _ = spring.gfx().blending(false);
+    unbind_gbuffers(spring);
 }
 
 fn draw_point_light(
+    spring: &spring::Spring<'_, spring::Ui>,
     resources: &LightResources,
     light: &PointLight,
-    camera: &spring::types::Float3,
+    camera: &spring::Float3,
     width: i32,
     height: i32,
     screen_ratio: f32,
 ) {
-    let position = spring::types::Float3 {
+    let position = spring::Float3 {
         x: light.position[0],
         y: light.position[1],
         z: light.position[2],
     };
-    let Ok(screen_result) = spring::camera::world_to_screen_coords(position) else {
+    let Ok(screen_result) = spring.camera().world_to_screen_coords(position) else {
         return;
     };
     let screen = screen_result.screen_pos;
@@ -387,7 +460,7 @@ fn draw_point_light(
     let distance = (dx * dx + dy * dy + dz * dz).sqrt().max(0.001);
     let ratio = light.radius / distance * 1.5;
 
-    let _ = gfx::uniform(
+    let _ = spring.gfx().uniform(
         resources.light_position,
         &[
             light.position[0],
@@ -397,12 +470,12 @@ fn draw_point_light(
         ],
         4,
     );
-    let _ = gfx::uniform(
+    let _ = spring.gfx().uniform(
         resources.light_color,
         &[light.color[0], light.color[1], light.color[2], 1.0],
         4,
     );
-    let _ = gfx::tex_rect(
+    let _ = spring.gfx().tex_rect(
         ((sx - 0.5) * 2.0 - ratio * screen_ratio).max(-1.0),
         ((sy - 0.5) * 2.0 - ratio).max(-1.0),
         ((sx - 0.5) * 2.0 + ratio * screen_ratio).min(1.0),
@@ -414,47 +487,77 @@ fn draw_point_light(
     );
 }
 
-fn draw_bloom(resources: &Resources) {
-    let _ = gfx::render_to_texture(&resources.bright_texture, || {
-        let _ = gfx::bind_texture(&resources.screen_hdr, 0, true);
-        let _ = gfx::use_shader(resources.bright.shader);
-        let _ = gfx::uniform(
-            resources.bright.illumination_threshold,
-            &[BLOOM_ILLUMINATION_THRESHOLD],
-            1,
-        );
-        let _ = gfx::tex_rect(-1.0, 1.0, 1.0, -1.0, 0.0, 1.0, 1.0, 0.0);
-        let _ = gfx::use_shader(0);
-        let _ = gfx::bind_texture(&resources.screen_hdr, 0, false);
-    });
+fn draw_bloom(spring: &spring::Spring<'_, spring::Ui>, resources: &Resources) {
+    let _ = spring
+        .gfx()
+        .render_to_texture(&resources.bright_texture, |spring| {
+            let _ = spring.gfx().bind_texture(&resources.screen_hdr, 0, true);
+            let _ = spring.gfx().use_shader(resources.bright.shader);
+            let _ = spring.gfx().uniform(
+                resources.bright.illumination_threshold,
+                &[BLOOM_ILLUMINATION_THRESHOLD],
+                1,
+            );
+            let _ = spring
+                .gfx()
+                .tex_rect(-1.0, 1.0, 1.0, -1.0, 0.0, 1.0, 1.0, 0.0);
+            let _ = spring.gfx().use_shader(0);
+            let _ = spring.gfx().bind_texture(&resources.screen_hdr, 0, false);
+        });
 
     let half_width = (resources.width / 2).max(1) as f32;
     let half_height = (resources.height / 2).max(1) as f32;
-    let _ = gfx::render_to_texture(&resources.blur_texture, || {
-        let _ = gfx::bind_texture(&resources.bright_texture, 0, true);
-        let _ = gfx::use_shader(resources.blur_h.shader);
-        let _ = gfx::uniform(resources.blur_h.inverse_resolution, &[1.0 / half_width], 1);
-        let _ = gfx::uniform(resources.blur_h.kernel_radius, &[BLOOM_KERNEL_RADIUS], 1);
-        let _ = gfx::tex_rect(-1.0, 1.0, 1.0, -1.0, 0.0, 1.0, 1.0, 0.0);
-        let _ = gfx::use_shader(0);
-        let _ = gfx::bind_texture(&resources.bright_texture, 0, false);
-    });
+    let _ = spring
+        .gfx()
+        .render_to_texture(&resources.blur_texture, |spring| {
+            let _ = spring
+                .gfx()
+                .bind_texture(&resources.bright_texture, 0, true);
+            let _ = spring.gfx().use_shader(resources.blur_h.shader);
+            let _ =
+                spring
+                    .gfx()
+                    .uniform(resources.blur_h.inverse_resolution, &[1.0 / half_width], 1);
+            let _ = spring
+                .gfx()
+                .uniform(resources.blur_h.kernel_radius, &[BLOOM_KERNEL_RADIUS], 1);
+            let _ = spring
+                .gfx()
+                .tex_rect(-1.0, 1.0, 1.0, -1.0, 0.0, 1.0, 1.0, 0.0);
+            let _ = spring.gfx().use_shader(0);
+            let _ = spring
+                .gfx()
+                .bind_texture(&resources.bright_texture, 0, false);
+        });
 
-    let _ = gfx::render_to_texture(&resources.bright_texture, || {
-        let _ = gfx::bind_texture(&resources.blur_texture, 0, true);
-        let _ = gfx::use_shader(resources.blur_v.shader);
-        let _ = gfx::uniform(resources.blur_v.inverse_resolution, &[1.0 / half_height], 1);
-        let _ = gfx::uniform(resources.blur_v.kernel_radius, &[BLOOM_KERNEL_RADIUS], 1);
-        let _ = gfx::tex_rect(-1.0, 1.0, 1.0, -1.0, 0.0, 1.0, 1.0, 0.0);
-        let _ = gfx::use_shader(0);
-        let _ = gfx::bind_texture(&resources.blur_texture, 0, false);
-    });
+    let _ = spring
+        .gfx()
+        .render_to_texture(&resources.bright_texture, |spring| {
+            let _ = spring.gfx().bind_texture(&resources.blur_texture, 0, true);
+            let _ = spring.gfx().use_shader(resources.blur_v.shader);
+            let _ =
+                spring
+                    .gfx()
+                    .uniform(resources.blur_v.inverse_resolution, &[1.0 / half_height], 1);
+            let _ = spring
+                .gfx()
+                .uniform(resources.blur_v.kernel_radius, &[BLOOM_KERNEL_RADIUS], 1);
+            let _ = spring
+                .gfx()
+                .tex_rect(-1.0, 1.0, 1.0, -1.0, 0.0, 1.0, 1.0, 0.0);
+            let _ = spring.gfx().use_shader(0);
+            let _ = spring.gfx().bind_texture(&resources.blur_texture, 0, false);
+        });
 
-    let _ = gfx::use_shader(resources.combine.shader);
-    let _ = gfx::uniform(resources.combine.max_brightness, &[BLOOM_MAX_BRIGHTNESS], 1);
-    let _ = gfx::bind_texture(&resources.screen_hdr, 0, true);
-    let _ = gfx::bind_texture(&resources.bright_texture, 1, true);
-    let _ = gfx::tex_rect(
+    let _ = spring.gfx().use_shader(resources.combine.shader);
+    let _ = spring
+        .gfx()
+        .uniform(resources.combine.max_brightness, &[BLOOM_MAX_BRIGHTNESS], 1);
+    let _ = spring.gfx().bind_texture(&resources.screen_hdr, 0, true);
+    let _ = spring
+        .gfx()
+        .bind_texture(&resources.bright_texture, 1, true);
+    let _ = spring.gfx().tex_rect(
         0.0,
         0.0,
         resources.width as f32,
@@ -464,7 +567,9 @@ fn draw_bloom(resources: &Resources) {
         1.0,
         1.0,
     );
-    let _ = gfx::bind_texture(&resources.screen_hdr, 0, false);
-    let _ = gfx::bind_texture(&resources.bright_texture, 1, false);
-    let _ = gfx::use_shader(0);
+    let _ = spring.gfx().bind_texture(&resources.screen_hdr, 0, false);
+    let _ = spring
+        .gfx()
+        .bind_texture(&resources.bright_texture, 1, false);
+    let _ = spring.gfx().use_shader(0);
 }

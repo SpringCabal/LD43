@@ -17,7 +17,12 @@ impl Widget<Global> for ApiSyncWidget {
         "ApiSync"
     }
 
-    fn recv_from_synced(&self, ctx: &spring_addons::AddonContext<'_, Global>, message: &[u8]) {
+    fn recv_from_synced(
+        &self,
+        ctx: &spring_addons::AddonContext<'_, Global, spring::Ui>,
+        message: &[u8],
+    ) {
+        let spring = ctx.spring();
         let Ok(text) = core::str::from_utf8(message) else {
             return;
         };
@@ -32,7 +37,7 @@ impl Widget<Global> for ApiSyncWidget {
             previous != 0 && status.round != previous
         };
         if new_round {
-            crate::widgets::gui_hud::hud::start_round(global);
+            crate::widgets::gui_hud::hud::start_round(spring, global);
         }
     }
 }

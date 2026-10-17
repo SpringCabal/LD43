@@ -20,22 +20,24 @@ impl Widget<Global> for GuiHudWidget {
         "GuiHud"
     }
 
-    fn shutdown(&self, ctx: &spring_addons::AddonContext<'_, Global>) {
-        self.document.shutdown(ctx.global());
+    fn shutdown(&self, ctx: &spring_addons::AddonContext<'_, Global, spring::Ui>) {
+        let spring = ctx.spring();
+        self.document.shutdown(spring, ctx.global());
     }
 
-    fn update(&self, ctx: &spring_addons::AddonContext<'_, Global>, _dt: f32) {
+    fn update(&self, ctx: &spring_addons::AddonContext<'_, Global, spring::Ui>, _dt: f32) {
+        let spring = ctx.spring();
         let global = ctx.global();
-        self.document.initialize(global);
-        if let Ok(geometry) = spring::display::get_view_geometry(0) {
+        self.document.initialize(spring, global);
+        if let Ok(geometry) = spring.display().get_view_geometry() {
             global
                 .view
                 .set((geometry.view_size_x, geometry.view_size_y));
             self.document
-                .render(geometry.view_size_x, geometry.view_size_y);
+                .render(spring, geometry.view_size_x, geometry.view_size_y);
         }
-        self.document.show_status(global);
-        hud::evaluate_endgame(global);
-        hud::track_target(global);
+        self.document.show_status(spring, global);
+        hud::evaluate_endgame(spring, global);
+        hud::track_target(spring, global);
     }
 }

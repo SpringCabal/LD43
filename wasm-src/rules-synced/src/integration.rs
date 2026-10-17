@@ -17,7 +17,6 @@ use alloc::rc::Rc;
 use alloc::vec::Vec;
 use core::cell::RefCell;
 
-use spring::commands;
 use springcabal::check::Suite;
 
 use crate::defs::defs;
@@ -71,16 +70,21 @@ impl Default for Checks {
     }
 }
 
-fn check(tracker: &mut Tracker, condition: bool, message: &str) {
-    tracker.suite.0.check(condition, message);
+fn check(
+    spring: &spring::Spring<'_, spring::RulesSynced>,
+    tracker: &mut Tracker,
+    condition: bool,
+    message: &str,
+) {
+    tracker.suite.0.check(spring, condition, message);
 }
 
-fn ork_distance(world: &World) -> f32 {
+fn ork_distance(spring: &spring::Spring<'_, spring::RulesSynced>, world: &World) -> f32 {
     let orks = world.global.orks.access().units().to_vec();
     let mut total = 0.0;
     let mut counted = 0.0;
     for unit_id in &orks {
-        let Some(position) = units::position(*unit_id) else {
+        let Some(position) = units::position(spring, *unit_id) else {
             continue;
         };
         let dx = position.x - TOWN_CENTRE_X;
@@ -91,14 +95,14 @@ fn ork_distance(world: &World) -> f32 {
     if counted == 0.0 { 0.0 } else { total / counted }
 }
 
-fn ork_def_ids() -> Vec<i32> {
+fn ork_def_ids(spring: &spring::Spring<'_, spring::RulesSynced>) -> Vec<i32> {
     [OrkKind::Small, OrkKind::Big, OrkKind::Boss]
         .into_iter()
-        .filter_map(|kind| defs().id(kind.unit()))
+        .filter_map(|kind| defs(spring).id(kind.unit()))
         .collect()
 }
 
-fn villager_count() -> i32 {
+fn villager_count(spring: &spring::Spring<'_, spring::RulesSynced>) -> i32 {
     [
         VillagerKind::Swordsman,
         VillagerKind::Crossbowman,
@@ -106,16 +110,26 @@ fn villager_count() -> i32 {
         VillagerKind::Peasant,
     ]
     .into_iter()
-    .filter_map(|kind| defs().id(kind.unit()))
-    .filter_map(|def_id| spring::get_team_unit_def_count(PLAYER_TEAM, def_id).ok())
+    .filter_map(|kind| defs(spring).id(kind.unit()))
+    .filter_map(|def_id| {
+        spring
+            .units_query()
+            .get_team_unit_def_count(PLAYER_TEAM, def_id)
+            .ok()
+    })
     .map(|count| count as i32)
     .sum()
 }
 
-fn enemy_unit_count() -> i32 {
-    ork_def_ids()
+fn enemy_unit_count(spring: &spring::Spring<'_, spring::RulesSynced>) -> i32 {
+    ork_def_ids(spring)
         .into_iter()
-        .filter_map(|def_id| spring::get_team_unit_def_count(ENEMY_TEAM, def_id).ok())
+        .filter_map(|def_id| {
+            spring
+                .units_query()
+                .get_team_unit_def_count(ENEMY_TEAM, def_id)
+                .ok()
+        })
         .map(|count| count as i32)
         .sum()
 }
@@ -126,7 +140,12 @@ struct World<'a> {
     frame: i32,
 }
 
-pub fn update(tracker: &Rc<RefCell<Tracker>>, global: &Global, frame: i32) {
+pub fn update(
+    spring: &spring::Spring<'_, spring::RulesSynced>,
+    tracker: &Rc<RefCell<Tracker>>,
+    global: &Global,
+    frame: i32,
+) {
     let world = World {
         tracker,
         global,
@@ -136,52 +155,58 @@ pub fn update(tracker: &Rc<RefCell<Tracker>>, global: &Global, frame: i32) {
     if done {
         return;
     }
-    animation_checks(&world);
+    animation_checks(spring, &world);
     match frame {
         10 => {
-            with_checks(&world, setup_checks);
-            with_checks(&world, record_round_start);
+            with_checks(spring, &world, setup_checks);
+            with_checks(spring, &world, record_round_start);
         }
-        40 => with_checks(&world, ork_spawn_checks),
-        60 => player_attack_checks(&world),
+        40 => with_checks(spring, &world, ork_spawn_checks),
+        60 => player_attack_checks(spring, &world),
         62 => command_player(
+            spring,
             &world,
             crate::gadgets::player::behavior::PlayerCommand::Stop,
         ),
-        ADRENALINE_CAST => cast_adrenaline(&world),
-        POULTICE_CAST => cast_poultice(&world),
-        HEARTBURN_CAST => cast_heartburn(&world),
-        HEARTBURN_ALLY => heartburn_ally(&world),
-        SPELLS_LANDED_CHECK => with_checks(&world, spells_landed_checks),
-        STUN_SETUP => stun_fixture(&world),
-        STUN_START => with_checks(&world, stun_the_ork),
-        STUN_PAUSED_CHECK => with_checks(&world, stunned_checks),
-        STUN_OVER_CHECK => with_checks(&world, stun_over_checks),
-        TRANSFUSION_CAST => cast_transfusion(&world),
+        ADRENALINE_CAST => cast_adrenaline(spring, &world),
+        POULTICE_CAST => cast_poultice(spring, &world),
+        HEARTBURN_CAST => cast_heartburn(spring, &world),
+        HEARTBURN_ALLY => heartburn_ally(spring, &world),
+        SPELLS_LANDED_CHECK => with_checks(spring, &world, spells_landed_checks),
+        STUN_SETUP => stun_fixture(spring, &world),
+        STUN_START => with_checks(spring, &world, stun_the_ork),
+        STUN_PAUSED_CHECK => with_checks(spring, &world, stunned_checks),
+        STUN_OVER_CHECK => with_checks(spring, &world, stun_over_checks),
+        TRANSFUSION_CAST => cast_transfusion(spring, &world),
         TRANSFUSION_CHECK => {
-            with_checks(&world, transfusion_checks);
-            cast_migraine(&world);
+            with_checks(spring, &world, transfusion_checks);
+            cast_migraine(spring, &world);
         }
-        MIGRAINE_CHECK => migraine_checks(&world),
-        300 => with_checks(&world, ork_advance_checks),
-        330 => final_wave_checks(&world),
-        331 => kill_boss_checks(&world),
-        400 => victory_checks(&world),
-        VICTORY_ATTACK => attack_after_victory(&world),
-        VICTORY_ATTACK_CHECK => with_checks(&world, attack_after_victory_checks),
+        MIGRAINE_CHECK => migraine_checks(spring, &world),
+        300 => with_checks(spring, &world, ork_advance_checks),
+        330 => final_wave_checks(spring, &world),
+        331 => kill_boss_checks(spring, &world),
+        400 => victory_checks(spring, &world),
+        VICTORY_ATTACK => attack_after_victory(spring, &world),
+        VICTORY_ATTACK_CHECK => with_checks(spring, &world, attack_after_victory_checks),
         429 => {
-            with_checks(&world, retreat_persists_checks);
-            with_checks(&world, record_round_end);
+            with_checks(spring, &world, retreat_persists_checks);
+            with_checks(spring, &world, record_round_end);
         }
         RESTART_DEADLINE => world.track(|tracker| {
-            check(tracker, false, "the restart started a new round in time");
-            finish(tracker);
+            check(
+                spring,
+                tracker,
+                false,
+                "the restart started a new round in time",
+            );
+            finish(spring, tracker);
         }),
         _ => {}
     }
     if world.track(|tracker| restart_check_due(tracker, &world)) {
-        with_checks(&world, restart_checks);
-        world.track(finish);
+        with_checks(spring, &world, restart_checks);
+        world.track(|tracker| finish(spring, tracker));
     }
 }
 
@@ -198,18 +223,27 @@ impl World<'_> {
         function(&mut self.tracker.borrow_mut())
     }
 
-    fn then_track(&self, function: impl FnOnce(&mut Tracker, &Global) + 'static) {
+    fn then_track(
+        &self,
+        function: impl FnOnce(&spring::Spring<'_, spring::RulesSynced>, &mut Tracker, &Global) + 'static,
+    ) {
         let tracker = Rc::clone(self.tracker);
-        commands::run(move || {
-            crate::with_global(|global| function(&mut tracker.borrow_mut(), global));
+        crate::with_addon_context(|ctx| {
+            ctx.commands().run(move |spring| {
+                crate::with_global(|global| function(spring, &mut tracker.borrow_mut(), global));
+            })
         });
     }
 }
 
-fn with_checks(world: &World, function: impl FnOnce(&mut Tracker, &World)) {
-    world.track(|tracker| function(tracker, world));
+fn with_checks(
+    spring: &spring::Spring<'_, spring::RulesSynced>,
+    world: &World,
+    function: impl FnOnce(&spring::Spring<'_, spring::RulesSynced>, &mut Tracker, &World),
+) {
+    world.track(|tracker| function(spring, tracker, world));
 }
 
-fn finish(tracker: &mut Tracker) {
-    tracker.suite.0.finish();
+fn finish(spring: &spring::Spring<'_, spring::RulesSynced>, tracker: &mut Tracker) {
+    tracker.suite.0.finish(spring);
 }

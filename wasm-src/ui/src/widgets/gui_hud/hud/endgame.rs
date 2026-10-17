@@ -4,7 +4,7 @@ use crate::state::{GameEnd, Global};
 
 use super::model;
 
-pub fn close_intro(global: &Global) {
+pub fn close_intro(spring: &spring::Spring<'_, spring::Ui>, global: &Global) {
     let bindings = {
         let mut hud = global.hud.access_mut();
         if !hud.intro_open {
@@ -14,12 +14,12 @@ pub fn close_intro(global: &Global) {
         hud.bindings
     };
     if let Some(bindings) = bindings {
-        model::set_bool(bindings.intro_visible, false);
+        model::set_bool(spring, bindings.intro_visible, false);
     }
-    let _ = spring::send_commands("pause 0", "");
+    let _ = spring.messages().send_commands("pause 0", "");
 }
 
-pub fn start_round(global: &Global) {
+pub fn start_round(spring: &spring::Spring<'_, spring::Ui>, global: &Global) {
     let bindings = {
         let mut hud = global.hud.access_mut();
         hud.endgame_open = false;
@@ -28,13 +28,13 @@ pub fn start_round(global: &Global) {
         hud.bindings
     };
     if let Some(bindings) = bindings {
-        model::set_bool(bindings.endgame_visible, false);
-        model::set_bool(bindings.target_visible, false);
-        model::set_bool(bindings.target_enemy, false);
+        model::set_bool(spring, bindings.endgame_visible, false);
+        model::set_bool(spring, bindings.target_visible, false);
+        model::set_bool(spring, bindings.target_enemy, false);
     }
 }
 
-pub fn evaluate(global: &Global) {
+pub fn evaluate(spring: &spring::Spring<'_, spring::Ui>, global: &Global) {
     let outcome = {
         let status = global.status.access();
         if status.game_end == GameEnd::Victory {
@@ -46,11 +46,11 @@ pub fn evaluate(global: &Global) {
     if let Some(victory) = outcome
         && !global.hud.access().modal()
     {
-        open(global, victory);
+        open(spring, global, victory);
     }
 }
 
-fn open(global: &Global, victory: bool) {
+fn open(spring: &spring::Spring<'_, spring::Ui>, global: &Global, victory: bool) {
     let (villagers, drained, orks) = {
         let status = global.status.access();
         (
@@ -78,11 +78,11 @@ fn open(global: &Global, victory: bool) {
         hud.bindings
     };
     if let Some(bindings) = bindings {
-        model::set_bool(bindings.endgame_visible, true);
-        model::set_bool(bindings.endgame_victory, victory);
-        model::set_string(bindings.endgame_title, title);
-        model::set_string(bindings.endgame_line_one, &line_one);
-        model::set_string(bindings.endgame_line_two, &line_two);
+        model::set_bool(spring, bindings.endgame_visible, true);
+        model::set_bool(spring, bindings.endgame_victory, victory);
+        model::set_string(spring, bindings.endgame_title, title);
+        model::set_string(spring, bindings.endgame_line_one, &line_one);
+        model::set_string(spring, bindings.endgame_line_two, &line_two);
     }
-    let _ = spring::send_commands("endgraph 0", "");
+    let _ = spring.messages().send_commands("endgraph 0", "");
 }

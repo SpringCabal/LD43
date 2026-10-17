@@ -18,20 +18,20 @@ impl HouseLights {
         }
     }
 
-    pub fn init(&mut self) {
-        self.house_def = spring::get_unit_def_id_by_name(HOUSE).ok();
-        for unit_id in spring::get_all_units().unwrap_or_default() {
-            if let Ok(def_id) = spring::units_info::get_unit_def_id(unit_id) {
-                self.created(unit_id, def_id);
+    pub fn init(&mut self, spring: &spring::Spring<'_, spring::Ui>) {
+        self.house_def = spring.unit_defs().get_unit_def_id_by_name(HOUSE).ok();
+        for unit_id in spring.units_query().get_all_units().unwrap_or_default() {
+            if let Ok(def_id) = spring.units_info().get_unit_def_id(unit_id) {
+                self.created(spring, unit_id, def_id);
             }
         }
     }
 
-    pub fn created(&mut self, unit_id: i32, def_id: i32) {
+    pub fn created(&mut self, spring: &spring::Spring<'_, spring::Ui>, unit_id: i32, def_id: i32) {
         if self.house_def != Some(def_id) {
             return;
         }
-        let Ok(position) = spring::units_info::get_unit_position(
+        let Ok(position) = spring.units_info().get_unit_position(
             unit_id,
             spring::units_info::GetUnitPositionOptions {
                 mid_pos: false,
@@ -41,12 +41,15 @@ impl HouseLights {
             return;
         };
         if self.repeatable && self.lights.is_empty() {
-            spring::random::unsynced::seed(REPEATABLE_SEED);
+            spring
+                .unsynced_random()
+                .seed(REPEATABLE_SEED)
+                .expect("unsynced random");
         }
         let mut lights = Vec::new();
         for dx in [-HALF_SIZE, HALF_SIZE] {
             for dz in [-HALF_SIZE, HALF_SIZE] {
-                if spring::random::unsynced::float() <= LIGHT_CHANCE {
+                if spring.unsynced_random().float().expect("unsynced random") <= LIGHT_CHANCE {
                     continue;
                 }
                 lights.push(PointLight {

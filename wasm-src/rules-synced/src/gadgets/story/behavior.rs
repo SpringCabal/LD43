@@ -1,5 +1,3 @@
-use spring::commands;
-
 use crate::random;
 use crate::state::GameEnd;
 use crate::units::{self, ENEMY_TEAM, OrkKind};
@@ -150,29 +148,31 @@ const WAVES: [Wave; 13] = [
     },
 ];
 
-pub fn spawn_wave(wave: &Wave) {
-    spring::log_info!("ttld-wasm", "wave: {}", wave.name);
+pub fn spawn_wave(spring: &spring::Spring<'_, spring::RulesSynced>, wave: &Wave) {
+    spring::log_info!(spring, "ttld-wasm", "wave: {}", wave.name);
     for (kind, count) in wave.units {
         for _ in 0..*count {
-            spawn(*kind);
+            spawn(spring, *kind);
         }
     }
 }
 
-pub fn spawn_boss() {
-    spawn(OrkKind::Boss);
+pub fn spawn_boss(spring: &spring::Spring<'_, spring::RulesSynced>) {
+    spawn(spring, OrkKind::Boss);
 }
 
-fn spawn(kind: OrkKind) {
-    commands::run(move || {
-        let (x, z) = ring_position();
-        units::create(kind.unit(), x, z, ENEMY_TEAM, 0);
+fn spawn(_spring: &spring::Spring<'_, spring::RulesSynced>, kind: OrkKind) {
+    crate::with_addon_context(|ctx| {
+        ctx.commands().run(move |spring| {
+            let (x, z) = ring_position(spring);
+            units::create(spring, kind.unit(), x, z, ENEMY_TEAM, 0);
+        })
     });
 }
 
-fn ring_position() -> (f32, f32) {
-    let radius = RING_RADIUS + random::unit_float() * RING_RADIUS_JITTER;
-    let mut angle = random::unit_float() * ANGLE_SPAN;
+fn ring_position(spring: &spring::Spring<'_, spring::RulesSynced>) -> (f32, f32) {
+    let radius = RING_RADIUS + random::unit_float(spring) * RING_RADIUS_JITTER;
+    let mut angle = random::unit_float(spring) * ANGLE_SPAN;
     for (from, to, rotation) in SKIPPED_ARCS {
         if angle > from && angle < to {
             angle += rotation;

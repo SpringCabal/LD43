@@ -3,9 +3,14 @@ use alloc::vec::Vec;
 
 use super::PointLight;
 
-pub fn update(lights: &mut Vec<PointLight>, defs: &mut BTreeMap<i32, Option<DefLight>>) {
-    let projectiles =
-        spring::projectiles::get_all_projectiles(spring::projectiles::GetAllProjectilesOptions {
+pub fn update(
+    spring: &spring::Spring<'_, spring::Ui>,
+    lights: &mut Vec<PointLight>,
+    defs: &mut BTreeMap<i32, Option<DefLight>>,
+) {
+    let projectiles = spring
+        .projectiles()
+        .get_all_projectiles(spring::projectiles::GetAllProjectilesOptions {
             exclude_weapon_projectiles: false,
             exclude_piece_projectiles: true,
         })
@@ -14,7 +19,7 @@ pub fn update(lights: &mut Vec<PointLight>, defs: &mut BTreeMap<i32, Option<DefL
     lights.extend(
         projectiles
             .into_iter()
-            .filter_map(|projectile| light_for(projectile, defs)),
+            .filter_map(|projectile| light_for(spring, projectile, defs)),
     );
 }
 
@@ -39,13 +44,23 @@ pub struct DefLight {
     color: [f32; 3],
 }
 
-fn light_for(projectile_id: i32, defs: &mut BTreeMap<i32, Option<DefLight>>) -> Option<PointLight> {
-    let weapon_def_id = spring::projectiles::get_projectile_def_id(projectile_id).ok()?;
+fn light_for(
+    spring: &spring::Spring<'_, spring::Ui>,
+    projectile_id: i32,
+    defs: &mut BTreeMap<i32, Option<DefLight>>,
+) -> Option<PointLight> {
+    let weapon_def_id = spring
+        .projectiles()
+        .get_projectile_def_id(projectile_id)
+        .ok()?;
     let light = *defs
         .entry(weapon_def_id)
-        .or_insert_with(|| def_light(weapon_def_id));
+        .or_insert_with(|| def_light(spring, weapon_def_id));
     let light = light?;
-    let position = spring::projectiles::get_projectile_position(projectile_id).ok()?;
+    let position = spring
+        .projectiles()
+        .get_projectile_position(projectile_id)
+        .ok()?;
     Some(PointLight {
         position: [position.x, position.y, position.z],
         color: light.color,
@@ -53,12 +68,20 @@ fn light_for(projectile_id: i32, defs: &mut BTreeMap<i32, Option<DefLight>>) -> 
     })
 }
 
-fn def_light(weapon_def_id: i32) -> Option<DefLight> {
-    let custom = |key| spring::weapon_defs::get_weapon_def_custom_param(weapon_def_id, key).ok();
+fn def_light(spring: &spring::Spring<'_, spring::Ui>, weapon_def_id: i32) -> Option<DefLight> {
+    let custom = |key| {
+        spring
+            .weapon_defs()
+            .get_weapon_def_custom_param(weapon_def_id, key)
+            .ok()
+    };
     if custom("fake_weapon").is_some() {
         return None;
     }
-    let weapon = spring::weapon_defs::get_weapon_def_by_id(weapon_def_id).ok()?;
+    let weapon = spring
+        .weapon_defs()
+        .get_weapon_def_by_id(weapon_def_id)
+        .ok()?;
     let size = custom("projectile_size")
         .and_then(|value| value.parse::<f32>().ok())
         .unwrap_or_else(|| {

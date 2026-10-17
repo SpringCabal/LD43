@@ -1,7 +1,7 @@
 use alloc::vec::Vec;
 
+use spring::Float3;
 use spring::consts::GAME_SPEED;
-use spring::types::Float3;
 
 use crate::combat;
 use crate::defs::{UnitKind, defs};
@@ -74,6 +74,7 @@ impl Spell {
 }
 
 pub fn cast(
+    spring: &spring::Spring<'_, spring::RulesSynced>,
     global: &Global,
     unit_id: i32,
     spell: Spell,
@@ -82,16 +83,16 @@ pub fn cast(
     frame: i32,
 ) -> Option<CastOutcome> {
     let drained = match spell {
-        Spell::Transfusion => drain_for_transfusion(global, unit_id)?,
+        Spell::Transfusion => drain_for_transfusion(spring, global, unit_id)?,
         _ => {
-            if !drain(global, unit_id, spell.cost(), false).0 {
+            if !drain(spring, global, unit_id, spell.cost(), false).0 {
                 return None;
             }
             None
         }
     };
     let level = spell.animation_level();
-    crate::unit_scripts::call(unit_id, ScriptCall::CastAnimation { level, tx, tz });
+    crate::unit_scripts::call(spring, unit_id, ScriptCall::CastAnimation { level, tx, tz });
     global.spells.access_mut().effects.push(PendingEffect {
         unit_id,
         spell,
@@ -105,18 +106,22 @@ pub fn cast(
     })
 }
 
-pub fn resolve_pending(global: &Global, frame: i32) {
+pub fn resolve_pending(
+    spring: &spring::Spring<'_, spring::RulesSynced>,
+    global: &Global,
+    frame: i32,
+) {
     let due = take_due(&mut global.spells.access_mut().effects, frame, |effect| {
         effect.frame
     });
     for effect in due {
-        resolve(global, effect, frame);
+        resolve(spring, global, effect, frame);
     }
-    resolve_impulses(global, frame);
+    resolve_impulses(spring, global, frame);
 }
 
-pub fn fireball_exploded(position: Float3) {
-    spawn_effect_at(position, CEG_FIREBALL_IMPACT);
+pub fn fireball_exploded(spring: &spring::Spring<'_, spring::RulesSynced>, position: Float3) {
+    spawn_effect_at(spring, position, CEG_FIREBALL_IMPACT);
 }
 
 const FIREBALL_COST: f32 = 1350.0;
@@ -189,42 +194,59 @@ fn take_due<T: Copy>(entries: &mut Vec<T>, frame: i32, due_frame: impl Fn(&T) ->
     due
 }
 
-fn resolve(global: &Global, effect: PendingEffect, frame: i32) {
-    if !valid(effect.unit_id) {
+fn resolve(
+    spring: &spring::Spring<'_, spring::RulesSynced>,
+    global: &Global,
+    effect: PendingEffect,
+    frame: i32,
+) {
+    if !valid(spring, effect.unit_id) {
         return;
     }
     match effect.spell {
-        Spell::Transfusion => resolve_transfusion(effect.unit_id, effect.shortfall),
-        Spell::Heartburn => resolve_heartburn(effect.unit_id, effect.tx, effect.tz),
-        Spell::Adrenaline => resolve_adrenaline(global, effect.unit_id, frame),
-        Spell::Migraine => resolve_migraine(global, effect.tx, effect.tz, frame),
-        Spell::Poultice => resolve_poultice(global, effect.unit_id, frame),
+        Spell::Transfusion => resolve_transfusion(spring, effect.unit_id, effect.shortfall),
+        Spell::Heartburn => resolve_heartburn(spring, effect.unit_id, effect.tx, effect.tz),
+        Spell::Adrenaline => resolve_adrenaline(spring, global, effect.unit_id, frame),
+        Spell::Migraine => resolve_migraine(spring, global, effect.tx, effect.tz, frame),
+        Spell::Poultice => resolve_poultice(spring, global, effect.unit_id, frame),
     }
 }
 
-fn resolve_transfusion(unit_id: i32, shortfall: Option<f32>) {
-    let Some(health) = health(unit_id) else {
+fn resolve_transfusion(
+    spring: &spring::Spring<'_, spring::RulesSynced>,
+    unit_id: i32,
+    shortfall: Option<f32>,
+) {
+    let Some(health) = health(spring, unit_id) else {
         return;
     };
-    play_sound("sounds/heal_spell.wav", SPELL_VOLUME, unit_id);
+    play_sound(spring, "sounds/heal_spell.wav", SPELL_VOLUME, unit_id);
     let restored = health.max - shortfall.unwrap_or(0.0);
     crate::engine::check(
-        spring::set_unit_health(unit_id, health_value(restored)),
+        spring,
+        spring
+            .unit_control()
+            .set_unit_health(unit_id, health_value(restored)),
         "set_unit_health",
         unit_id,
     );
-    spawn_effect(unit_id, CEG_HEALTH);
+    spawn_effect(spring, unit_id, CEG_HEALTH);
 }
 
-fn resolve_heartburn(unit_id: i32, tx: f32, tz: f32) {
-    let Some(origin) = units::position(unit_id) else {
+fn resolve_heartburn(
+    spring: &spring::Spring<'_, spring::RulesSynced>,
+    unit_id: i32,
+    tx: f32,
+    tz: f32,
+) {
+    let Some(origin) = units::position(spring, unit_id) else {
         return;
     };
-    let Some(weapon_def_id) = defs().fireball else {
+    let Some(weapon_def_id) = defs(spring).fireball else {
         return;
     };
-    play_sound("sounds/fireballfire.wav", FIREBALL_VOLUME, unit_id);
-    let ty = units::ground_height(tx, tz) + FIREBALL_TARGET_HEIGHT;
+    play_sound(spring, "sounds/fireballfire.wav", FIREBALL_VOLUME, unit_id);
+    let ty = units::ground_height(spring, tx, tz) + FIREBALL_TARGET_HEIGHT;
     let y = origin.y + FIREBALL_LAUNCH_HEIGHT;
     let dx = tx - origin.x;
     let dy = ty - y;
@@ -236,10 +258,10 @@ fn resolve_heartburn(unit_id: i32, tx: f32, tz: f32) {
         y: fly_time * FIREBALL_GRAVITY / 2.0 + dy / fly_time,
         z: dz / fly_time,
     };
-    let projectile = spring::spawn_projectile(
+    let projectile = spring.projectile_control().spawn_projectile(
         weapon_def_id,
-        spring::ProjectileParams {
-            position: Float3 {
+        &spring::projectile_control::NativeProjectileParams {
+            pos: Float3 {
                 x: origin.x,
                 y,
                 z: origin.z,
@@ -248,40 +270,54 @@ fn resolve_heartburn(unit_id: i32, tx: f32, tz: f32) {
             ttl: fly_time,
             owner: unit_id,
             team: PLAYER_TEAM,
-            weapon_number: -1,
+            weapon_num: -1,
             gravity: -FIREBALL_GRAVITY,
-            ceg_tag: "fireball_ball",
+            ceg_tag: "fireball_ball".into(),
             ..Default::default()
         },
     );
     let gravity = projectile.and_then(|projectile| {
-        spring::projectile_control::set_projectile_gravity(projectile, -FIREBALL_GRAVITY)
+        spring
+            .projectile_control()
+            .set_projectile_gravity(projectile, -FIREBALL_GRAVITY)
     });
     if let Err(error) = gravity {
-        spring::log_warning!("ttld-wasm", "heartburn fireball failed: {error:?}");
+        spring::log_warning!(spring, "ttld-wasm", "heartburn fireball failed: {error:?}");
     }
 }
 
-fn resolve_adrenaline(global: &Global, unit_id: i32, frame: i32) {
-    let Some(origin) = units::position(unit_id) else {
+fn resolve_adrenaline(
+    spring: &spring::Spring<'_, spring::RulesSynced>,
+    global: &Global,
+    unit_id: i32,
+    frame: i32,
+) {
+    let Some(origin) = units::position(spring, unit_id) else {
         return;
     };
-    play_sound("sounds/buff_spell.wav", SPELL_VOLUME, unit_id);
-    let house = defs().id(UnitKind::House);
-    for target in units_in_cylinder(origin.x, origin.z, ADRENALINE_RADIUS, PLAYER_TEAM) {
-        if def_of(target) == house {
+    play_sound(spring, "sounds/buff_spell.wav", SPELL_VOLUME, unit_id);
+    let house = defs(spring).id(UnitKind::House);
+    for target in units_in_cylinder(spring, origin.x, origin.z, ADRENALINE_RADIUS, PLAYER_TEAM) {
+        if def_of(spring, target) == house {
             continue;
         }
-        let duration = ADRENALINE_FRAMES + random::unit_float() * ADRENALINE_FRAMES_SPREAD;
-        combat::adrenaline(global, target, duration as i32, frame);
-        spawn_effect(target, CEG_ADRENALINE);
+        let duration = ADRENALINE_FRAMES + random::unit_float(spring) * ADRENALINE_FRAMES_SPREAD;
+        combat::adrenaline(spring, global, target, duration as i32, frame);
+        spawn_effect(spring, target, CEG_ADRENALINE);
     }
-    spawn_effect_at(origin, CEG_ADRENALINE);
+    spawn_effect_at(spring, origin, CEG_ADRENALINE);
 }
 
-fn resolve_migraine(global: &Global, tx: f32, tz: f32, frame: i32) {
-    let ty = units::ground_height(tx, tz);
+fn resolve_migraine(
+    spring: &spring::Spring<'_, spring::RulesSynced>,
+    global: &Global,
+    tx: f32,
+    tz: f32,
+    frame: i32,
+) {
+    let ty = units::ground_height(spring, tx, tz);
     play_sound_at(
+        spring,
         "sounds/curse_spell.wav",
         SPELL_VOLUME,
         Float3 {
@@ -290,8 +326,8 @@ fn resolve_migraine(global: &Global, tx: f32, tz: f32, frame: i32) {
             z: tz,
         },
     );
-    for target in units_in_cylinder(tx, tz, MIGRAINE_RADIUS, ENEMY_TEAM) {
-        let Some(position) = units::position(target) else {
+    for target in units_in_cylinder(spring, tx, tz, MIGRAINE_RADIUS, ENEMY_TEAM) {
+        let Some(position) = units::position(spring, target) else {
             continue;
         };
         let dx = position.x - tx;
@@ -301,12 +337,13 @@ fn resolve_migraine(global: &Global, tx: f32, tz: f32, frame: i32) {
             unit_id: target,
             impulse: Float3::default(),
             stun: (1.0 - distance / MIGRAINE_FALLOFF)
-                * (MIGRAINE_STUN_FRAMES + random::unit_float() * MIGRAINE_STUN_FRAMES_SPREAD),
+                * (MIGRAINE_STUN_FRAMES + random::unit_float(spring) * MIGRAINE_STUN_FRAMES_SPREAD),
             frame: frame + (distance / MIGRAINE_WAVE_SPEED).ceil() as i32,
         };
         global.spells.access_mut().impulses.push(delayed);
     }
     spawn_effect_at(
+        spring,
         Float3 {
             x: tx,
             y: ty,
@@ -316,16 +353,23 @@ fn resolve_migraine(global: &Global, tx: f32, tz: f32, frame: i32) {
     );
 }
 
-fn resolve_poultice(global: &Global, unit_id: i32, frame: i32) {
-    let Some(origin) = units::position(unit_id) else {
+fn resolve_poultice(
+    spring: &spring::Spring<'_, spring::RulesSynced>,
+    global: &Global,
+    unit_id: i32,
+    frame: i32,
+) {
+    let Some(origin) = units::position(spring, unit_id) else {
         return;
     };
-    let unit_gravity = spring::game::get_game_map_info(0)
+    let unit_gravity = spring
+        .game()
+        .get_game_map_info()
         .map(|map| map.gravity / FPS / FPS)
         .unwrap_or(DEFAULT_UNIT_GRAVITY);
-    play_sound("sounds/throw_spell.wav", SPELL_VOLUME, unit_id);
-    for target in units_in_cylinder(origin.x, origin.z, POULTICE_RADIUS, ENEMY_TEAM) {
-        let Some(position) = units::position(target) else {
+    play_sound(spring, "sounds/throw_spell.wav", SPELL_VOLUME, unit_id);
+    for target in units_in_cylinder(spring, origin.x, origin.z, POULTICE_RADIUS, ENEMY_TEAM) {
+        let Some(position) = units::position(spring, target) else {
             continue;
         };
         let dx = position.x - origin.x;
@@ -333,8 +377,12 @@ fn resolve_poultice(global: &Global, unit_id: i32, frame: i32) {
         let dz = position.z - origin.z;
         let distance = (dx * dx + dz * dz).sqrt();
         let fly_time = POULTICE_MIN_FLIGHT
-            + ((distance + random::centered(POULTICE_JITTER)) / POULTICE_ELMOS_PER_FRAME).floor();
-        let velocity = spring::units_info::get_unit_velocity(target).unwrap_or_default();
+            + ((distance + random::centered(spring, POULTICE_JITTER)) / POULTICE_ELMOS_PER_FRAME)
+                .floor();
+        let velocity = spring
+            .units_info()
+            .get_unit_velocity(target)
+            .unwrap_or_default();
         let impulse = Float3 {
             x: dx / fly_time - velocity.x,
             y: fly_time * unit_gravity / 2.0 + dy / fly_time - velocity.y,
@@ -347,24 +395,27 @@ fn resolve_poultice(global: &Global, unit_id: i32, frame: i32) {
             frame: frame + (distance / POULTICE_ELMOS_PER_FRAME).ceil() as i32,
         };
         global.spells.access_mut().impulses.push(delayed);
-        crate::unit_scripts::call(target, ScriptCall::StopMoving);
+        crate::unit_scripts::call(spring, target, ScriptCall::StopMoving);
     }
-    spawn_effect_at(origin, CEG_POULTICE);
+    spawn_effect_at(spring, origin, CEG_POULTICE);
 }
 
-fn resolve_impulses(global: &Global, frame: i32) {
+fn resolve_impulses(spring: &spring::Spring<'_, spring::RulesSynced>, global: &Global, frame: i32) {
     let due = take_due(&mut global.spells.access_mut().impulses, frame, |impulse| {
         impulse.frame
     });
     for entry in due {
-        if !valid(entry.unit_id) {
+        if !valid(spring, entry.unit_id) {
             continue;
         }
         if entry.stun > 0.0 {
-            combat::stun(global, entry.unit_id, entry.stun as i32, frame);
+            combat::stun(spring, global, entry.unit_id, entry.stun as i32, frame);
         } else {
             crate::engine::check(
-                spring::add_unit_impulse(entry.unit_id, entry.impulse, 0.0),
+                spring,
+                spring
+                    .unit_control()
+                    .add_unit_impulse(entry.unit_id, entry.impulse, 0.0),
                 "add_unit_impulse",
                 entry.unit_id,
             );

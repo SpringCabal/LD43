@@ -40,61 +40,125 @@ pub struct TtldUnitScript {
 
 impl UnitScript for TtldUnitScript {
     fn create(&mut self, ctx: &UnitCtx) {
-        let Some(kind) = self.kind else {
-            return;
-        };
-        match kind {
-            ScriptKind::BloodMage => {
-                self.init_shared(ctx, 2.0, 1.0, false, Some("sounds/death_player.wav"), 1.0);
-                set_unit_number(ctx.unit().0, "unorkable", 1.0);
-            }
-            ScriptKind::Coward => {
-                self.init_shared(ctx, 3.0, 1.0, false, Some("sounds/panicdeathyell.wav"), 0.6);
-            }
-            ScriptKind::Crossbowman => {
-                self.init_shared(ctx, 3.0, 1.0, false, Some("sounds/bravedeathyell.wav"), 0.6);
-                issue_patrol_orders(ctx);
-            }
-            ScriptKind::Peasant => {
-                self.init_shared(ctx, 3.0, 1.0, false, Some("sounds/panicdeathyell.wav"), 0.6);
-                issue_patrol_orders(ctx);
-            }
-            ScriptKind::Swordsman => {
-                self.init_shared(ctx, 3.0, 1.0, false, Some("sounds/bravedeathyell.wav"), 0.6);
-                issue_patrol_orders(ctx);
-            }
-            ScriptKind::OrkSmall => {
-                self.init_shared(
-                    ctx,
-                    3.0,
-                    0.9,
-                    true,
-                    Some("sounds/smallorkdeathyell.wav"),
-                    0.6,
-                );
-                set_unit_number(ctx.unit().0, "unorkable", 1.0);
-                spring::set_unit_max_range(ctx.unit().0, 80.0).log_err("ork max range");
-            }
-            ScriptKind::OrkBig => {
-                self.init_shared(ctx, 2.0, 2.0, true, Some("sounds/bigorkdeathyell.wav"), 1.0);
-                set_unit_number(ctx.unit().0, "unorkable", 1.0);
-                self.state.borrow_mut().toss_radius = 120.0;
-                self.state.borrow_mut().toss_strength = 5.0;
-                spring::set_unit_max_range(ctx.unit().0, 120.0).log_err("ork max range");
-            }
-            ScriptKind::OrkBoss => {
-                self.init_shared(ctx, 2.0, 2.0, true, Some("sounds/bossdeathyell.wav"), 1.0);
-                set_unit_number(ctx.unit().0, "unorkable", 1.0);
-                {
-                    let mut state = self.state.borrow_mut();
-                    state.toss_radius = 200.0;
-                    state.toss_strength = 10.0;
-                    state.deunorkable = true;
+        ctx.with_spring(|spring| {
+            let _: () = (|| {
+                let Some(kind) = self.kind else {
+                    return;
+                };
+                match kind {
+                    ScriptKind::BloodMage => {
+                        self.init_shared(
+                            ctx,
+                            2.0,
+                            1.0,
+                            false,
+                            Some("sounds/death_player.wav"),
+                            1.0,
+                        );
+                        set_unit_number(spring, ctx.unit().0, "unorkable", 1.0);
+                    }
+                    ScriptKind::Coward => {
+                        self.init_shared(
+                            ctx,
+                            3.0,
+                            1.0,
+                            false,
+                            Some("sounds/panicdeathyell.wav"),
+                            0.6,
+                        );
+                    }
+                    ScriptKind::Crossbowman => {
+                        self.init_shared(
+                            ctx,
+                            3.0,
+                            1.0,
+                            false,
+                            Some("sounds/bravedeathyell.wav"),
+                            0.6,
+                        );
+                        issue_patrol_orders(spring, ctx);
+                    }
+                    ScriptKind::Peasant => {
+                        self.init_shared(
+                            ctx,
+                            3.0,
+                            1.0,
+                            false,
+                            Some("sounds/panicdeathyell.wav"),
+                            0.6,
+                        );
+                        issue_patrol_orders(spring, ctx);
+                    }
+                    ScriptKind::Swordsman => {
+                        self.init_shared(
+                            ctx,
+                            3.0,
+                            1.0,
+                            false,
+                            Some("sounds/bravedeathyell.wav"),
+                            0.6,
+                        );
+                        issue_patrol_orders(spring, ctx);
+                    }
+                    ScriptKind::OrkSmall => {
+                        self.init_shared(
+                            ctx,
+                            3.0,
+                            0.9,
+                            true,
+                            Some("sounds/smallorkdeathyell.wav"),
+                            0.6,
+                        );
+                        set_unit_number(spring, ctx.unit().0, "unorkable", 1.0);
+                        spring
+                            .unit_control()
+                            .set_unit_max_range(ctx.unit().0, 80.0)
+                            .log_err(spring, "ork max range");
+                    }
+                    ScriptKind::OrkBig => {
+                        self.init_shared(
+                            ctx,
+                            2.0,
+                            2.0,
+                            true,
+                            Some("sounds/bigorkdeathyell.wav"),
+                            1.0,
+                        );
+                        set_unit_number(spring, ctx.unit().0, "unorkable", 1.0);
+                        self.state.borrow_mut().toss_radius = 120.0;
+                        self.state.borrow_mut().toss_strength = 5.0;
+                        spring
+                            .unit_control()
+                            .set_unit_max_range(ctx.unit().0, 120.0)
+                            .log_err(spring, "ork max range");
+                    }
+                    ScriptKind::OrkBoss => {
+                        self.init_shared(
+                            ctx,
+                            2.0,
+                            2.0,
+                            true,
+                            Some("sounds/bossdeathyell.wav"),
+                            1.0,
+                        );
+                        set_unit_number(spring, ctx.unit().0, "unorkable", 1.0);
+                        {
+                            let mut state = self.state.borrow_mut();
+                            state.toss_radius = 200.0;
+                            state.toss_strength = 10.0;
+                            state.deunorkable = true;
+                        }
+                        spring
+                            .unit_control()
+                            .set_unit_max_range(ctx.unit().0, 200.0)
+                            .log_err(spring, "ork max range");
+                    }
+                    ScriptKind::House => {}
                 }
-                spring::set_unit_max_range(ctx.unit().0, 200.0).log_err("ork max range");
-            }
-            ScriptKind::House => {}
-        }
+            })();
+            Ok(())
+        })
+        .expect("unit-script engine scope")
     }
 
     fn start_moving(&mut self, ctx: &UnitCtx, _reversing: bool) {
@@ -186,91 +250,104 @@ impl UnitScript for TtldUnitScript {
         target: UnitId,
         _user_target: bool,
     ) -> bool {
-        let unit = ctx.unit();
-        match self.kind {
-            Some(ScriptKind::Coward) => coward_block(ctx, target),
-            Some(ScriptKind::Peasant | ScriptKind::Swordsman) if weapon.0 == 1 => {
-                spring::set_unit_weapon_state(
-                    unit.0,
-                    weapon.0,
-                    "reloadFrame",
-                    spring::game::current_frame() as f32 + 300.0,
-                )
-                .log_err("villager eyes reload");
-                true
-            }
-            Some(ScriptKind::BloodMage) => {
-                let Some((tx, tz)) = self.state.borrow().fire_target else {
-                    return true;
-                };
-                face_from_position(unit, tx, tz);
-                false
-            }
-            Some(ScriptKind::OrkSmall | ScriptKind::OrkBig | ScriptKind::OrkBoss) => {
-                face_target(unit, target.0);
-                ork_toss(unit, target.0, &self.state);
-                false
-            }
-            Some(ScriptKind::Peasant | ScriptKind::Swordsman) => {
-                face_target(unit, target.0);
-                false
-            }
-            _ => false,
-        }
+        ctx.with_spring(|spring| {
+            Ok((|| {
+                let unit = ctx.unit();
+                match self.kind {
+                    Some(ScriptKind::Coward) => coward_block(spring, ctx, target),
+                    Some(ScriptKind::Peasant | ScriptKind::Swordsman) if weapon.0 == 1 => {
+                        spring
+                            .unit_control()
+                            .set_unit_weapon_state(
+                                unit.0,
+                                weapon.0,
+                                "reloadFrame",
+                                spring.game().current_frame().unwrap_or(0) as f32 + 300.0,
+                            )
+                            .log_err(spring, "villager eyes reload");
+                        true
+                    }
+                    Some(ScriptKind::BloodMage) => {
+                        let Some((tx, tz)) = self.state.borrow().fire_target else {
+                            return true;
+                        };
+                        face_from_position(spring, unit, tx, tz);
+                        false
+                    }
+                    Some(ScriptKind::OrkSmall | ScriptKind::OrkBig | ScriptKind::OrkBoss) => {
+                        face_target(spring, unit, target.0);
+                        ork_toss(spring, unit, target.0, &self.state);
+                        false
+                    }
+                    Some(ScriptKind::Peasant | ScriptKind::Swordsman) => {
+                        face_target(spring, unit, target.0);
+                        false
+                    }
+                    _ => false,
+                }
+            })())
+        })
+        .expect("unit-script engine scope")
     }
 
     fn fire_weapon(&mut self, ctx: &UnitCtx, weapon: WeaponId) {
-        match self.kind {
-            Some(ScriptKind::BloodMage) => {
-                let target = self.state.borrow().fire_target;
-                if let Some((tx, tz)) = target {
-                    face_from_position(ctx.unit(), tx, tz);
+        ctx.with_spring(|spring| {
+            let _: () = match self.kind {
+                Some(ScriptKind::BloodMage) => {
+                    let target = self.state.borrow().fire_target;
+                    if let Some((tx, tz)) = target {
+                        face_from_position(spring, ctx.unit(), tx, tz);
+                    }
+                    crate::engine::check(
+                        spring,
+                        spring.unit_control().clear_unit_goal(ctx.unit().0, true),
+                        "clear_unit_goal",
+                        ctx.unit().0,
+                    );
+                    ctx.signal(SIG_ATTACK);
+                    ctx.spawn(TaskDefinition::with_state(
+                        "ttld-blood-attack",
+                        Rc::clone(&self.state),
+                        attack_task,
+                    ));
                 }
-                crate::engine::check(
-                    spring::clear_unit_goal(ctx.unit().0, true),
-                    "clear_unit_goal",
-                    ctx.unit().0,
-                );
-                ctx.signal(SIG_ATTACK);
-                ctx.spawn(TaskDefinition::with_state(
-                    "ttld-blood-attack",
-                    Rc::clone(&self.state),
-                    attack_task,
-                ));
-            }
-            Some(ScriptKind::OrkSmall | ScriptKind::OrkBig | ScriptKind::OrkBoss)
-                if weapon.0 == 0 =>
-            {
-                ctx.signal(SIG_ATTACK);
-                ctx.spawn(TaskDefinition::with_state(
-                    "ttld-ork-attack-bob",
-                    Rc::clone(&self.state),
-                    attack_bob_task,
-                ));
-            }
-            Some(ScriptKind::Peasant | ScriptKind::Swordsman) => {
-                ctx.signal(SIG_ATTACK);
-                ctx.spawn(TaskDefinition::with_state(
-                    "ttld-melee-attack",
-                    Rc::clone(&self.state),
-                    melee_attack_task,
-                ));
-            }
-            Some(ScriptKind::Crossbowman) => {
-                crate::engine::check(
-                    spring::clear_unit_goal(ctx.unit().0, true),
-                    "clear_unit_goal",
-                    ctx.unit().0,
-                );
-                ctx.signal(SIG_ATTACK);
-                ctx.spawn(TaskDefinition::with_state(
-                    "ttld-hand-attack",
-                    Rc::clone(&self.state),
-                    attack_task,
-                ));
-            }
-            _ => {}
-        }
+                Some(ScriptKind::OrkSmall | ScriptKind::OrkBig | ScriptKind::OrkBoss)
+                    if weapon.0 == 0 =>
+                {
+                    ctx.signal(SIG_ATTACK);
+                    ctx.spawn(TaskDefinition::with_state(
+                        "ttld-ork-attack-bob",
+                        Rc::clone(&self.state),
+                        attack_bob_task,
+                    ));
+                }
+                Some(ScriptKind::Peasant | ScriptKind::Swordsman) => {
+                    ctx.signal(SIG_ATTACK);
+                    ctx.spawn(TaskDefinition::with_state(
+                        "ttld-melee-attack",
+                        Rc::clone(&self.state),
+                        melee_attack_task,
+                    ));
+                }
+                Some(ScriptKind::Crossbowman) => {
+                    crate::engine::check(
+                        spring,
+                        spring.unit_control().clear_unit_goal(ctx.unit().0, true),
+                        "clear_unit_goal",
+                        ctx.unit().0,
+                    );
+                    ctx.signal(SIG_ATTACK);
+                    ctx.spawn(TaskDefinition::with_state(
+                        "ttld-hand-attack",
+                        Rc::clone(&self.state),
+                        attack_task,
+                    ));
+                }
+                _ => {}
+            };
+            Ok(())
+        })
+        .expect("unit-script engine scope")
     }
 
     fn hit_by_weapon(
@@ -280,67 +357,84 @@ impl UnitScript for TtldUnitScript {
         _weapon: spring::WeaponDefId,
         damage: f32,
     ) -> f32 {
-        if self.kind == Some(ScriptKind::House) && damage > 400.0 {
-            set_unit_number(ctx.unit().0, "on_fire", 1.0);
-        }
-        damage
+        ctx.with_spring(|spring| {
+            Ok({
+                if self.kind == Some(ScriptKind::House) && damage > 400.0 {
+                    set_unit_number(spring, ctx.unit().0, "on_fire", 1.0);
+                }
+                damage
+            })
+        })
+        .expect("unit-script engine scope")
     }
 
     fn killed(&mut self, ctx: &UnitCtx, _recent_damage: f32, _max_health: f32) -> WreckLevel {
-        let Some(kind) = self.kind else {
-            return WreckLevel::None;
-        };
-        if self.state.borrow().death_pending {
-            return WreckLevel::NoWreck;
-        }
-        ctx.signal(SIG_MOVE);
-        ctx.signal(SIG_BUFF);
-        ctx.signal(SIG_STUN);
-        ctx.signal(SIG_ATTACK);
-        self.state.borrow_mut().dead = true;
-        self.state.borrow_mut().death_pending = true;
-        match kind {
-            ScriptKind::House => {
-                collision_volume(ctx.unit(), false);
-                collision_volume(ctx.unit(), true);
-                spring::set_unit_neutral(ctx.unit().0, true).log_err("neutral when killed");
-                let state = Rc::clone(&self.state);
-                ctx.spawn(TaskDefinition::with_state(
-                    "ttld-house-death",
-                    state,
-                    house_death_task,
-                ));
-            }
-            _ => {
-                let state = Rc::clone(&self.state);
-                let sound = self.state.borrow().death_sound;
-                let chance = self.state.borrow().death_sound_chance;
-                if sound.is_some() && random::unit_float() < chance {
-                    play_unit_sound(ctx.unit(), sound.unwrap_or_default(), 10.0);
+        ctx.with_spring(|spring| {
+            Ok((|| {
+                let Some(kind) = self.kind else {
+                    return WreckLevel::None;
+                };
+                if self.state.borrow().death_pending {
+                    return WreckLevel::NoWreck;
                 }
-                collision_volume(ctx.unit(), false);
-                collision_volume(ctx.unit(), true);
-                spring::set_unit_neutral(ctx.unit().0, true).log_err("neutral when killed");
-                crate::with_global(|global| {
-                    combat::add_effect(
-                        global,
-                        ctx.unit().0,
-                        combat::Effect::DeathParalysis,
-                        combat::Modifier {
-                            move_factor: 0.0,
-                            reload_factor: 0.0,
-                        },
-                    )
-                });
-                set_blocking(ctx.unit(), false);
-                ctx.spawn(TaskDefinition::with_state(
-                    "ttld-human-death",
-                    state,
-                    death_task,
-                ));
-            }
-        }
-        WreckLevel::NoWreck
+                ctx.signal(SIG_MOVE);
+                ctx.signal(SIG_BUFF);
+                ctx.signal(SIG_STUN);
+                ctx.signal(SIG_ATTACK);
+                self.state.borrow_mut().dead = true;
+                self.state.borrow_mut().death_pending = true;
+                match kind {
+                    ScriptKind::House => {
+                        collision_volume(spring, ctx.unit(), false);
+                        collision_volume(spring, ctx.unit(), true);
+                        spring
+                            .unit_control()
+                            .set_unit_neutral(ctx.unit().0, true)
+                            .log_err(spring, "neutral when killed");
+                        let state = Rc::clone(&self.state);
+                        ctx.spawn(TaskDefinition::with_state(
+                            "ttld-house-death",
+                            state,
+                            house_death_task,
+                        ));
+                    }
+                    _ => {
+                        let state = Rc::clone(&self.state);
+                        let sound = self.state.borrow().death_sound;
+                        let chance = self.state.borrow().death_sound_chance;
+                        if sound.is_some() && random::unit_float(spring) < chance {
+                            play_unit_sound(spring, ctx.unit(), sound.unwrap_or_default(), 10.0);
+                        }
+                        collision_volume(spring, ctx.unit(), false);
+                        collision_volume(spring, ctx.unit(), true);
+                        spring
+                            .unit_control()
+                            .set_unit_neutral(ctx.unit().0, true)
+                            .log_err(spring, "neutral when killed");
+                        crate::with_global(|global| {
+                            combat::add_effect(
+                                spring,
+                                global,
+                                ctx.unit().0,
+                                combat::Effect::DeathParalysis,
+                                combat::Modifier {
+                                    move_factor: 0.0,
+                                    reload_factor: 0.0,
+                                },
+                            )
+                        });
+                        set_blocking(spring, ctx.unit(), false);
+                        ctx.spawn(TaskDefinition::with_state(
+                            "ttld-human-death",
+                            state,
+                            death_task,
+                        ));
+                    }
+                }
+                WreckLevel::NoWreck
+            })())
+        })
+        .expect("unit-script engine scope")
     }
 
     fn killed_pending(&self) -> bool {

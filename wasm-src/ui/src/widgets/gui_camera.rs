@@ -31,7 +31,8 @@ impl Widget<Global> for GuiCameraWidget {
         "GuiCamera"
     }
 
-    fn update(&self, ctx: &spring_addons::AddonContext<'_, Global>, dt: f32) {
+    fn update(&self, ctx: &spring_addons::AddonContext<'_, Global, spring::Ui>, dt: f32) {
+        let spring = ctx.spring();
         let (round, player_unit) = {
             let status = ctx.global().status.access();
             (status.round, status.player_unit)
@@ -40,7 +41,7 @@ impl Widget<Global> for GuiCameraWidget {
             self.camera.reset();
         }
         self.camera
-            .update((player_unit >= 0).then_some(player_unit), dt);
+            .update(spring, (player_unit >= 0).then_some(player_unit), dt);
     }
 }
 

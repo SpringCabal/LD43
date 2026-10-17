@@ -38,8 +38,14 @@ impl Statuses {
     }
 }
 
-pub fn adrenaline(global: &Global, unit_id: i32, duration: i32, frame: i32) {
-    let modifier = if resists(unit_id) {
+pub fn adrenaline(
+    spring: &spring::Spring<'_, spring::RulesSynced>,
+    global: &Global,
+    unit_id: i32,
+    duration: i32,
+    frame: i32,
+) {
+    let modifier = if resists(spring, unit_id) {
         Modifier {
             move_factor: 1.8,
             reload_factor: 2.5,
@@ -50,21 +56,28 @@ pub fn adrenaline(global: &Global, unit_id: i32, duration: i32, frame: i32) {
             reload_factor: 2.5,
         }
     };
-    attributes::add_effect(global, unit_id, Effect::Buff, modifier);
-    crate::unit_scripts::call(unit_id, ScriptCall::Buff { frames: duration });
+    attributes::add_effect(spring, global, unit_id, Effect::Buff, modifier);
+    crate::unit_scripts::call(spring, unit_id, ScriptCall::Buff { frames: duration });
     global
         .statuses
         .access_mut()
         .schedule(unit_id, Effect::Buff, frame + duration);
 }
 
-pub fn stun(global: &Global, unit_id: i32, duration: i32, frame: i32) {
-    let duration = if resists(unit_id) {
+pub fn stun(
+    spring: &spring::Spring<'_, spring::RulesSynced>,
+    global: &Global,
+    unit_id: i32,
+    duration: i32,
+    frame: i32,
+) {
+    let duration = if resists(spring, unit_id) {
         (duration as f32 * 0.5) as i32
     } else {
         duration
     };
     attributes::add_effect(
+        spring,
         global,
         unit_id,
         Effect::Stun,
@@ -73,17 +86,17 @@ pub fn stun(global: &Global, unit_id: i32, duration: i32, frame: i32) {
             reload_factor: 0.0,
         },
     );
-    crate::unit_scripts::call(unit_id, ScriptCall::Stun { frames: duration });
+    crate::unit_scripts::call(spring, unit_id, ScriptCall::Stun { frames: duration });
     global
         .statuses
         .access_mut()
         .schedule(unit_id, Effect::Stun, frame + duration);
 }
 
-pub fn update(global: &Global, frame: i32) {
+pub fn update(spring: &spring::Spring<'_, spring::RulesSynced>, global: &Global, frame: i32) {
     let expired = global.statuses.access_mut().take_expired(frame);
     for timer in expired {
-        attributes::remove_effect(global, timer.unit_id, timer.effect);
+        attributes::remove_effect(spring, global, timer.unit_id, timer.effect);
     }
 }
 
@@ -94,12 +107,12 @@ struct Timer {
     end_frame: i32,
 }
 
-fn resists(unit_id: i32) -> bool {
-    let Ok(unit_def_id) = spring::units_info::get_unit_def_id(unit_id) else {
+fn resists(spring: &spring::Spring<'_, spring::RulesSynced>, unit_id: i32) -> bool {
+    let Ok(unit_def_id) = spring.units_info().get_unit_def_id(unit_id) else {
         return false;
     };
     matches!(
-        defs().kind(unit_def_id),
+        defs(spring).kind(unit_def_id),
         Some(UnitKind::OrkBoss | UnitKind::BloodMage)
     )
 }

@@ -35,34 +35,39 @@ impl Lights {
         }
     }
 
-    pub fn init(&mut self) {
-        self.houses.init();
+    pub fn init(&mut self, spring: &spring::Spring<'_, spring::Ui>) {
+        self.houses.init(spring);
     }
 
-    pub fn unit_created(&mut self, unit_id: i32, def_id: i32) {
-        self.houses.created(unit_id, def_id);
+    pub fn unit_created(
+        &mut self,
+        spring: &spring::Spring<'_, spring::Ui>,
+        unit_id: i32,
+        def_id: i32,
+    ) {
+        self.houses.created(spring, unit_id, def_id);
     }
 
     pub fn unit_destroyed(&mut self, unit_id: i32) {
         self.houses.destroyed(unit_id);
     }
 
-    fn flicker_seconds(&self) -> f32 {
+    fn flicker_seconds(&self, spring: &spring::Spring<'_, spring::Ui>) -> f32 {
         if self.still {
             0.0
         } else {
-            staff::clock_seconds()
+            staff::clock_seconds(spring)
         }
     }
 
-    pub fn update(&mut self, global: &Global) {
+    pub fn update(&mut self, spring: &spring::Spring<'_, spring::Ui>, global: &Global) {
         let status = *global.status.access();
-        let seconds = self.flicker_seconds();
-        self.staff = staff::light(&status, &mut self.staff_boost, seconds);
+        let seconds = self.flicker_seconds(spring);
+        self.staff = staff::light(spring, &status, &mut self.staff_boost, seconds);
         if let Some(ground) = global.cursor.get().ground {
             self.mouse = Some(mouse::light(ground));
         }
-        projectiles::update(&mut self.projectiles, &mut self.projectile_defs);
+        projectiles::update(spring, &mut self.projectiles, &mut self.projectile_defs);
     }
 
     pub fn iter(&self) -> impl Iterator<Item = &PointLight> {

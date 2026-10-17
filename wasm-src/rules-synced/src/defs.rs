@@ -1,5 +1,5 @@
 use alloc::collections::BTreeMap;
-use core::cell::RefCell;
+use std::sync::Mutex;
 
 use springcabal::defs::DefCache;
 
@@ -69,21 +69,26 @@ pub struct Movement {
 pub struct Defs {
     units: [Option<i32>; UnitKind::ALL.len()],
     pub fireball: Option<i32>,
-    info: RefCell<BTreeMap<i32, DefInfo>>,
+    info: Mutex<BTreeMap<i32, DefInfo>>,
 }
 
-static DEFS: DefCache<Defs> = DefCache::new(Defs::resolve);
+static DEFS: DefCache<Defs> = DefCache::new();
 
-pub fn defs() -> &'static Defs {
-    DEFS.get()
+pub fn defs(spring: &spring::Spring<'_, spring::RulesSynced>) -> &'static Defs {
+    DEFS.get_or_init(|| Defs::resolve(spring))
 }
 
 impl Defs {
-    fn resolve() -> Self {
+    fn resolve(spring: &spring::Spring<'_, spring::RulesSynced>) -> Self {
         Self {
-            units: UnitKind::ALL.map(|kind| spring::get_unit_def_id_by_name(kind.def_name()).ok()),
-            fireball: spring::weapon_defs::get_weapon_def_id("fireball").ok(),
-            info: RefCell::new(BTreeMap::new()),
+            units: UnitKind::ALL.map(|kind| {
+                spring
+                    .unit_defs()
+                    .get_unit_def_id_by_name(kind.def_name())
+                    .ok()
+            }),
+            fireball: spring.weapon_defs().get_weapon_def_id("fireball").ok(),
+            info: Mutex::new(BTreeMap::new()),
         }
     }
 
@@ -105,29 +110,37 @@ impl Defs {
         self.kind(def_id).is_some_and(UnitKind::is_ork)
     }
 
-    pub fn info(&self, def_id: i32) -> DefInfo {
-        if let Some(info) = self.info.borrow().get(&def_id) {
+    pub fn info(&self, spring: &spring::Spring<'_, spring::RulesSynced>, def_id: i32) -> DefInfo {
+        if let Some(info) = self.info.lock().expect("def info cache").get(&def_id) {
             return *info;
         }
-        let info = DefInfo::read(def_id);
-        self.info.borrow_mut().insert(def_id, info);
+        let info = DefInfo::read(spring, def_id);
+        self.info
+            .lock()
+            .expect("def info cache")
+            .insert(def_id, info);
         info
     }
 }
 
 impl DefInfo {
-    fn read(def_id: i32) -> Self {
-        let speed = spring::get_unit_def_speed(def_id).ok();
+    fn read(spring: &spring::Spring<'_, spring::RulesSynced>, def_id: i32) -> Self {
+        let speed = spring.unit_defs().get_unit_def_speed(def_id).ok();
         let immobile = speed.is_some_and(|speed| speed <= 0.0);
         let footprint = immobile
-            .then(|| Some((footprint(def_id, "xsize")?, footprint(def_id, "zsize")?)))
+            .then(|| {
+                Some((
+                    footprint(spring, def_id, "xsize")?,
+                    footprint(spring, def_id, "zsize")?,
+                ))
+            })
             .flatten();
         let movement = speed.filter(|speed| *speed > 0.0).map(|speed| Movement {
             speed,
-            reverse_speed: param(def_id, "rSpeed"),
-            turn_rate: param(def_id, "turnRate"),
-            max_acc: param(def_id, "maxAcc"),
-            max_dec: param(def_id, "maxDec"),
+            reverse_speed: param(spring, def_id, "rSpeed"),
+            turn_rate: param(spring, def_id, "turnRate"),
+            max_acc: param(spring, def_id, "maxAcc"),
+            max_dec: param(spring, def_id, "maxDec"),
         });
         Self {
             movement,
@@ -136,16 +149,24 @@ impl DefInfo {
     }
 }
 
-fn param(def_id: i32, key: &str) -> f32 {
+fn param(spring: &spring::Spring<'_, spring::RulesSynced>, def_id: i32, key: &str) -> f32 {
     use spring::ResultExt;
-    spring::get_unit_def_param_float(def_id, key)
-        .log_err(&alloc::format!("unit def {def_id} {key}"))
+    spring
+        .unit_defs()
+        .get_unit_def_param_float(def_id, key)
+        .log_err(spring, &alloc::format!("unit def {def_id} {key}"))
         .unwrap_or(0.0)
 }
 
-fn footprint(def_id: i32, key: &str) -> Option<f32> {
+fn footprint(
+    spring: &spring::Spring<'_, spring::RulesSynced>,
+    def_id: i32,
+    key: &str,
+) -> Option<f32> {
     const FOOTPRINT_TO_ELMOS: f32 = 4.0;
-    spring::get_unit_def_param_int(def_id, key)
+    spring
+        .unit_defs()
+        .get_unit_def_param_int(def_id, key)
         .ok()
         .map(|size| size as f32 * FOOTPRINT_TO_ELMOS)
 }

@@ -18,7 +18,11 @@ pub(super) async fn bob_task(state: Rc<RefCell<TtldState>>, ctx: UnitCtx) {
     let initial_delay = {
         let mut state = state.borrow_mut();
         if state.is_ork && state.first_bob_run {
-            let delay = (unit_float() * 464.0).ceil() as u64;
+            let delay = (ctx
+                .with_spring(|spring| Ok(unit_float(spring)))
+                .expect("unit-script random scope")
+                * 464.0)
+                .ceil() as u64;
             state.first_bob_run = false;
             Some(delay)
         } else {
@@ -122,15 +126,26 @@ pub(super) async fn attack_task(state: Rc<RefCell<TtldState>>, ctx: UnitCtx) {
             &ctx,
             pieces.torso,
             Axis::X,
-            -(5.0 + unit_float() * 2.0).to_radians(),
+            -(5.0
+                + ctx
+                    .with_spring(|spring| Ok(unit_float(spring)))
+                    .expect("unit-script random scope")
+                    * 2.0)
+                .to_radians(),
             120.0_f32.to_radians(),
         );
         move_piece(
             &ctx,
             pieces.torso,
             Axis::Y,
-            -8.0 - unit_float() * 4.0,
-            45.0 + unit_float() * 10.0,
+            -8.0 - ctx
+                .with_spring(|spring| Ok(unit_float(spring)))
+                .expect("unit-script random scope")
+                * 4.0,
+            45.0 + ctx
+                .with_spring(|spring| Ok(unit_float(spring)))
+                .expect("unit-script random scope")
+                * 10.0,
         );
     }
     ctx.sleep(Duration::from_millis(100)).await;
@@ -161,13 +176,22 @@ pub(super) async fn cast_task(state: Rc<RefCell<TtldState>>, ctx: UnitCtx) {
     }
     ctx.signal(SIG_MOVE);
     move_piece(&ctx, pieces.torso, Axis::Y, 0.0, 10.0);
-    crate::engine::check(
-        spring::clear_unit_goal(unit.0, true),
-        "clear_unit_goal",
-        unit.0,
-    );
+    ctx.with_spring(|spring| {
+        crate::engine::check(
+            spring,
+            spring.unit_control().clear_unit_goal(unit.0, true),
+            "clear_unit_goal",
+            unit.0,
+        );
+        Ok(())
+    })
+    .expect("unit-script goal scope");
     if level > 1 {
-        face_from_position(unit, tx, tz);
+        ctx.with_spring(|spring| {
+            face_from_position(spring, unit, tx, tz);
+            Ok(())
+        })
+        .expect("unit-script facing scope");
     }
     raise_arms(&ctx, pieces, level);
     if level == 1 {
@@ -283,8 +307,20 @@ pub(super) async fn stun_task(state: Rc<RefCell<TtldState>>, ctx: UnitCtx) {
     ctx.set_signal_mask(SIG_STUN);
     let (piece, duration, direction, spin_speed) = {
         let mut state = state.borrow_mut();
-        let direction = if unit_float() < 0.5 { -1.0 } else { 1.0 };
-        let spin_speed = 250.0 + unit_float() * 100.0;
+        let direction = if ctx
+            .with_spring(|spring| Ok(unit_float(spring)))
+            .expect("unit-script random scope")
+            < 0.5
+        {
+            -1.0
+        } else {
+            1.0
+        };
+        let spin_speed = 250.0
+            + ctx
+                .with_spring(|spring| Ok(unit_float(spring)))
+                .expect("unit-script random scope")
+                * 100.0;
         state.bob_scale = state.static_bob_scale * 0.1;
         (
             state.pieces.torso,
@@ -349,28 +385,47 @@ pub(super) async fn death_task(state: Rc<RefCell<TtldState>>, ctx: UnitCtx) {
 pub(super) async fn house_death_task(state: Rc<RefCell<TtldState>>, ctx: UnitCtx) {
     ctx.set_signal_mask(SIG_DEATH);
     let piece = state.borrow().pieces.house;
-    play_unit_sound(ctx.unit(), "sounds/house_fall.wav", 10.0);
+    ctx.with_spring(|spring| {
+        play_unit_sound(spring, ctx.unit(), "sounds/house_fall.wav", 10.0);
+        Ok(())
+    })
+    .expect("unit-script sound scope");
     move_piece(&ctx, piece, Axis::Z, -250.0, 250.0);
     turn(
         &ctx,
         piece,
         Axis::X,
-        (unit_float() - 0.5) / 2.0,
-        unit_float() / 2.0,
+        (ctx.with_spring(|spring| Ok(unit_float(spring)))
+            .expect("unit-script random scope")
+            - 0.5)
+            / 2.0,
+        ctx.with_spring(|spring| Ok(unit_float(spring)))
+            .expect("unit-script random scope")
+            / 2.0,
     );
     turn(
         &ctx,
         piece,
         Axis::Y,
-        (unit_float() - 0.5) / 2.0,
-        unit_float() / 2.0,
+        (ctx.with_spring(|spring| Ok(unit_float(spring)))
+            .expect("unit-script random scope")
+            - 0.5)
+            / 2.0,
+        ctx.with_spring(|spring| Ok(unit_float(spring)))
+            .expect("unit-script random scope")
+            / 2.0,
     );
     turn(
         &ctx,
         piece,
         Axis::Z,
-        (unit_float() - 0.5) / 4.0,
-        unit_float() / 4.0,
+        (ctx.with_spring(|spring| Ok(unit_float(spring)))
+            .expect("unit-script random scope")
+            - 0.5)
+            / 4.0,
+        ctx.with_spring(|spring| Ok(unit_float(spring)))
+            .expect("unit-script random scope")
+            / 4.0,
     );
     ctx.sleep(Duration::from_millis(1200)).await;
     state.borrow_mut().death_pending = false;

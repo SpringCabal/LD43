@@ -1,5 +1,4 @@
-use spring::commands;
-use spring::types::Float3;
+use spring::Float3;
 
 use crate::defs::{UnitKind, defs};
 use crate::units;
@@ -32,8 +31,13 @@ impl Player {
         self.unit_id
     }
 
-    pub fn adopt(&mut self, unit_id: i32, unit_def_id: i32) {
-        if defs().is(unit_def_id, UnitKind::BloodMage) {
+    pub fn adopt(
+        &mut self,
+        spring: &spring::Spring<'_, spring::RulesSynced>,
+        unit_id: i32,
+        unit_def_id: i32,
+    ) {
+        if defs(spring).is(unit_def_id, UnitKind::BloodMage) {
             self.unit_id = Some(unit_id);
         }
     }
@@ -44,7 +48,12 @@ impl Player {
         }
     }
 
-    pub fn accept(&mut self, command: PlayerCommand, frame: i32) {
+    pub fn accept(
+        &mut self,
+        spring: &spring::Spring<'_, spring::RulesSynced>,
+        command: PlayerCommand,
+        frame: i32,
+    ) {
         let Some(unit_id) = self.unit_id else {
             return;
         };
@@ -58,8 +67,8 @@ impl Player {
                 self.held = None;
                 self.moving_to_attack = false;
                 if !self.casting(frame) {
-                    self.clear_move(unit_id);
-                    self.clear_attack(unit_id);
+                    self.clear_move(spring, unit_id);
+                    self.clear_attack(spring, unit_id);
                 }
             }
             PlayerCommand::Move(_) | PlayerCommand::Attack { .. } => {
@@ -79,12 +88,17 @@ impl Player {
         self.held = None;
     }
 
-    pub fn begin_cast(&mut self, frame: i32, frames: i32) {
+    pub fn begin_cast(
+        &mut self,
+        spring: &spring::Spring<'_, spring::RulesSynced>,
+        frame: i32,
+        frames: i32,
+    ) {
         self.casting_until = frame + frames;
         self.cast_start_frame = frame;
         self.cast_animation_frames = frames + CAST_ANIMATION_EXTRA_FRAMES;
         if let Some(unit_id) = self.unit_id {
-            clear_goal(unit_id);
+            clear_goal(spring, unit_id);
         }
         self.move_goal = None;
     }
@@ -106,7 +120,7 @@ impl Player {
         (cast.frame + INPUT_WINDOW > frame).then_some((cast.spell, cast.x, cast.z))
     }
 
-    pub fn update(&mut self, frame: i32) {
+    pub fn update(&mut self, spring: &spring::Spring<'_, spring::RulesSynced>, frame: i32) {
         let Some(unit_id) = self.unit_id else {
             return;
         };
@@ -117,11 +131,11 @@ impl Player {
             Some(held) => {
                 held.used = true;
                 let command = held.command;
-                self.apply(unit_id, command);
+                self.apply(spring, unit_id, command);
             }
-            None => self.clear_attack(unit_id),
+            None => self.clear_attack(spring, unit_id),
         }
-        self.update_move_goal(unit_id);
+        self.update_move_goal(spring, unit_id);
     }
 }
 
@@ -156,31 +170,49 @@ struct MoveGoal {
 }
 
 impl Player {
-    fn apply(&mut self, unit_id: i32, command: PlayerCommand) {
+    fn apply(
+        &mut self,
+        spring: &spring::Spring<'_, spring::RulesSynced>,
+        unit_id: i32,
+        command: PlayerCommand,
+    ) {
         match command {
-            PlayerCommand::Move((x, z)) => self.move_to(unit_id, x, z),
+            PlayerCommand::Move((x, z)) => self.move_to(spring, unit_id, x, z),
             PlayerCommand::Attack { target, move_to } => {
-                self.attack(unit_id, target.0, target.1, move_to)
+                self.attack(spring, unit_id, target.0, target.1, move_to)
             }
-            PlayerCommand::Stop => self.clear_move(unit_id),
+            PlayerCommand::Stop => self.clear_move(spring, unit_id),
             PlayerCommand::Cast { .. } => {}
         }
     }
 
-    fn move_to(&mut self, unit_id: i32, x: f32, z: f32) {
-        self.clear_attack(unit_id);
-        self.set_move_goal(unit_id, x, z, GOAL_RADIUS);
+    fn move_to(
+        &mut self,
+        spring: &spring::Spring<'_, spring::RulesSynced>,
+        unit_id: i32,
+        x: f32,
+        z: f32,
+    ) {
+        self.clear_attack(spring, unit_id);
+        self.set_move_goal(spring, unit_id, x, z, GOAL_RADIUS);
     }
 
-    fn attack(&mut self, unit_id: i32, x: f32, z: f32, move_to: bool) {
-        let Some(position) = units::position(unit_id) else {
+    fn attack(
+        &mut self,
+        spring: &spring::Spring<'_, spring::RulesSynced>,
+        unit_id: i32,
+        x: f32,
+        z: f32,
+        move_to: bool,
+    ) {
+        let Some(position) = units::position(spring, unit_id) else {
             return;
         };
         let dx = x - position.x;
         let dz = z - position.z;
         let distance = (dx * dx + dz * dz).sqrt().max(0.1);
         if move_to && distance > ATTACK_RADIUS {
-            self.set_move_goal(unit_id, x, z, ATTACK_RADIUS);
+            self.set_move_goal(spring, unit_id, x, z, ATTACK_RADIUS);
             self.moving_to_attack = true;
             return;
         }
@@ -190,11 +222,12 @@ impl Player {
             }
             self.moving_to_attack = false;
         }
-        self.clear_move(unit_id);
+        self.clear_move(spring, unit_id);
         let tx = position.x + ATTACK_REACH * dx / distance;
         let tz = position.z + ATTACK_REACH * dz / distance;
-        let ty = units::ground_height(tx, tz) + AIM_HEIGHT;
+        let ty = units::ground_height(spring, tx, tz) + AIM_HEIGHT;
         aim(
+            spring,
             unit_id,
             Some(Float3 {
                 x: tx,
@@ -205,80 +238,108 @@ impl Player {
         self.attacking = true;
     }
 
-    fn set_move_goal(&mut self, unit_id: i32, x: f32, z: f32, radius: f32) {
-        let (x, z) = clamp_to_map(x, z);
-        let y = units::ground_height(x, z);
-        set_goal(unit_id, Float3 { x, y, z });
+    fn set_move_goal(
+        &mut self,
+        spring: &spring::Spring<'_, spring::RulesSynced>,
+        unit_id: i32,
+        x: f32,
+        z: f32,
+        radius: f32,
+    ) {
+        let (x, z) = clamp_to_map(spring, x, z);
+        let y = units::ground_height(spring, x, z);
+        set_goal(spring, unit_id, Float3 { x, y, z });
         self.move_goal = Some(MoveGoal { x, z, radius });
     }
 
-    fn clear_move(&mut self, unit_id: i32) {
+    fn clear_move(&mut self, spring: &spring::Spring<'_, spring::RulesSynced>, unit_id: i32) {
         if self.move_goal.is_some() {
-            clear_goal(unit_id);
+            clear_goal(spring, unit_id);
             self.move_goal = None;
         }
     }
 
-    fn clear_attack(&mut self, unit_id: i32) {
+    fn clear_attack(&mut self, spring: &spring::Spring<'_, spring::RulesSynced>, unit_id: i32) {
         if self.attacking {
-            aim(unit_id, None);
+            aim(spring, unit_id, None);
             self.attacking = false;
         }
     }
 
-    fn update_move_goal(&mut self, unit_id: i32) {
+    fn update_move_goal(&mut self, spring: &spring::Spring<'_, spring::RulesSynced>, unit_id: i32) {
         let Some(goal) = self.move_goal else {
             return;
         };
-        let Some(position) = units::position(unit_id) else {
+        let Some(position) = units::position(spring, unit_id) else {
             return;
         };
         let dx = position.x - goal.x;
         let dz = position.z - goal.z;
         if dx * dx + dz * dz < goal.radius * goal.radius {
-            self.clear_move(unit_id);
+            self.clear_move(spring, unit_id);
         }
     }
 }
 
-fn aim(unit_id: i32, target: Option<Float3>) {
-    commands::queue(move || {
-        spring::set_unit_target(
-            unit_id,
-            spring::types::UnitTargetRef {
-                target_id: -1,
-                pos: target.unwrap_or_default(),
-                is_ground_target: target.is_some(),
-            },
-            spring::types::SetUnitTargetOptions {
-                manual_fire: false,
-                user_target: false,
-            },
-            0,
-        )
+fn aim(_spring: &spring::Spring<'_, spring::RulesSynced>, unit_id: i32, target: Option<Float3>) {
+    crate::with_addon_context(|ctx| {
+        ctx.commands().queue(move |spring| {
+            spring.unit_control().set_unit_target(
+                unit_id,
+                spring::unit_control::UnitTargetRef {
+                    target_id: -1,
+                    pos: target.unwrap_or_default(),
+                    is_ground_target: target.is_some(),
+                },
+                spring::unit_control::SetUnitTargetOptions {
+                    manual_fire: false,
+                    user_target: false,
+                },
+                0,
+            )
+        })
     })
-    .then(move |result| {
-        crate::engine::check(result, "set_unit_target", unit_id);
-        publish_fire_target(unit_id, target.map(|target| (target.x, target.z)));
+    .then(move |spring, result| {
+        crate::engine::check(spring, result, "set_unit_target", unit_id);
+        publish_fire_target(spring, unit_id, target.map(|target| (target.x, target.z)));
     });
 }
 
-fn set_goal(unit_id: i32, goal: Float3) {
-    commands::queue(move || spring::set_unit_move_goal(unit_id, goal, 10.0, 0.0, true))
-        .then(move |result| crate::engine::check(result, "set_unit_move_goal", unit_id));
+fn set_goal(_spring: &spring::Spring<'_, spring::RulesSynced>, unit_id: i32, goal: Float3) {
+    crate::with_addon_context(|ctx| {
+        ctx.commands().queue(move |spring| {
+            spring
+                .unit_control()
+                .set_unit_move_goal(unit_id, goal, 10.0, 0.0, true)
+        })
+    })
+    .then(move |spring, result| {
+        crate::engine::check(spring, result, "set_unit_move_goal", unit_id)
+    });
 }
 
-fn clear_goal(unit_id: i32) {
-    commands::queue(move || spring::clear_unit_goal(unit_id, true))
-        .then(move |result| crate::engine::check(result, "clear_unit_goal", unit_id));
+fn clear_goal(_spring: &spring::Spring<'_, spring::RulesSynced>, unit_id: i32) {
+    crate::with_addon_context(|ctx| {
+        ctx.commands()
+            .queue(move |spring| spring.unit_control().clear_unit_goal(unit_id, true))
+    })
+    .then(move |spring, result| crate::engine::check(spring, result, "clear_unit_goal", unit_id));
 }
 
-fn publish_fire_target(unit_id: i32, target: Option<(f32, f32)>) {
-    crate::unit_scripts::call(unit_id, crate::unit_scripts::ScriptCall::FireTarget(target));
+fn publish_fire_target(
+    spring: &spring::Spring<'_, spring::RulesSynced>,
+    unit_id: i32,
+    target: Option<(f32, f32)>,
+) {
+    crate::unit_scripts::call(
+        spring,
+        unit_id,
+        crate::unit_scripts::ScriptCall::FireTarget(target),
+    );
 }
 
-fn clamp_to_map(x: f32, z: f32) -> (f32, f32) {
-    let Ok(map) = spring::game::get_game_map_info(0) else {
+fn clamp_to_map(spring: &spring::Spring<'_, spring::RulesSynced>, x: f32, z: f32) -> (f32, f32) {
+    let Ok(map) = spring.game().get_game_map_info() else {
         return (x, z);
     };
     let width = map.map_size_x as f32;

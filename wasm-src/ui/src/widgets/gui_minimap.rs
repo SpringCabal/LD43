@@ -21,12 +21,19 @@ impl Widget<Global> for GuiMinimapWidget {
         "GuiMinimap"
     }
 
-    fn draw_screen(&self, ctx: &spring_addons::AddonContext<'_, Global>, width: i32, height: i32) {
+    fn draw_screen(
+        &self,
+        ctx: &spring_addons::AddonContext<'_, Global, spring::Ui>,
+        width: i32,
+        height: i32,
+    ) {
+        let spring = ctx.spring();
         let player_unit = ctx.global().status.access().player_unit;
-        self.minimap.draw(player_unit, width, height);
+        self.minimap.draw(spring, player_unit, width, height);
     }
 
-    fn shutdown(&self, _ctx: &spring_addons::AddonContext<'_, Global>) {
-        self.minimap.shutdown();
+    fn shutdown(&self, _ctx: &spring_addons::AddonContext<'_, Global, spring::Ui>) {
+        let spring = _ctx.spring();
+        self.minimap.shutdown(spring);
     }
 }

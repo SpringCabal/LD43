@@ -2,7 +2,6 @@ use alloc::format;
 use alloc::vec::Vec;
 
 use spring::cmd;
-use spring::commands;
 
 use crate::combat;
 use crate::defs::UnitKind;
@@ -28,71 +27,101 @@ pub struct Bite {
     pub frame: i32,
 }
 
-pub(super) fn stun_fixture(world: &World) {
+pub(super) fn stun_fixture(_spring: &spring::Spring<'_, spring::RulesSynced>, world: &World) {
     let tracker = Rc::clone(world.tracker);
-    commands::queue(|| {
-        let peasant = units::create(UnitKind::Peasant, FIXTURE_X, FIXTURE_Z, PLAYER_TEAM, 0);
-        let ork = units::create(
-            UnitKind::OrkSmall,
-            FIXTURE_X + ORK_OFFSET,
-            FIXTURE_Z,
-            ENEMY_TEAM,
-            0,
-        );
-        (peasant, ork)
+    crate::with_addon_context(|ctx| {
+        ctx.commands().queue(|spring| {
+            let peasant = units::create(
+                spring,
+                UnitKind::Peasant,
+                FIXTURE_X,
+                FIXTURE_Z,
+                PLAYER_TEAM,
+                0,
+            );
+            let ork = units::create(
+                spring,
+                UnitKind::OrkSmall,
+                FIXTURE_X + ORK_OFFSET,
+                FIXTURE_Z,
+                ENEMY_TEAM,
+                0,
+            );
+            (peasant, ork)
+        })
     })
-    .then(move |fixture| {
+    .then(move |spring, fixture| {
         let (Some(peasant), Some(ork)) = fixture else {
             check(
+                spring,
                 &mut tracker.borrow_mut(),
                 false,
                 "the stunned-ork fixture spawned",
             );
             return;
         };
-        commands::give_order_to_unit(ork, cmd::ATTACK, &[peasant as f32], 0, 0).then(
-            move |ordered| {
-                let mut tracker = tracker.borrow_mut();
-                check(
-                    &mut tracker,
-                    ordered.is_ok(),
-                    &format!("the fixture ork is ordered to attack a peasant ({ordered:?})"),
-                );
-                tracker.stun_ork = ork;
-            },
-        );
+        crate::with_addon_context(|ctx| {
+            ctx.commands()
+                .give_order_to_unit(ork, cmd::ATTACK, &[peasant as f32], 0, 0)
+        })
+        .then(move |spring, ordered| {
+            let mut tracker = tracker.borrow_mut();
+            check(
+                spring,
+                &mut tracker,
+                ordered.is_ok(),
+                &format!("the fixture ork is ordered to attack a peasant ({ordered:?})"),
+            );
+            tracker.stun_ork = ork;
+        });
     });
 }
 
-pub(super) fn stun_the_ork(tracker: &mut Tracker, world: &World) {
+pub(super) fn stun_the_ork(
+    spring: &spring::Spring<'_, spring::RulesSynced>,
+    tracker: &mut Tracker,
+    world: &World,
+) {
     let ork = tracker.stun_ork;
     let bites = bites_between(tracker, 0, world.frame);
     check(
+        spring,
         tracker,
         bites > 0,
         &format!("the fixture ork bites before its stun ({bites} bites)"),
     );
-    combat::stun(world.global, ork, STUN_FRAMES, world.frame);
+    combat::stun(spring, world.global, ork, STUN_FRAMES, world.frame);
 }
 
-pub(super) fn stunned_checks(tracker: &mut Tracker, _world: &World) {
-    let reloads = reloads(tracker.stun_ork);
+pub(super) fn stunned_checks(
+    spring: &spring::Spring<'_, spring::RulesSynced>,
+    tracker: &mut Tracker,
+    _world: &World,
+) {
+    let reloads = reloads(spring, tracker.stun_ork);
     check(
+        spring,
         tracker,
         reloads.len() == 2 && reloads.iter().all(|reload| *reload >= PAUSED_RELOAD),
         &format!("a stun pauses every weapon of the ork, the firebomb too (reloads {reloads:?})"),
     );
 }
 
-pub(super) fn stun_over_checks(tracker: &mut Tracker, _world: &World) {
+pub(super) fn stun_over_checks(
+    spring: &spring::Spring<'_, spring::RulesSynced>,
+    tracker: &mut Tracker,
+    _world: &World,
+) {
     let stunned = bites_between(tracker, STUN_START + STUN_SETTLE, STUN_END);
     check(
+        spring,
         tracker,
         stunned == 0,
         &format!("a stunned ork doesn't bite ({stunned} bites while stunned)"),
     );
-    let reloads = reloads(tracker.stun_ork);
+    let reloads = reloads(spring, tracker.stun_ork);
     check(
+        spring,
         tracker,
         reloads.len() == 2
             && (reloads[0] - BITE_RELOAD).abs() < 0.01
@@ -103,6 +132,7 @@ pub(super) fn stun_over_checks(tracker: &mut Tracker, _world: &World) {
     );
     let after = bites_between(tracker, STUN_END, STUN_OVER_CHECK);
     check(
+        spring,
         tracker,
         after > 0,
         &format!("the ork bites again after its stun ({after} bites)"),
@@ -120,11 +150,16 @@ fn bites_between(tracker: &Tracker, from: i32, to: i32) -> usize {
         .count()
 }
 
-fn reloads(unit_id: i32) -> Vec<f32> {
-    let count = spring::owned::units_weapons::get_unit_weapon_count(unit_id).unwrap_or(0) as i32;
+fn reloads(spring: &spring::Spring<'_, spring::RulesSynced>, unit_id: i32) -> Vec<f32> {
+    let count = spring
+        .units_weapons()
+        .get_unit_weapon_count(unit_id)
+        .unwrap_or(0) as i32;
     (1..=count)
         .filter_map(|weapon| {
-            spring::owned::units_weapons::get_unit_weapon_state(unit_id, weapon, "reloadTime")
+            spring
+                .units_weapons()
+                .get_unit_weapon_state(unit_id, weapon, "reloadTime")
                 .ok()
                 .map(|state| state.reload_time)
         })

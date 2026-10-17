@@ -3,7 +3,6 @@ pub(crate) mod behavior;
 use alloc::rc::Rc;
 use core::cell::{Cell, RefCell};
 
-use spring::commands;
 use spring_addons::AddonContext;
 use spring_addons::rules::Gadget;
 
@@ -23,6 +22,7 @@ impl Gadget<Global> for StoryGadget {
     }
 
     fn game_frame(&self, ctx: &AddonContext<'_, Global>, frame: i32) {
+        let spring = ctx.spring();
         let global = ctx.global();
         match global.phase(frame) {
             Phase::Loading => return,
@@ -38,15 +38,17 @@ impl Gadget<Global> for StoryGadget {
             .borrow_mut()
             .take_due_wave(frame, global.game_end.get());
         if let Some(wave) = wave {
-            behavior::spawn_wave(wave);
+            behavior::spawn_wave(spring, wave);
             self.boss_due.set(self.boss_due.get() || wave.able_to_win);
         }
         if self.boss_due.get() {
             let boss_due = Rc::clone(&self.boss_due);
-            commands::run(move || {
-                if crate::with_global(victory::open_victory) {
-                    boss_due.set(false);
-                }
+            crate::with_addon_context(|ctx| {
+                ctx.commands().run(move |spring| {
+                    if crate::with_global(|global| victory::open_victory(spring, global)) {
+                        boss_due.set(false);
+                    }
+                })
             });
         }
     }
