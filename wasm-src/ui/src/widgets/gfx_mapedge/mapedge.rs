@@ -1,6 +1,6 @@
 use core::cell::Cell;
 
-use spring::gl;
+use spring::{ResultExt, gl};
 
 use crate::gl_uniforms;
 
@@ -15,6 +15,26 @@ struct Resources {
     shader: u32,
     list: u32,
     uniforms: Uniforms,
+    width: f32,
+    height: f32,
+    bounds: Option<(f32, f32)>,
+}
+
+impl Resources {
+    fn draw_tile(&self, spring: &spring::Spring<'_, spring::Ui>, x: f32, z: f32) {
+        if let Some((center_y, radius)) = self.bounds {
+            let center = spring::Float3::new(x + self.width * 0.5, center_y, z + self.height * 0.5);
+            if !spring
+                .display()
+                .is_sphere_in_view(center, radius)
+                .log_err_once(spring, "checking mirrored terrain visibility")
+                .unwrap_or(true)
+            {
+                return;
+            }
+        }
+        let _ = spring.gfx().call_list(self.list);
+    }
 }
 
 impl MapEdge {
@@ -41,10 +61,11 @@ impl MapEdge {
 fn draw(spring: &spring::Spring<'_, spring::Ui>, resources: Resources) {
     let Resources {
         shader: shader_id,
-        list: list_id,
         uniforms,
+        width,
+        height,
+        ..
     } = resources;
-    let (width, height) = map_size(spring);
     let _ = spring.gfx().fog(true);
     let _ = spring.gfx().fog_coord(1.0);
     let _ = spring.gfx().use_shader(shader_id);
@@ -60,33 +81,33 @@ fn draw(spring: &spring::Spring<'_, spring::Ui>, resources: Resources) {
     uniforms.set(spring, Uniform::Left, 1.0);
     uniforms.set(spring, Uniform::Up, 1.0);
     translate(spring, -width, -height);
-    call(spring, list_id);
+    resources.draw_tile(spring, -width, -height);
     uniforms.set(spring, Uniform::Left, 0.0);
     translate(spring, width * 2.0, 0.0);
-    call(spring, list_id);
+    resources.draw_tile(spring, width, -height);
     uniforms.set(spring, Uniform::Up, 0.0);
     translate(spring, 0.0, height * 2.0);
-    call(spring, list_id);
+    resources.draw_tile(spring, width, height);
     uniforms.set(spring, Uniform::Left, 1.0);
     translate(spring, -width * 2.0, 0.0);
-    call(spring, list_id);
+    resources.draw_tile(spring, -width, height);
 
     uniforms.set(spring, Uniform::MirrorX, 0.0);
     translate(spring, width, 0.0);
-    call(spring, list_id);
+    resources.draw_tile(spring, 0.0, height);
     uniforms.set(spring, Uniform::Left, 0.0);
     uniforms.set(spring, Uniform::Up, 1.0);
     translate(spring, 0.0, -height * 2.0);
-    call(spring, list_id);
+    resources.draw_tile(spring, 0.0, -height);
 
     uniforms.set(spring, Uniform::Up, 0.0);
     uniforms.set(spring, Uniform::MirrorZ, 0.0);
     uniforms.set(spring, Uniform::MirrorX, width);
     translate(spring, width, height);
-    call(spring, list_id);
+    resources.draw_tile(spring, width, 0.0);
     uniforms.set(spring, Uniform::Left, 1.0);
     translate(spring, -width * 2.0, 0.0);
-    call(spring, list_id);
+    resources.draw_tile(spring, -width, 0.0);
 
     let _ = spring.gfx().depth_mask(false);
     let _ = spring.gfx().bind_texture(GROUND_TEXTURE, 0, false);
@@ -173,10 +194,27 @@ fn create(spring: &spring::Spring<'_, spring::Ui>) -> Option<Resources> {
         .map(|shader| shader.shader_id)
         .filter(|shader| *shader != 0)?;
     let list = spring.gfx().create_list(|spring| emit_list(spring)).ok()?;
+    let (width, height) = map_size(spring);
+    // The display list freezes the terrain heights at creation. Its full tile
+    // sphere stays conservative for the geometry, including mirrored corners.
+    let bounds = spring
+        .terrain()
+        .get_ground_extremes()
+        .log_err_once(spring, "reading mirrored terrain bounds")
+        .map(|bounds| {
+            let half_y = (bounds.curr_max_height - bounds.curr_min_height) * 0.5;
+            (
+                bounds.curr_min_height + half_y,
+                ((width * 0.5).powi(2) + (height * 0.5).powi(2) + half_y.powi(2)).sqrt() + 1.0,
+            )
+        });
     Some(Resources {
         shader,
         list,
         uniforms: Uniforms::locate(spring, shader),
+        width,
+        height,
+        bounds,
     })
 }
 
@@ -260,8 +298,4 @@ fn map_size(spring: &spring::Spring<'_, spring::Ui>) -> (f32, f32) {
 
 fn translate(spring: &spring::Spring<'_, spring::Ui>, x: f32, z: f32) {
     let _ = spring.gfx().translate(x, 0.0, z);
-}
-
-fn call(spring: &spring::Spring<'_, spring::Ui>, list_id: u32) {
-    let _ = spring.gfx().call_list(list_id);
 }

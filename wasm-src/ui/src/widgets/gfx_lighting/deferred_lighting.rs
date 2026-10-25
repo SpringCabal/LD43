@@ -1,7 +1,7 @@
 use alloc::string::String;
 use core::cell::{Cell, RefCell};
 
-use spring::gl;
+use spring::{ResultExt, gl};
 
 use super::lights::{Lights, PointLight};
 use crate::{game, gl_uniforms};
@@ -448,6 +448,16 @@ fn draw_point_light(
         y: light.position[1],
         z: light.position[2],
     };
+    // The attenuation is zero outside this sphere. Cull its full radius, not
+    // just the light's center: an offscreen lamp can still light the scene.
+    if !spring
+        .display()
+        .is_sphere_in_view(position, light.radius)
+        .log_err_once(spring, "checking a deferred light's visibility")
+        .unwrap_or(true)
+    {
+        return;
+    }
     let Ok(screen_result) = spring.camera().world_to_screen_coords(position) else {
         return;
     };

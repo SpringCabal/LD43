@@ -22,3 +22,11 @@ Verification in the dedicated port worktree:
   captures also slightly exceed the existing 1% image limit in both the old code
   and the port; the late capture meets its 3% limit. Expected images and limits
   were not changed. The visual suite remains red.
+
+Rendering rejects deferred lights only when their entire influence sphere is
+outside the camera frustum. Mirrored terrain tiles likewise use bounds covering
+the full tile and its frozen height range. Lighting, bloom, terrain detail and
+geometry remain the same for visible content.
+
+Release builds use whole-program LTO and one code generation unit. The
+workspace profile applies to both installed modules and verification builds.
