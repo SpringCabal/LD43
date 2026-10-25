@@ -260,7 +260,7 @@ impl UnitScript for TtldUnitScript {
                             .unit_control()
                             .set_unit_weapon_state(
                                 unit.0,
-                                weapon.0,
+                                weapon.0 + 1,
                                 "reloadFrame",
                                 spring.game().current_frame().unwrap_or(0) as f32 + 300.0,
                             )

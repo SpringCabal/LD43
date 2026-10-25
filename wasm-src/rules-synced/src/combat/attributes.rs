@@ -111,7 +111,7 @@ pub fn update_paused(
             global.attributes.access_mut().paused.remove(&unit_id);
             continue;
         }
-        for weapon in 0..weapon_count(spring, unit_id) {
+        for weapon in 1..=weapon_count(spring, unit_id) {
             let Some(state) = weapon_state(spring, unit_id, weapon) else {
                 continue;
             };
@@ -248,7 +248,7 @@ fn apply_reload(
     };
     let frame = spring.game().current_frame().unwrap_or(0);
     for (weapon, base) in bases.iter().enumerate() {
-        let weapon = weapon as i32;
+        let weapon = weapon as i32 + 1;
         let Some(state) = weapon_state(spring, unit_id, weapon) else {
             continue;
         };
@@ -299,7 +299,7 @@ fn weapon_bases(
     if let Some(bases) = global.attributes.access().weapons.get(&def_id) {
         return Some(bases.clone());
     }
-    let bases: Vec<WeaponBase> = (0..weapon_count(spring, unit_id))
+    let bases: Vec<WeaponBase> = (1..=weapon_count(spring, unit_id))
         .map_while(|weapon| {
             weapon_state(spring, unit_id, weapon).map(|state| WeaponBase {
                 reload: state.reload_time,
@@ -330,7 +330,7 @@ fn weapon_state(
 ) -> Option<units_weapons::UnitWeaponState> {
     spring
         .units_weapons()
-        .get_unit_weapon_state(unit_id, weapon + 1, "reloadTime")
+        .get_unit_weapon_state(unit_id, weapon, "reloadTime")
         .log_err(spring, &format!("weapon {weapon} of unit {unit_id}"))
 }
 

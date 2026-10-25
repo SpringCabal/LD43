@@ -315,6 +315,9 @@ fn report_leader_fixture(spring: &spring::Spring<'_, spring::Ui>) {
         let Ok(screen) = spring.camera().world_to_screen_coords(position) else {
             continue;
         };
+        if !screen.valid {
+            continue;
+        }
         if Some(def_id) == leader_def {
             leader = Some((unit_id, screen.screen_pos.x, screen.screen_pos.y));
         } else if Some(def_id) == orkbig_def {
@@ -576,6 +579,9 @@ fn hover_fixture(spring: &spring::Spring<'_, spring::Ui>, def_name: &str) -> Opt
     let Ok(screen) = spring.camera().world_to_screen_coords(position) else {
         return None;
     };
+    if !screen.valid {
+        return None;
+    }
     let height = crate::with_global(|global| global.view.get().1);
     if height <= 1 {
         return None;

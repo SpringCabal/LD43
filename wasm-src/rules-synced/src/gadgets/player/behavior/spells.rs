@@ -270,7 +270,7 @@ fn resolve_heartburn(
             ttl: fly_time,
             owner: unit_id,
             team: PLAYER_TEAM,
-            weapon_num: -1,
+            weapon_num: 0,
             gravity: -FIREBALL_GRAVITY,
             ceg_tag: "fireball_ball".into(),
             ..Default::default()

@@ -92,7 +92,7 @@ pub(super) fn coward_block(
         .unit_control()
         .set_unit_weapon_state(
             ctx.unit().0,
-            0,
+            1,
             "reloadFrame",
             spring.game().current_frame().unwrap_or(0) as f32 + 180.0,
         )

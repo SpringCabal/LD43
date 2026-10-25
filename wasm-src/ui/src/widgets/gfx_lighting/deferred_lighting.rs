@@ -451,6 +451,9 @@ fn draw_point_light(
     let Ok(screen_result) = spring.camera().world_to_screen_coords(position) else {
         return;
     };
+    if !screen_result.valid {
+        return;
+    }
     let screen = screen_result.screen_pos;
     let sx = (screen.x / width as f32).clamp(0.0, 1.0);
     let sy = screen.y / height as f32;
