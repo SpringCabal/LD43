@@ -467,7 +467,8 @@ local function DrawLightType(lights, lightsCount, lighttype) -- point = 0 beam =
 			VerboseEcho('gfx_deferred_rendering.lua: Light being drawn:', i)
 			Spring.Utilities.TableEcho(light)
 		end
-		if lighttype == 0 then -- point
+		-- Cull the entire influence sphere, preserving lights just offscreen.
+		if lighttype == 0 and spIsSphereInView(light.px, light.py, light.pz, param.radius) then -- point
 			local lightradius = param.radius
 			--Spring.Echo("Drawlighttype position = ", light.px, light.py, light.pz)
 			local sx, sy, sz = spWorldToScreenCoords(light.px, light.py, light.pz) -- returns x, y, z, where x and y are screen pixels, and z is z buffer depth.

@@ -23,6 +23,7 @@ local realTex = '$grass'
 
 local dList
 local mirrorShader
+local tileBounds
 
 local umirrorX
 local umirrorZ
@@ -299,6 +300,12 @@ function widget:Initialize()
 		ubrightness = gl.GetUniformLocation(mirrorShader,"brightness")
 	end
 	dList = gl.CreateList(DrawOMap, mirrorShader)
+    local _, _, minimum, maximum = Spring.GetGroundExtremes()
+    if minimum and maximum then
+        local halfY = (maximum - minimum) * 0.5
+        tileBounds = {y = minimum + halfY,
+            radius = math.sqrt((Game.mapSizeX*0.5)^2 + (Game.mapSizeZ*0.5)^2 + halfY^2) + 1}
+    end
 	--Spring.SetDrawGround(false)
 end
 
@@ -308,6 +315,15 @@ function widget:Shutdown()
 	if mirrorShader then
 		gl.DeleteShader(mirrorShader)
 	end
+end
+
+-- The mirror shader leaves every tile inside its translated map-sized box.
+-- Include the full frozen height range when culling, not just the tile center.
+local function DrawVisibleTile(x, z)
+    if not tileBounds or Spring.IsSphereInView(x + Game.mapSizeX*0.5, tileBounds.y,
+            z + Game.mapSizeZ*0.5, tileBounds.radius) then
+        gl.CallList(dList)
+    end
 end
 
 local function DrawWorldFunc() --is overwritten when not using the shader
@@ -334,33 +350,33 @@ local function DrawWorldFunc() --is overwritten when not using the shader
 	glUniform(uleft, 1)
 	glUniform(uup, 1)
 	glTranslate(-GamemapSizeX,0,-GamemapSizeZ)
-	gl.CallList(dList)
+	DrawVisibleTile(-GamemapSizeX, -GamemapSizeZ)
 	glUniform(uleft , 0)
 	glTranslate(GamemapSizeX*2,0,0)
-	gl.CallList(dList)
+	DrawVisibleTile(GamemapSizeX, -GamemapSizeZ)
 	gl.Uniform(uup, 0)
 	glTranslate(0,0,GamemapSizeZ*2)
-	gl.CallList(dList)
+	DrawVisibleTile(GamemapSizeX, GamemapSizeZ)
 	glUniform(uleft, 1)
 	glTranslate(-GamemapSizeX*2,0,0)
-	gl.CallList(dList)
+	DrawVisibleTile(-GamemapSizeX, GamemapSizeZ)
 
 	glUniform(umirrorX, 0)
 	glTranslate(GamemapSizeX,0,0)
-	gl.CallList(dList)
+	DrawVisibleTile(0, GamemapSizeZ)
 	glUniform(uleft, 0)
 	glUniform(uup, 1)
 	glTranslate(0,0,-GamemapSizeZ*2)
-	gl.CallList(dList)
+	DrawVisibleTile(0, -GamemapSizeZ)
 
 	glUniform(uup, 0)
 	glUniform(umirrorZ, 0)
 	glUniform(umirrorX, GamemapSizeX)
 	glTranslate(GamemapSizeX,0,GamemapSizeZ)
-	gl.CallList(dList)
+	DrawVisibleTile(GamemapSizeX, 0)
 	glUniform(uleft, 1)
 	glTranslate(-GamemapSizeX*2,0,0)
-	gl.CallList(dList)
+	DrawVisibleTile(-GamemapSizeX, 0)
 	if wiremap then
 		gl.PolygonMode(GL.FRONT_AND_BACK, GL.FILL)
 	end
