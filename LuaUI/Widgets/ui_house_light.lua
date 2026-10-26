@@ -26,9 +26,13 @@ function widget:UnitCreated(unitID, unitDefID, unitTeam)
 
 	local x, y, z = Spring.GetUnitPosition(unitID)
 	local lights = {}
+	-- Same per-house generator as ttld_shared::house_lamps. Every integer
+	-- operation is below 2^24, so float32 Lua and Rust make identical choices.
+	local randomState = unitID % 65521
 	for _, dx in ipairs({minx, maxx}) do
 		for _, dz in ipairs({minz, maxz}) do
-			if math.random() > 0.6 then
+			randomState = (randomState * 251 + 1) % 65521
+			if randomState / 65521 > 0.6 then
 				local light = {py = y + 50, param = {r = 0.7, g = 0.7, b = 0.4, radius = 500}, colMult = 2}
 				light.px = x + dx
 				light.pz = z + dz

@@ -280,6 +280,8 @@ end
 
 local lastGameMode = nil
 function gadget:GameFrame()
+	-- The town is populated on frame zero, before the first story wave.
+	if Spring.GetGameFrame() == 0 then return end
 	if Spring.GetGameRulesParam("gameEnd") == "victory" then
 		return
 	end

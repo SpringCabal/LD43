@@ -55,46 +55,38 @@ else
 -- UNSYNCED
 --------------------------------------------------------------------------------
 
-local spurSetUnitLuaDraw  = Spring.UnitRendering.SetUnitLuaDraw
-local spGetUnitRulesParam = Spring.GetUnitRulesParam
-local spGetUnitPosition   = Spring.GetUnitPosition
-
-local glTranslate = gl.Translate
-local glScale     = gl.Scale
-
---------------------------------------------------------------------------------
-
-local function SetUnitLuaDraw(unitID, enabled)
-	spurSetUnitLuaDraw(unitID, enabled)
+local setUnitLuaDraw = Spring.UnitRendering.SetUnitLuaDraw
+local glScale = gl.Scale
+local defScales, unitScales = {}, {}
+for defID, def in pairs(UnitDefs) do
+	local horizontal = tonumber(def.customParams.hscale) or 1
+	local vertical = tonumber(def.customParams.vscale) or 1
+	if horizontal ~= 1 or vertical ~= 1 then
+		defScales[defID] = {horizontal, vertical}
+	end
 end
 
 function gadget:Initialize()
-	Spring.UnitRendering.SetUnitLuaDraw (1, true)
-	local allUnits = Spring.GetAllUnits()
-	for i = 1, #allUnits do
-		local unitID = allUnits[i]
-		gadget:UnitCreated(unitID, Spring.GetUnitDefID(unitID))
+	for _, unitID in ipairs(Spring.GetAllUnits()) do
+		self:UnitCreated(unitID, Spring.GetUnitDefID(unitID))
 	end
 end
 
 function gadget:UnitCreated(unitID, unitDefID)
-	local vScale = spGetUnitRulesParam( unitID, "scale_vertical")
-	local hScale = spGetUnitRulesParam( unitID, "scale_horizontal")
-	if vScale or hScale then
-		SetUnitLuaDraw(unitID, true)
+	local scale = defScales[unitDefID]
+	if scale then
+		unitScales[unitID] = scale
+		setUnitLuaDraw(unitID, true)
 	end
 end
 
+function gadget:UnitDestroyed(unitID)
+	unitScales[unitID] = nil
+end
+
 function gadget:DrawUnit(unitID, drawMode)
-	local vScale = spGetUnitRulesParam( unitID, "scale_vertical")
-	local hScale = spGetUnitRulesParam( unitID, "scale_horizontal")
-	if not (vScale or hScale) then
-		return
-	end
-	--local bx, by, bz = spGetUnitPosition(unitID)
-	--glTranslate( -bx, -by, -bz )
-	glScale(hScale, vScale, hScale)
-	--glTranslate( bx, by, bz )
+	local scale = unitScales[unitID]
+	if scale then glScale(scale[1], scale[2], scale[1]) end
 end
 
 --------------------------------------------------------------------------------

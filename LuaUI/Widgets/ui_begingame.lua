@@ -217,6 +217,12 @@ function widget:KeyPress(key, mods, isRepeat)
 end
 
 function widget:Initialize()
+    if (Spring.GetModOptions() or {}).skip_intro == "1" then
+        WG.ShowBindingText(true)
+        Spring.Echo("TTLD intro skipped (skip_intro=1)")
+        widgetHandler:RemoveWidget()
+        return
+    end
     if not WG.Chili then
         widgetHandler:RemoveWidget()
         return

@@ -414,7 +414,13 @@ local function FillVillagerAreas()
 	local totalVillagers = 0
 	for i = 1, #villagerArea do
 		--Spring.MarkerAddPoint(villagerArea[i].x, 0, villagerArea[i].z, i)
-		for unitDefname, count in pairs(villagerArea[i].units) do
+		-- Canonical order shared with the Rust town data. Table hash order
+		-- must not assign the RNG stream to different villager types.
+		local names = {}
+		for name in pairs(villagerArea[i].units) do names[#names + 1] = name end
+		table.sort(names)
+		for _, unitDefname in ipairs(names) do
+			local count = villagerArea[i].units[unitDefname]
 			local unitDefID = UnitDefNames[unitDefname].id
 			for j = 1, count do
 				SpawnVillager(villagerArea[i], unitDefID)
@@ -445,8 +451,6 @@ local function CheckIdle(unitID, area)
 		return
 	end
 	
-	local x = area.x + area.width*math.random() - area.width/2
-	local z = area.z + area.height*math.random() - area.height/2
 	local dx = area.x + math.random()*area.width - area.width/2
 	local dz = area.z + math.random()*area.height - area.height/2
 	local dy = Spring.GetGroundHeight(dx, dz)
@@ -457,15 +461,7 @@ end
 ----------------------------------------------------------------------------
 -- Callins
 
-function gadget:GameFrame(frame)
-	local count = math.ceil(villagers.GetIndexMax()/90)
-	for i = 1, count do
-		local unitID, area = villagers.Next()
-		CheckIdle(unitID, area)
-	end
-end
-
-function gadget:Initialize()
+local function PopulateTown()
 	local units = Spring.GetAllUnits()
 	for i = 1, #units do
 		Spring.SetUnitPosition(units[i], 100, 100)
@@ -476,6 +472,28 @@ function gadget:Initialize()
 	SpawnBloodMage(5580, 7100)
 	FillVillagerAreas()
 end
+
+
+-- Match the Rust rules lifecycle: create the town after every module and
+-- unit-script handler has loaded, on the first simulation frame.
+local populatePending = true
+function gadget:Initialize()
+	populatePending = true
+end
+
+function gadget:GameFrame(frame)
+	if populatePending then
+		populatePending = false
+		PopulateTown()
+		return
+	end
+	local count = math.ceil(villagers.GetIndexMax()/90)
+	for i = 1, count do
+		local unitID, area = villagers.Next()
+		CheckIdle(unitID, area)
+	end
+end
+
 
 function gadget:UnitDestroyed(unitID, unitDefID, teamID)
 	Spring.SetUnitNoMinimap(unitID, true) -- Update minimap faster in the event of unit death.
