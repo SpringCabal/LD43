@@ -1,6 +1,7 @@
 extern crate alloc;
 
 use alloc::collections::BTreeMap;
+use alloc::vec::Vec;
 use core::cell::RefCell;
 
 use spring::ResultExt;
@@ -11,7 +12,7 @@ use spring_addons::{AddonContext, register_unsynced_addons};
 #[derive(Default)]
 struct UnitEnlarger {
     scales: RefCell<BTreeMap<i32, Option<(f32, f32)>>>,
-    units: RefCell<BTreeMap<i32, (f32, f32)>>,
+    units: RefCell<Vec<Option<(f32, f32)>>>,
 }
 
 impl UnitEnlarger {
@@ -30,7 +31,13 @@ impl UnitEnlarger {
 
     fn arm(&self, spring: &spring::Spring<'_, spring::RulesUnsynced>, unit_id: i32, def_id: i32) {
         if let Some(scale) = self.scale(spring, def_id) {
-            self.units.borrow_mut().insert(unit_id, scale);
+            let index = usize::try_from(unit_id).expect("nonnegative engine unit ID");
+            let mut units = self.units.borrow_mut();
+            if index >= units.len() {
+                units.resize(index + 1, None);
+            }
+            units[index] = Some(scale);
+            drop(units);
             spring
                 .unsynced_ctrl()
                 .set_unit_lua_draw(unit_id, true)
@@ -69,7 +76,9 @@ impl UnsyncedAddon for UnitEnlarger {
         unit_id: i32,
         _draw_mode: i32,
     ) -> EventResult {
-        let scale = self.units.borrow().get(&unit_id).copied();
+        let scale = usize::try_from(unit_id)
+            .ok()
+            .and_then(|index| self.units.borrow().get(index).copied().flatten());
         if let Some((horizontal, vertical)) = scale {
             _ctx.spring()
                 .gfx()
@@ -84,7 +93,11 @@ impl UnsyncedAddon for UnitEnlarger {
         _ctx: &AddonContext<'_, (), spring::RulesUnsynced>,
         event: &spring_addons::rules::UnitDestroyedEvent,
     ) {
-        self.units.borrow_mut().remove(&event.unit_id);
+        if let Ok(index) = usize::try_from(event.unit_id)
+            && let Some(slot) = self.units.borrow_mut().get_mut(index)
+        {
+            *slot = None;
+        }
     }
 }
 

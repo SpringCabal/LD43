@@ -58,10 +58,25 @@ pub(super) fn face_direction(
     dx: f32,
     dz: f32,
 ) {
-    if dx == 0.0 && dz == 0.0 {
-        return;
-    }
-    let angle = dz.atan2(dx) - core::f32::consts::FRAC_PI_2;
+    // Lua's Vector.Angle normalizes first and uses acos with a z quadrant.
+    // atan2 is geometrically equivalent, but changes the engine's float pose.
+    let direction = if dx == 0.0 && dz == 0.0 {
+        0.0
+    } else {
+        let inverse = 1.0 / (dx * dx + dz * dz).sqrt();
+        let x = dx * inverse;
+        let z = dz * inverse;
+        if z > 0.0 {
+            springcabal_math::acosf(x)
+        } else if z < 0.0 {
+            2.0 * core::f32::consts::PI - springcabal_math::acosf(x)
+        } else if x < 0.0 {
+            core::f32::consts::PI
+        } else {
+            0.0
+        }
+    };
+    let angle = direction - core::f32::consts::FRAC_PI_2;
     spring
         .unit_control()
         .set_unit_rotation(unit.0, spring::Float3::new(0.0, angle, 0.0))
@@ -119,18 +134,27 @@ pub(super) fn set_blocking(
     unit: UnitId,
     blocking: bool,
 ) {
+    // Spring.SetUnitBlocking(unit, blocking) leaves the other optional flags
+    // unchanged. Clearing solid-object collision changes corpse pushes.
+    let Some(previous) = spring
+        .units_info()
+        .get_unit_blocking(unit.0)
+        .log_err_once(spring, "reading death collision flags")
+    else {
+        return;
+    };
     spring
         .unit_control()
         .set_unit_blocking(
             unit.0,
             spring::unit_control::SetUnitBlockingOptions {
                 blocking,
-                solid_objects: blocking,
-                projectiles: blocking,
-                quad_map_rays: blocking,
-                crushable: false,
-                block_enemy_pushing: blocking,
-                block_height_changes: blocking,
+                solid_objects: previous.is_solid_object_collidable,
+                projectiles: previous.is_projectile_collidable,
+                quad_map_rays: previous.is_ray_segment_collidable,
+                crushable: previous.crushable,
+                block_enemy_pushing: previous.block_enemy_pushing,
+                block_height_changes: previous.block_height_changes,
             },
         )
         .log_err(spring, &alloc::format!("blocking of unit {}", unit.0));

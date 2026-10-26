@@ -181,7 +181,7 @@ fn ring_position(spring: &spring::Spring<'_, spring::RulesSynced>) -> (f32, f32)
     }
     let angle = angle * core::f32::consts::PI / 180.0;
     (
-        RING_CENTER_X + angle.cos() * radius,
-        RING_CENTER_Z - angle.sin() * radius,
+        RING_CENTER_X + springcabal_math::cosf(angle) * radius,
+        RING_CENTER_Z - springcabal_math::sinf(angle) * radius,
     )
 }

@@ -53,6 +53,7 @@ impl UnitKind {
 
 #[derive(Clone, Copy)]
 pub struct DefInfo {
+    pub max_weapon_range: f32,
     pub movement: Option<Movement>,
     pub footprint: Option<(f32, f32)>,
 }
@@ -143,6 +144,7 @@ impl DefInfo {
             max_dec: param(spring, def_id, "maxDec"),
         });
         Self {
+            max_weapon_range: param(spring, def_id, "maxWeaponRange"),
             movement,
             footprint,
         }

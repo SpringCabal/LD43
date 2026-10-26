@@ -42,6 +42,7 @@ struct UnitAttributes {
 
 #[derive(Clone, Copy)]
 struct WeaponBase {
+    range: f32,
     reload: f32,
     burst_rate: f32,
 }
@@ -246,6 +247,15 @@ fn apply_reload(
     let Some(bases) = weapon_bases(spring, global, unit_id) else {
         return;
     };
+    // Lua UpdateWeapons restores the def range, including secondary weapons.
+    // An ork's script initially uses its melee range; leaving that override
+    // after an attribute update changes CommandAI movement and corpse paths.
+    if let Some(def_id) = units::def_of(spring, unit_id) {
+        spring
+            .unit_control()
+            .set_unit_max_range(unit_id, defs(spring).info(spring, def_id).max_weapon_range)
+            .log_err(spring, &format!("maximum weapon range of unit {unit_id}"));
+    }
     let frame = spring.game().current_frame().unwrap_or(0);
     for (weapon, base) in bases.iter().enumerate() {
         let weapon = weapon as i32 + 1;
@@ -253,16 +263,15 @@ fn apply_reload(
             continue;
         };
         if factor <= 0.0 {
-            if !global.attributes.access_mut().paused.insert(unit_id) {
-                continue;
+            if global.attributes.access_mut().paused.insert(unit_id) {
+                let reload_state = if state.reload_frame < frame as f32 {
+                    (frame + UPDATE_PERIOD + 1) as f32
+                } else {
+                    rescaled(frame, &state, PAUSED_RELOAD) + UPDATE_PERIOD as f32
+                };
+                set_weapon(spring, unit_id, weapon, "reloadTime", PAUSED_RELOAD);
+                set_weapon(spring, unit_id, weapon, "reloadState", reload_state);
             }
-            let reload_state = if state.reload_frame < frame as f32 {
-                (frame + UPDATE_PERIOD + 1) as f32
-            } else {
-                rescaled(frame, &state, PAUSED_RELOAD) + UPDATE_PERIOD as f32
-            };
-            set_weapon(spring, unit_id, weapon, "reloadTime", PAUSED_RELOAD);
-            set_weapon(spring, unit_id, weapon, "reloadState", reload_state);
         } else {
             global.attributes.access_mut().paused.remove(&unit_id);
             let reload = base.reload / factor;
@@ -282,6 +291,14 @@ fn apply_reload(
                 base.burst_rate / factor,
             );
         }
+        set_weapon(spring, unit_id, weapon, "range", base.range);
+        spring
+            .unit_control()
+            .set_unit_weapon_damages(unit_id, weapon, "dynDamageRange", base.range)
+            .log_err(
+                spring,
+                &format!("dynamic damage range of unit {unit_id} weapon {weapon}"),
+            );
     }
 }
 
@@ -302,6 +319,7 @@ fn weapon_bases(
     let bases: Vec<WeaponBase> = (1..=weapon_count(spring, unit_id))
         .map_while(|weapon| {
             weapon_state(spring, unit_id, weapon).map(|state| WeaponBase {
+                range: state.range,
                 reload: state.reload_time,
                 burst_rate: state.salvo_delay,
             })
