@@ -7,17 +7,9 @@ use super::PointLight;
 pub struct HouseLights {
     house_def: Option<i32>,
     lights: BTreeMap<i32, Vec<PointLight>>,
-    repeatable: bool,
 }
 
 impl HouseLights {
-    pub fn new(repeatable: bool) -> Self {
-        Self {
-            repeatable,
-            ..Self::default()
-        }
-    }
-
     pub fn init(&mut self, spring: &spring::Spring<'_, spring::Ui>) {
         self.house_def = spring.unit_defs().get_unit_def_id_by_name(HOUSE).ok();
         for unit_id in spring.units_query().get_all_units().unwrap_or_default() {
@@ -40,16 +32,11 @@ impl HouseLights {
         ) else {
             return;
         };
-        if self.repeatable && self.lights.is_empty() {
-            spring
-                .unsynced_random()
-                .seed(REPEATABLE_SEED)
-                .expect("unsynced random");
-        }
+        let mut lamps = ttld_shared::house_lamps(unit_id).into_iter();
         let mut lights = Vec::new();
         for dx in [-HALF_SIZE, HALF_SIZE] {
             for dz in [-HALF_SIZE, HALF_SIZE] {
-                if spring.unsynced_random().float().expect("unsynced random") <= LIGHT_CHANCE {
+                if !lamps.next().unwrap_or(false) {
                     continue;
                 }
                 lights.push(PointLight {
@@ -83,5 +70,3 @@ const RED: f32 = 0.7;
 const GREEN: f32 = 0.7;
 const BLUE: f32 = 0.4;
 const COLOR_MULTIPLIER: f32 = 2.0;
-const LIGHT_CHANCE: f32 = 0.6;
-const REPEATABLE_SEED: i32 = 1;

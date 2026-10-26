@@ -118,9 +118,9 @@ pub const VILLAGER_AREAS: [VillagerArea; 22] = [
         width: 300.0,
         height: 400.0,
         units: &[
-            (VillagerKind::Swordsman, 7),
-            (VillagerKind::Crossbowman, 2),
             (VillagerKind::Coward, 2),
+            (VillagerKind::Crossbowman, 2),
+            (VillagerKind::Swordsman, 7),
         ],
     },
     VillagerArea {
@@ -129,10 +129,10 @@ pub const VILLAGER_AREAS: [VillagerArea; 22] = [
         width: 400.0,
         height: 400.0,
         units: &[
-            (VillagerKind::Swordsman, 6),
             (VillagerKind::Coward, 5),
             (VillagerKind::Crossbowman, 2),
             (VillagerKind::Peasant, 6),
+            (VillagerKind::Swordsman, 6),
         ],
     },
     VillagerArea {
@@ -141,9 +141,9 @@ pub const VILLAGER_AREAS: [VillagerArea; 22] = [
         width: 400.0,
         height: 400.0,
         units: &[
-            (VillagerKind::Swordsman, 5),
             (VillagerKind::Coward, 1),
             (VillagerKind::Peasant, 3),
+            (VillagerKind::Swordsman, 5),
         ],
     },
     VillagerArea {
@@ -152,9 +152,9 @@ pub const VILLAGER_AREAS: [VillagerArea; 22] = [
         width: 500.0,
         height: 500.0,
         units: &[
-            (VillagerKind::Swordsman, 6),
             (VillagerKind::Coward, 1),
             (VillagerKind::Peasant, 10),
+            (VillagerKind::Swordsman, 6),
         ],
     },
     VillagerArea {
@@ -177,9 +177,9 @@ pub const VILLAGER_AREAS: [VillagerArea; 22] = [
         width: 700.0,
         height: 300.0,
         units: &[
-            (VillagerKind::Swordsman, 8),
             (VillagerKind::Crossbowman, 6),
             (VillagerKind::Peasant, 5),
+            (VillagerKind::Swordsman, 8),
         ],
     },
     VillagerArea {
@@ -187,21 +187,21 @@ pub const VILLAGER_AREAS: [VillagerArea; 22] = [
         z: 6320.0,
         width: 180.0,
         height: 300.0,
-        units: &[(VillagerKind::Swordsman, 5), (VillagerKind::Crossbowman, 2)],
+        units: &[(VillagerKind::Crossbowman, 2), (VillagerKind::Swordsman, 5)],
     },
     VillagerArea {
         x: 6850.0,
         z: 6191.0,
         width: 180.0,
         height: 180.0,
-        units: &[(VillagerKind::Swordsman, 5), (VillagerKind::Crossbowman, 3)],
+        units: &[(VillagerKind::Crossbowman, 3), (VillagerKind::Swordsman, 5)],
     },
     VillagerArea {
         x: 6700.0,
         z: 4900.0,
         width: 360.0,
         height: 180.0,
-        units: &[(VillagerKind::Swordsman, 7), (VillagerKind::Crossbowman, 3)],
+        units: &[(VillagerKind::Crossbowman, 3), (VillagerKind::Swordsman, 7)],
     },
     VillagerArea {
         x: 6450.0,
@@ -209,9 +209,9 @@ pub const VILLAGER_AREAS: [VillagerArea; 22] = [
         width: 300.0,
         height: 300.0,
         units: &[
-            (VillagerKind::Swordsman, 5),
             (VillagerKind::Crossbowman, 2),
             (VillagerKind::Peasant, 3),
+            (VillagerKind::Swordsman, 5),
         ],
     },
     VillagerArea {
@@ -233,14 +233,14 @@ pub const VILLAGER_AREAS: [VillagerArea; 22] = [
         z: 4480.0,
         width: 240.0,
         height: 240.0,
-        units: &[(VillagerKind::Swordsman, 4), (VillagerKind::Crossbowman, 5)],
+        units: &[(VillagerKind::Crossbowman, 5), (VillagerKind::Swordsman, 4)],
     },
     VillagerArea {
         x: 5700.0,
         z: 5100.0,
         width: 280.0,
         height: 220.0,
-        units: &[(VillagerKind::Swordsman, 5), (VillagerKind::Crossbowman, 2)],
+        units: &[(VillagerKind::Crossbowman, 2), (VillagerKind::Swordsman, 5)],
     },
     VillagerArea {
         x: 4930.0,
@@ -248,10 +248,10 @@ pub const VILLAGER_AREAS: [VillagerArea; 22] = [
         width: 300.0,
         height: 800.0,
         units: &[
-            (VillagerKind::Swordsman, 6),
-            (VillagerKind::Crossbowman, 1),
             (VillagerKind::Coward, 3),
+            (VillagerKind::Crossbowman, 1),
             (VillagerKind::Peasant, 12),
+            (VillagerKind::Swordsman, 6),
         ],
     },
     VillagerArea {
@@ -260,10 +260,10 @@ pub const VILLAGER_AREAS: [VillagerArea; 22] = [
         width: 1000.0,
         height: 1000.0,
         units: &[
-            (VillagerKind::Swordsman, 20),
-            (VillagerKind::Crossbowman, 8),
             (VillagerKind::Coward, 75),
+            (VillagerKind::Crossbowman, 8),
             (VillagerKind::Peasant, 16),
+            (VillagerKind::Swordsman, 20),
         ],
     },
     VillagerArea {
@@ -272,10 +272,10 @@ pub const VILLAGER_AREAS: [VillagerArea; 22] = [
         width: 500.0,
         height: 800.0,
         units: &[
-            (VillagerKind::Swordsman, 12),
-            (VillagerKind::Crossbowman, 4),
             (VillagerKind::Coward, 5),
+            (VillagerKind::Crossbowman, 4),
             (VillagerKind::Peasant, 8),
+            (VillagerKind::Swordsman, 12),
         ],
     },
     VillagerArea {
@@ -284,10 +284,10 @@ pub const VILLAGER_AREAS: [VillagerArea; 22] = [
         width: 900.0,
         height: 900.0,
         units: &[
-            (VillagerKind::Swordsman, 7),
-            (VillagerKind::Crossbowman, 2),
             (VillagerKind::Coward, 6),
+            (VillagerKind::Crossbowman, 2),
             (VillagerKind::Peasant, 16),
+            (VillagerKind::Swordsman, 7),
         ],
     },
     VillagerArea {
@@ -296,10 +296,10 @@ pub const VILLAGER_AREAS: [VillagerArea; 22] = [
         width: 1600.0,
         height: 800.0,
         units: &[
-            (VillagerKind::Swordsman, 8),
-            (VillagerKind::Crossbowman, 3),
             (VillagerKind::Coward, 10),
+            (VillagerKind::Crossbowman, 3),
             (VillagerKind::Peasant, 30),
+            (VillagerKind::Swordsman, 8),
         ],
     },
     VillagerArea {
@@ -308,10 +308,10 @@ pub const VILLAGER_AREAS: [VillagerArea; 22] = [
         width: 900.0,
         height: 1800.0,
         units: &[
-            (VillagerKind::Swordsman, 15),
-            (VillagerKind::Crossbowman, 2),
             (VillagerKind::Coward, 6),
+            (VillagerKind::Crossbowman, 2),
             (VillagerKind::Peasant, 15),
+            (VillagerKind::Swordsman, 15),
         ],
     },
     VillagerArea {
@@ -320,10 +320,10 @@ pub const VILLAGER_AREAS: [VillagerArea; 22] = [
         width: 300.0,
         height: 700.0,
         units: &[
-            (VillagerKind::Swordsman, 2),
+            (VillagerKind::Coward, 2),
             (VillagerKind::Crossbowman, 1),
             (VillagerKind::Peasant, 1),
-            (VillagerKind::Coward, 2),
+            (VillagerKind::Swordsman, 2),
         ],
     },
 ];

@@ -30,9 +30,13 @@ const STEPS: &[(i32, When, Step)] = &[
     (288, When::Running, Step::Shot("selection cleared")),
     (303, When::Running, Step::MouseWheel),
     (339, When::Running, Step::MovePlayer),
-    (376, When::Running, Step::RememberPoultice),
     (376, When::Running, Step::Shot("before poultice")),
+    (418, When::Running, Step::RememberPoultice),
     (418, When::Running, Step::Poultice),
+    (435, When::Running, Step::ReportPoultice),
+    (440, When::Running, Step::ReportPoultice),
+    (445, When::Running, Step::ReportPoultice),
+    (450, When::Running, Step::ReportPoultice),
     (458, When::Running, Step::ReportPoultice),
     (458, When::Running, Step::Shot("poultice throw")),
     (498, When::Running, Step::Track("after_move")),
@@ -459,6 +463,8 @@ impl DbgE2eWidget {
         else {
             return;
         };
+        let mut remembered = None;
+        let mut best_health = 0.0;
         for target in output {
             let Ok(team) = spring.units_info().get_unit_team(target) else {
                 continue;
@@ -478,6 +484,18 @@ impl DbgE2eWidget {
             ) else {
                 continue;
             };
+            let health = spring
+                .units_info()
+                .get_unit_health(target)
+                .map_or(0.0, |h| h.health);
+            if health > best_health {
+                best_health = health;
+                remembered = Some((target, team, def, position));
+            }
+        }
+        // Observe the cast's live target now, rather than an arbitrary enemy
+        // selected 42 combat frames earlier. Record early flight before impact.
+        if let Some((target, team, def, position)) = remembered {
             self.poultice_target.set(target);
             self.poultice_x.set(position.x);
             self.poultice_z.set(position.z);
@@ -491,7 +509,6 @@ impl DbgE2eWidget {
                 ),
                 "",
             );
-            return;
         }
     }
 

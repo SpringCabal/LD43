@@ -20,6 +20,18 @@ impl Widget<Global> for GuiHudWidget {
         "GuiHud"
     }
 
+    fn init(&self, ctx: &spring_addons::AddonContext<'_, Global, spring::Ui>) {
+        let spring = ctx.spring();
+        if spring
+            .game()
+            .get_mod_option("skip_intro")
+            .is_ok_and(|option| option.exists && option.value == "1")
+        {
+            ctx.global().hud.access_mut().intro_open = false;
+            spring::log_notice!(spring, "ttld-ui", "TTLD intro skipped (skip_intro=1)");
+        }
+    }
+
     fn shutdown(&self, ctx: &spring_addons::AddonContext<'_, Global, spring::Ui>) {
         let spring = ctx.spring();
         self.document.shutdown(spring, ctx.global());

@@ -125,9 +125,10 @@ fn spawn_villager(
     kind: UnitKind,
     def_id: i32,
 ) -> Option<i32> {
-    let facing = random::facing(spring);
-    let position = find_placement(spring, area, def_id, facing);
-    let unit_id = units::create_at(spring, kind, position, PLAYER_TEAM, facing)?;
+    let position = find_placement(spring, area, def_id);
+    // The placement probe and the created unit have separate facing draws
+    // in the original. Keep their order so the next villager sees the same RNG.
+    let unit_id = units::create_at(spring, kind, position, PLAYER_TEAM, random::facing(spring))?;
     spring
         .unit_control()
         .set_unit_rotation(
@@ -146,10 +147,11 @@ fn find_placement(
     spring: &spring::Spring<'_, spring::RulesSynced>,
     area: &VillagerArea,
     def_id: i32,
-    facing: i32,
 ) -> Float3 {
     let mut position = sample(spring, area);
-    for tries in 1..=PLACEMENT_TRIES {
+    let facing = random::facing(spring);
+    // The original accepts the eighth sample without a ninth retry.
+    for tries in 1..PLACEMENT_TRIES {
         let blocking = test_build_order(spring, def_id, position, facing);
         let acceptable = if tries < 4 {
             blocking == FREE
@@ -165,8 +167,8 @@ fn find_placement(
 }
 
 fn sample(spring: &spring::Spring<'_, spring::RulesSynced>, area: &VillagerArea) -> Float3 {
-    let x = area.x + random::centered(spring, area.width);
-    let z = area.z + random::centered(spring, area.height);
+    let x = area.x + area.width * random::unit_float(spring) - area.width / 2.0;
+    let z = area.z + area.height * random::unit_float(spring) - area.height / 2.0;
     Float3 {
         x,
         y: units::ground_height(spring, x, z),

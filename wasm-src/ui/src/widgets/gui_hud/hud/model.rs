@@ -1,7 +1,11 @@
 use crate::state::{Global, HudBindings};
 use ttld_shared::Command;
 
-pub fn create(spring: &spring::Spring<'_, spring::Ui>, context: u64) -> Option<HudBindings> {
+pub fn create(
+    spring: &spring::Spring<'_, spring::Ui>,
+    context: u64,
+    intro_open: bool,
+) -> Option<HudBindings> {
     let model = spring
         .rml_ui()
         .context_create_data_model(context, "ttld")
@@ -30,7 +34,7 @@ pub fn create(spring: &spring::Spring<'_, spring::Ui>, context: u64) -> Option<H
         villagers_killed: bind_int(spring, model, "villagersKilled", 0)?,
         allies_drained: bind_int(spring, model, "alliesDrained", 0)?,
         orks_killed: bind_int(spring, model, "orksKilled", 0)?,
-        intro_visible: bind_bool(spring, model, "introVisible", true)?,
+        intro_visible: bind_bool(spring, model, "introVisible", intro_open)?,
         endgame_visible: bind_bool(spring, model, "endgameVisible", false)?,
         endgame_victory: bind_bool(spring, model, "endgameVictory", false)?,
         endgame_title: bind_string(spring, model, "endgameTitle", "")?,

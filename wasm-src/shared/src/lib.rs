@@ -4,6 +4,16 @@ extern crate alloc;
 
 pub mod minimap;
 
+/// Four window lights, in x-then-z order. The 16-bit generator also runs
+/// exactly in Spring Lua's float32 numbers; visual RNG does not affect it.
+pub fn house_lamps(unit_id: i32) -> [bool; 4] {
+    let mut state = unit_id as u32 % 65521;
+    core::array::from_fn(|_| {
+        state = (state * 251 + 1) % 65521;
+        state as f32 / 65521.0 > 0.6
+    })
+}
+
 use alloc::string::String;
 
 use springcabal::message::{Encoder, fields, key_values};
@@ -184,6 +194,17 @@ impl Command {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn house_light_choices_match_the_lua_widget_vectors() {
+        for (id, expected) in [(0, 4u8), (1, 2), (11652, 11), (65520, 5)] {
+            let mask = house_lamps(id)
+                .into_iter()
+                .enumerate()
+                .fold(0u8, |mask, (i, lit)| mask | (u8::from(lit) << i));
+            assert_eq!(mask, expected, "house {id}");
+        }
+    }
 
     #[test]
     fn status_round_trips() {

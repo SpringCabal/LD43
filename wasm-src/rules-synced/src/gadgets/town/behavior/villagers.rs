@@ -71,8 +71,8 @@ pub fn check_idle(spring: &spring::Spring<'_, spring::RulesSynced>, villager: Vi
     if (position.x - area.x).abs() < area.width && (position.z - area.z).abs() < area.height {
         return;
     }
-    let x = area.x + random::centered(spring, area.width);
-    let z = area.z + random::centered(spring, area.height);
+    let x = area.x + random::unit_float(spring) * area.width - area.width / 2.0;
+    let z = area.z + random::unit_float(spring) * area.height - area.height / 2.0;
     let y = units::ground_height(spring, x, z);
     crate::with_addon_context(|ctx| {
         ctx.commands()

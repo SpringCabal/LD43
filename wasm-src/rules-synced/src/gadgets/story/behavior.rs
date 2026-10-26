@@ -52,7 +52,8 @@ const RING_CENTER_Z: f32 = units::TOWN_CENTRE_Z - 20.0;
 const RING_RADIUS: f32 = 3000.0;
 const RING_RADIUS_JITTER: f32 = 200.0;
 const ANGLE_SPAN: f32 = 320.0;
-const SKIPPED_ARCS: [(f32, f32, f32); 2] = [(65.0, 85.0, 270.0), (180.0, 200.0, 210.0)];
+const SKIPPED_ARCS: [(f32, f32, f32, f32); 2] =
+    [(65.0, 85.0, 320.0, 50.0), (180.0, 200.0, 340.0, 130.0)];
 
 const WAVES: [Wave; 13] = [
     Wave {
@@ -173,9 +174,9 @@ fn spawn(_spring: &spring::Spring<'_, spring::RulesSynced>, kind: OrkKind) {
 fn ring_position(spring: &spring::Spring<'_, spring::RulesSynced>) -> (f32, f32) {
     let radius = RING_RADIUS + random::unit_float(spring) * RING_RADIUS_JITTER;
     let mut angle = random::unit_float(spring) * ANGLE_SPAN;
-    for (from, to, rotation) in SKIPPED_ARCS {
+    for (from, to, add, subtract) in SKIPPED_ARCS {
         if angle > from && angle < to {
-            angle += rotation;
+            angle = angle + add - subtract;
         }
     }
     let angle = angle * core::f32::consts::PI / 180.0;

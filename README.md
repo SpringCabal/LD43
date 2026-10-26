@@ -30,3 +30,11 @@ geometry remain the same for visible content.
 
 Release builds use whole-program LTO and one code generation unit. The
 workspace profile applies to both installed modules and verification builds.
+
+Startup and rendering parity: town creation runs at frame zero after event
+subscription, with canonical villager order and matching placement draws.
+Lua and Rust use the same deterministic per-house light masks. Per-unit scale
+lookups are cached. The deferred lighting target uses RGB32F and the bloom
+targets RGB8, matching Lua without an unused alpha channel. Set the optional
+`skip_intro=1` game option to start in the gameplay view; the normal launch
+profile retains the intro.

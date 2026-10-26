@@ -1,10 +1,21 @@
 use spring::{RulesSynced, Spring};
 
+#[cfg_attr(feature = "diagnostics", track_caller)]
 pub fn unit_float(spring: &Spring<'_, RulesSynced>) -> f32 {
-    spring
+    let value = spring
         .synced_random()
         .next_float()
-        .expect("synced random float")
+        .expect("synced random float");
+    #[cfg(feature = "diagnostics")]
+    if spring.game().current_frame().unwrap_or(2) <= 1 {
+        spring::log_notice!(
+            spring,
+            "PerfRng",
+            "{value:.9} {}",
+            core::panic::Location::caller()
+        );
+    }
+    value
 }
 pub fn range(spring: &Spring<'_, RulesSynced>, low: f32, high: f32) -> f32 {
     low + (high - low) * unit_float(spring)

@@ -68,8 +68,8 @@ impl OrkAi {
 }
 
 pub fn advance(spring: &spring::Spring<'_, spring::RulesSynced>, unit_id: i32) {
-    let dx = AIM_X + random::centered(spring, AIM_VARIANCE);
-    let dz = AIM_Z + random::centered(spring, AIM_VARIANCE);
+    let dx = AIM_X + random::unit_float(spring) * AIM_VARIANCE - AIM_VARIANCE / 2.0;
+    let dz = AIM_Z + random::unit_float(spring) * AIM_VARIANCE - AIM_VARIANCE / 2.0;
     let y = units::ground_height(spring, dx, dz);
     crate::engine::check(
         spring,
@@ -85,8 +85,8 @@ pub fn check_idle(spring: &spring::Spring<'_, spring::RulesSynced>, unit_id: i32
     if units::has_orders(spring, unit_id) {
         return;
     }
-    let dx = AIM_X + random::centered(spring, AIM_REACHED_VARIANCE);
-    let dz = AIM_Z + random::centered(spring, AIM_REACHED_VARIANCE);
+    let dx = AIM_X + random::unit_float(spring) * AIM_REACHED_VARIANCE - AIM_REACHED_VARIANCE / 2.0;
+    let dz = AIM_Z + random::unit_float(spring) * AIM_REACHED_VARIANCE - AIM_REACHED_VARIANCE / 2.0;
     let y = units::ground_height(spring, dx, dz);
     order(spring, unit_id, cmd::FIGHT, &[dx, y, dz]);
 }

@@ -12,6 +12,7 @@ crate-type = ["cdylib"]
 headless-integration = []
 e2e = []
 pose-probe = []
+diagnostics = []
 
 [dependencies]
 spring = { workspace = true }

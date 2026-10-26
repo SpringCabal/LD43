@@ -237,9 +237,13 @@ fn create_resources(
     let _ = gl_uniforms::set_int(spring, light_shader, "modelExtra", 4);
     let _ = spring.gfx().use_shader(0);
 
-    let screen_hdr = create_texture(spring, width, height, gl::RGBA32F_ARB, true)?;
-    let bright_texture = create_texture(spring, width / 2, height / 2, gl::RGBA8, true)?;
-    let blur_texture = create_texture(spring, width / 2, height / 2, gl::RGBA8, true)?;
+    // These passes use RGB only. Match Lua's targets: retaining alpha here
+    // adds blending/storage work for every overlapping point light.
+    const RGB32F: u32 = 0x8815;
+    const RGB8: u32 = 0x8051;
+    let screen_hdr = create_texture(spring, width, height, RGB32F, true)?;
+    let bright_texture = create_texture(spring, width / 2, height / 2, RGB8, true)?;
+    let blur_texture = create_texture(spring, width / 2, height / 2, RGB8, true)?;
 
     let bright_shader = effect_shader(spring, BLOOM_BRIGHT_FRAGMENT)?;
     let bright = BrightResources {

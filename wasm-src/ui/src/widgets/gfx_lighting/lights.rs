@@ -29,7 +29,7 @@ pub struct Lights {
 impl Lights {
     pub fn new(still: bool) -> Self {
         Self {
-            houses: houses::HouseLights::new(still),
+            houses: houses::HouseLights::default(),
             still,
             ..Self::default()
         }

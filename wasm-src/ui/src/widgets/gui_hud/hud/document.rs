@@ -32,7 +32,7 @@ impl Document {
         let Some(context) = create_context(spring) else {
             return;
         };
-        let Some(bindings) = model::create(spring, context) else {
+        let Some(bindings) = model::create(spring, context, global.hud.access().intro_open) else {
             spring::log_warning!(spring, "ttld-ui", "RmlUi data-model creation failed");
             let _ = spring.rml_ui().remove_context(context);
             return;

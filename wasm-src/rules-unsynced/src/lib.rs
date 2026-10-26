@@ -3,6 +3,7 @@ extern crate alloc;
 use alloc::collections::BTreeMap;
 use core::cell::RefCell;
 
+use spring::ResultExt;
 use spring_addons::event::EventResult;
 use spring_addons::unsynced::{UnsyncedAddon, UnsyncedHandler};
 use spring_addons::{AddonContext, register_unsynced_addons};
@@ -10,6 +11,7 @@ use spring_addons::{AddonContext, register_unsynced_addons};
 #[derive(Default)]
 struct UnitEnlarger {
     scales: RefCell<BTreeMap<i32, Option<(f32, f32)>>>,
+    units: RefCell<BTreeMap<i32, (f32, f32)>>,
 }
 
 impl UnitEnlarger {
@@ -27,8 +29,12 @@ impl UnitEnlarger {
     }
 
     fn arm(&self, spring: &spring::Spring<'_, spring::RulesUnsynced>, unit_id: i32, def_id: i32) {
-        if self.scale(spring, def_id).is_some() {
-            let _ = spring.unsynced_ctrl().set_unit_lua_draw(unit_id, true);
+        if let Some(scale) = self.scale(spring, def_id) {
+            self.units.borrow_mut().insert(unit_id, scale);
+            spring
+                .unsynced_ctrl()
+                .set_unit_lua_draw(unit_id, true)
+                .log_err_once(spring, "enabling scaled unit drawing");
         }
     }
 }
@@ -63,16 +69,22 @@ impl UnsyncedAddon for UnitEnlarger {
         unit_id: i32,
         _draw_mode: i32,
     ) -> EventResult {
-        let scale = _ctx
-            .spring()
-            .units_info()
-            .get_unit_def_id(unit_id)
-            .ok()
-            .and_then(|def_id| self.scale(_ctx.spring(), def_id));
+        let scale = self.units.borrow().get(&unit_id).copied();
         if let Some((horizontal, vertical)) = scale {
-            let _ = _ctx.spring().gfx().scale(horizontal, vertical, horizontal);
+            _ctx.spring()
+                .gfx()
+                .scale(horizontal, vertical, horizontal)
+                .log_err_once(_ctx.spring(), "scaling a unit model");
         }
         EventResult::Ignored
+    }
+
+    fn unit_destroyed(
+        &self,
+        _ctx: &AddonContext<'_, (), spring::RulesUnsynced>,
+        event: &spring_addons::rules::UnitDestroyedEvent,
+    ) {
+        self.units.borrow_mut().remove(&event.unit_id);
     }
 }
 

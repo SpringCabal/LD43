@@ -55,5 +55,5 @@ const START_POSITION: Float3 = Float3::new(5580.0, START_Y, 7100.0);
 
 const FOLLOW: Follow = Follow::target(0.0)
     .start(START_VIEW, START_POSITION)
-    .aim(Aim::MidPosition)
+    .aim(Aim::Position)
     .engine_tracker();
