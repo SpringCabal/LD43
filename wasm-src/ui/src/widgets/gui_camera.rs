@@ -1,6 +1,7 @@
 use core::cell::Cell;
 
-use spring::Float3;
+use spring::{Float3, ResultExt};
+use spring_addons::UnitDestroyedEvent;
 use spring_addons::ui::Widget;
 use springcabal_control::camera::{Aim, CameraFollow, Follow, View};
 
@@ -9,6 +10,8 @@ use crate::state::Global;
 pub struct GuiCameraWidget {
     camera: CameraFollow,
     round: Cell<u32>,
+    player_def: Cell<Option<i32>>,
+    controlled: Cell<Option<i32>>,
 }
 
 impl Default for GuiCameraWidget {
@@ -22,6 +25,8 @@ impl GuiCameraWidget {
         Self {
             camera: CameraFollow::new(FOLLOW),
             round: Cell::new(0),
+            player_def: Cell::new(None),
+            controlled: Cell::new(None),
         }
     }
 }
@@ -31,17 +36,53 @@ impl Widget<Global> for GuiCameraWidget {
         "GuiCamera"
     }
 
+    fn init(&self, ctx: &spring_addons::AddonContext<'_, Global, spring::Ui>) {
+        let spring = ctx.spring();
+        self.player_def.set(
+            spring
+                .unit_defs()
+                .get_unit_def_id_by_name("bloodmage")
+                .log_err_once(spring, "resolving the camera's player definition"),
+        );
+        for unit in spring.units_query().get_all_units().unwrap_or_default() {
+            if spring.units_info().get_unit_def_id(unit).ok() == self.player_def.get() {
+                self.controlled.set(Some(unit));
+            }
+        }
+    }
+
+    fn unit_created(
+        &self,
+        _ctx: &spring_addons::AddonContext<'_, Global, spring::Ui>,
+        unit: i32,
+        def: i32,
+        _team: i32,
+        _builder: i32,
+    ) {
+        if self.player_def.get() == Some(def) {
+            self.controlled.set(Some(unit));
+        }
+    }
+
+    fn unit_destroyed(
+        &self,
+        _ctx: &spring_addons::AddonContext<'_, Global, spring::Ui>,
+        event: &UnitDestroyedEvent,
+    ) {
+        if self.controlled.get() == Some(event.unit_id) {
+            self.controlled.set(None);
+        }
+    }
+
     fn update(&self, ctx: &spring_addons::AddonContext<'_, Global, spring::Ui>, dt: f32) {
         let spring = ctx.spring();
-        let (round, player_unit) = {
-            let status = ctx.global().status.access();
-            (status.round, status.player_unit)
-        };
+        // Unit events arrive immediately, like the original Lua camera.
+        // The HUD status packet is sent only every six simulation frames.
+        let round = ctx.global().status.access().round;
         if self.round.replace(round) != round && round > 1 {
             self.camera.reset();
         }
-        self.camera
-            .update(spring, (player_unit >= 0).then_some(player_unit), dt);
+        self.camera.update(spring, self.controlled.get(), dt);
     }
 }
 
