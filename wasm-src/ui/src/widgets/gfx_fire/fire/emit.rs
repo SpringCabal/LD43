@@ -1,89 +1,91 @@
-use super::particles::{self, Field, Particle};
+use super::particles::{Effect, Field, Texture};
 
-const WIND_SCALE: f32 = 0.09;
-const DISC_RADIUS_SCALE: f32 = 0.6;
-const SIZE_SCALE: f32 = 0.35;
-const EMIT_CHANCE_RANGE: i32 = 400;
-
+/// Exactly representable arithmetic in Spring's f32 Lua. Both widgets own it,
+/// so native CEG randomness is independent of custom fire polling.
+pub struct Random(u32);
+impl Default for Random {
+    fn default() -> Self {
+        Self(1)
+    }
+}
+impl Random {
+    pub fn sample(&mut self) -> f32 {
+        self.0 = (self.0 * 251 + 1) % 65521;
+        self.0 as f32 / 65521.0
+    }
+}
 pub fn on_fire(spring: &spring::Spring<'_, spring::Ui>, unit_id: i32) -> bool {
     spring
         .rules_params()
         .get_unit_rules_param_f32(unit_id, "on_fire")
         .unwrap_or(0.0)
-        >= 0.5
+        == 1.0
 }
-
-pub fn emit(spring: &spring::Spring<'_, spring::Ui>, field: &mut Field, burning: &[i32]) {
+pub fn emit(
+    spring: &spring::Spring<'_, spring::Ui>,
+    field: &mut Field,
+    burning: &[i32],
+    random: &mut Random,
+) {
     if burning.is_empty() {
         return;
     }
-    apply_wind(spring, field);
-    let count = burning.len() as i32;
+    let wind = spring.game().get_wind_vector().unwrap_or_default();
     for &unit_id in burning {
-        if (spring.unsynced_random().float().expect("unsynced random") * EMIT_CHANCE_RANGE as f32)
-            as i32
-            >= EMIT_CHANCE_RANGE - count
-        {
+        // Lua math.random(400) is one based and uses a strict comparison.
+        if (random.sample() * 400.0) as i32 + 1 >= 400 - burning.len() as i32 {
             continue;
         }
-        let Ok(position) = spring.units_info().get_unit_position(
-            unit_id,
-            spring::units_info::GetUnitPositionOptions {
-                mid_pos: false,
-                aim_pos: false,
-            },
-        ) else {
+        let Ok(position) = spring
+            .units_info()
+            .get_unit_position(unit_id, Default::default())
+        else {
             continue;
         };
         let Ok(radius) = spring.units_info().get_unit_radius(unit_id) else {
             continue;
         };
-        for _ in 0..particles::PARTICLES_PER_EMIT {
-            spawn(spring, field, position, radius);
-        }
+        let effect = effect(radius, [wind.x, wind.y, wind.z]);
+        springcabal::particles::emit_effect(
+            field,
+            &effect,
+            [position.x, position.y, position.z],
+            &mut || random.sample(),
+        );
     }
 }
-
-fn apply_wind(spring: &spring::Spring<'_, spring::Ui>, field: &mut Field) {
-    let Ok(wind) = spring.game().get_wind() else {
-        return;
-    };
-    field.set_force(0.0, wind.current * WIND_SCALE + 3.0, 0.0);
+pub(super) fn effect(radius: f32, wind: [f32; 3]) -> Effect {
+    Effect {
+        count: 5,
+        life: 30.0,
+        life_spread: 10.0,
+        delay_spread: 20.0,
+        force: [wind[0] * 0.09, wind[1] * 0.09 + 3.0, wind[2] * 0.09],
+        speed: 0.65,
+        speed_spread: 0.0,
+        speed_exp: 1.0,
+        size: radius * 0.35,
+        size_spread: 1.0,
+        size_growth: 0.9,
+        size_exp: 1.0,
+        rotation_speed: 1.0,
+        rotation_speed_spread: -2.0,
+        rotation_spread: 360.0,
+        rotation_exp: 1.0,
+        distortion: false,
+        distortion_strength: 0.0,
+        distortion_scale: 0.0,
+        distortion_heat: 0.0,
+        emit_rotation_spread: 60.0,
+        emit_vector: [0.0, 1.0, 0.0],
+        start_radius: radius * 0.6,
+        colormap: &COLORS,
+        texture: Texture::Flame,
+    }
 }
-
-fn spawn(
-    spring: &spring::Spring<'_, spring::Ui>,
-    field: &mut Field,
-    position: spring::Float3,
-    radius: f32,
-) {
-    let alpha = spring.unsynced_random().float().expect("unsynced random") * core::f32::consts::TAU;
-    let disc =
-        spring.unsynced_random().float().expect("unsynced random") * DISC_RADIUS_SCALE * radius;
-    let emit_angle = spring.unsynced_random().float().expect("unsynced random")
-        * particles::EMIT_ROTATION_SPREAD
-        * core::f32::consts::PI
-        / 180.0;
-    let emit_spin =
-        spring.unsynced_random().float().expect("unsynced random") * core::f32::consts::TAU;
-    let particle = Particle {
-        x: position.x + disc * alpha.sin(),
-        y: position.y,
-        z: position.z + disc * alpha.cos(),
-        velocity_x: emit_angle.sin() * emit_spin.cos(),
-        velocity_y: emit_angle.cos(),
-        velocity_z: emit_angle.sin() * emit_spin.sin(),
-        age: 0.0,
-        life: particles::LIFE
-            + spring.unsynced_random().float().expect("unsynced random") * particles::LIFE_SPREAD,
-        delay: spring.unsynced_random().float().expect("unsynced random") * particles::DELAY_SPREAD,
-        size: radius * SIZE_SCALE
-            + spring.unsynced_random().float().expect("unsynced random") * particles::SIZE_SPREAD,
-        rotation: spring.unsynced_random().float().expect("unsynced random")
-            * particles::ROTATION_SPREAD,
-        rotation_speed: particles::ROTATION_SPEED
-            + spring.unsynced_random().float().expect("unsynced random")
-                * particles::ROTATION_SPEED_SPREAD,
-    };
-    field.spawn(particle);
-}
+const COLORS: [[f32; 4]; 4] = [
+    [0.0, 0.0, 0.0, 0.0],
+    [0.4, 0.4, 0.4, 0.01],
+    [0.35, 0.15, 0.15, 0.20],
+    [0.0, 0.0, 0.0, 0.0],
+];

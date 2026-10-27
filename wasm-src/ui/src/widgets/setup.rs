@@ -15,6 +15,16 @@ pub const HIDDEN_INTERFACE: u32 =
     CONSOLE | RESOURCE_BAR | TOOLTIP | CLOCK | PLAYER_INFO | UNIT_ICONS | END_GRAPH;
 
 pub fn setup(handler: &mut WidgetHandler<Global>, spring: &spring::Spring<'_, spring::Ui>) {
+    if cfg!(feature = "fire-probe") {
+        register_widgets!(
+            handler,
+            [
+                HideDefaultInterface::new(HIDDEN_INTERFACE),
+                GfxFireWidget::new()
+            ]
+        );
+        return;
+    }
     register_widgets!(handler, [springcabal::controls::GameControls::new()]);
     if springcabal::verification::world_only(spring) {
         gallery::setup(spring, handler);

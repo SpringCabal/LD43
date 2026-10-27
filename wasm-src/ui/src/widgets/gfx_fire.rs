@@ -11,6 +11,8 @@ use crate::state::Global;
 pub struct GfxFireWidget {
     fire: RefCell<Fire>,
     house_def: Cell<Option<i32>>,
+    #[cfg(feature = "fire-probe")]
+    probe: RefCell<fire::probe::Probe>,
 }
 
 impl GfxFireWidget {
@@ -65,9 +67,20 @@ impl Widget<Global> for GfxFireWidget {
         self.fire.borrow_mut().remove_house(event.unit_id);
     }
 
-    fn update(&self, _ctx: &spring_addons::AddonContext<'_, Global, spring::Ui>, dt: f32) {
+    fn update(&self, _ctx: &spring_addons::AddonContext<'_, Global, spring::Ui>, _dt: f32) {
         let spring = _ctx.spring();
-        self.fire.borrow_mut().update(spring, dt.max(0.0));
+        if cfg!(feature = "fire-probe") {
+            #[cfg(feature = "fire-probe")]
+            self.probe
+                .borrow_mut()
+                .update(spring, &mut self.fire.borrow_mut());
+        } else {
+            self.fire.borrow_mut().update(spring);
+        }
+    }
+
+    fn shutdown(&self, ctx: &spring_addons::AddonContext<'_, Global, spring::Ui>) {
+        self.fire.borrow().shutdown(ctx.spring());
     }
 
     fn draw_world(&self, _ctx: &spring_addons::AddonContext<'_, Global, spring::Ui>) {
