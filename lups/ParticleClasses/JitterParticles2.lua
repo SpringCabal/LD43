@@ -5,6 +5,8 @@
 local JitterParticles2 = {}
 JitterParticles2.__index = JitterParticles2
 
+local ParticleBatch = VFS.Include("lups/headers/particle_batch.lua")
+local batch
 local billShader
 local colormapUniform = {}
 
@@ -128,42 +130,39 @@ local ParseParamString = ParseParamString
 local Vmul    = Vmul
 local Vlength = Vlength
 
-local nullVector = {0,0,0}
 
 -----------------------------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------
 
 function JitterParticles2:CreateParticleAttributes(up, right, forward, partpos,n)
-  local life, delay, pos, speed, sizeStart,sizeEnd, rotStart,rotEnd;
-
-  local az = rand()*twopi;
-  local ay = (self.emitRot + rand() * self.emitRotSpread) * degreeToPI;
-
-  local a,b,c = cos(ay),  cos(az)*sin(ay),  sin(az)*sin(ay)
-
-  speed = {
-    up[1]*a - right[1]*b + forward[1]*c,
-    up[2]*a - right[2]*b + forward[2]*c,
-    up[3]*a - right[3]*b + forward[3]*c}
-
-  life      = self.life + rand() * self.lifeSpread
-  speed     = Vmul( speed,( self.speed + rand() * self.speedSpread) * life)
-  delay     = rand() * self.delaySpread
-
-  sizeStart = self.size + rand() * self.sizeSpread
-  sizeEnd   = sizeStart + self.sizeGrowth * life
-
-  if (partpos) then
-    local part = { speed=speed, velocity=Vlength(speed), life=life, delay=delay, i=n }
-    pos = { ProcessParamCode(partpos, part) }
-  else
-    pos = nullVector
+  local rand = self.random or rand
+  local az = rand()*twopi
+  local ay = (self.emitRot + rand()*self.emitRotSpread)*degreeToPI
+  local sinAy = sin(ay)
+  local a,b,c = cos(ay),cos(az)*sinAy,sin(az)*sinAy
+  local sx = up[1]*a - right[1]*b + forward[1]*c
+  local sy = up[2]*a - right[2]*b + forward[2]*c
+  local sz = up[3]*a - right[3]*b + forward[3]*c
+  local life = self.life + rand()*self.lifeSpread
+  local travel = (self.speed + rand()*self.speedSpread)*life
+  sx,sy,sz = sx*travel,sy*travel,sz*travel
+  local delay = rand()*self.delaySpread
+  local sizeStart = self.size + rand()*self.sizeSpread
+  local sizeEnd = sizeStart + self.sizeGrowth*life
+  local px,py,pz = 0,0,0
+  if self.startRadius then
+    local alpha,radius = rand()*twopi,rand()*self.startRadius
+    px,pz = radius*sin(alpha),radius*cos(alpha)
+  elseif self.startVelocity then
+    local v = self.startVelocity
+    px,py,pz = v[1]*delay,v[2]*delay,v[3]*delay
+  elseif partpos then
+    -- Arbitrary expressions keep their complete mutable environment.
+    local speed = {sx,sy,sz}
+    local part = {speed=speed,velocity=Vlength(speed),life=life,delay=delay,i=n}
+    px,py,pz = ProcessParamCode(partpos,part)
   end
-
-  return life, delay,
-         pos[1],pos[2],pos[3],
-         speed[1],speed[2],speed[3],
-         sizeStart,sizeEnd;
+  return life,delay,px,py,pz,sx,sy,sz,sizeStart,sizeEnd
 end
 
 -----------------------------------------------------------------------------------------------------------------
@@ -171,11 +170,18 @@ end
 local time
 
 function JitterParticles2.BeginDrawDistortion()
+  if batch then batch:begin(thisGameFrame) end
   glUseShader(billShader)
   time = Spring.GetGameFrame()*0.01
+  if batch then batch.noiseFrame = time * 100 end
+end
+
+function JitterParticles2.FlushDrawDistortion()
+  if batch then batch:flush(billShader); lastTexture = "" end
 end
 
 function JitterParticles2.EndDrawDistortion()
+  JitterParticles2.FlushDrawDistortion()
   glTexture(0,false)
   glUseShader(0)
 
@@ -183,6 +189,7 @@ function JitterParticles2.EndDrawDistortion()
 end
 
 function JitterParticles2:DrawDistortion()
+  if batch and batch:queue(self, billShader) then return end
   if (lastTexture~=self.texture) then
     glTexture(0,self.texture)
     lastTexture=self.texture
@@ -193,9 +200,7 @@ function JitterParticles2:DrawDistortion()
 end
 
 
-local function DrawParticleForDList(life,delay, x,y,z, dx,dy,dz, sizeStart,sizeEnd)
-  local animDirX = floor((rand() - 0.5) * 2)
-  local animDirY = floor((rand() - 0.5) * 2)
+local function DrawParticleForDList(life,delay, x,y,z, dx,dy,dz, sizeStart,sizeEnd, animDirX,animDirY)
 
   glMultiTexCoord(0, x,y,z, life/200)
   glMultiTexCoord(1, dx,dy,dz, delay/200)
@@ -205,6 +210,7 @@ local function DrawParticleForDList(life,delay, x,y,z, dx,dy,dz, sizeStart,sizeE
   glVertex(1,0)
   glVertex(1,1)
   glVertex(0,1)
+  return animDirX, animDirY
 end
 
 -----------------------------------------------------------------------------------------------------------------
@@ -302,9 +308,11 @@ function JitterParticles2:Initialize()
     print(PRIO_MAJOR,"LUPS->JitterParticles2: Critical Shader Error: " ..gl.GetShaderLog())
     return false
   end
+  batch = ParticleBatch.new(true)
 end
 
 function JitterParticles2:Finalize()
+  if batch then batch:delete(); batch = nil end
   gl.DeleteShader(billShader)
 end
 
@@ -317,6 +325,7 @@ end
 
 -- used if repeatEffect=true;
 function JitterParticles2:ReInitialize()
+  self.gpuReset = true
   self.frame = 0
   self.dieGameFrame = self.dieGameFrame + self.life + self.lifeSpread + self.delaySpread
 end
@@ -328,7 +337,7 @@ local function InitializeParticles(self)
   local forward = Vcross( up, right );
 
   local partposCode
-  if (self.partpos ~= "0,0,0") then
+  if not self.startRadius and not self.startVelocity and (self.partpos ~= "0,0,0") then
     partposCode = ParseParamString(self.partpos)
   end
 
@@ -338,28 +347,36 @@ local function InitializeParticles(self)
   local emitMatrix = CreateEmitMatrix3x3(ev[1],ev[2],ev[3])
 
   --// global data
-  glMultiTexCoord(3, self.speedExp, self.sizeExp)
-  glMultiTexCoord(4, self.force[1], self.force[2], self.force[3], self.forceExp)
-  glMultiTexCoord(6, self.strength * 0.01, self.scale, self.heat/self.strength)
+  if not self.gpuOnly then
+    glMultiTexCoord(3, self.speedExp, self.sizeExp)
+    glMultiTexCoord(4, self.force[1], self.force[2], self.force[3], self.forceExp)
+    glMultiTexCoord(6, self.strength * 0.01, self.scale, self.heat/self.strength)
+  end
 
+  ParticleBatch.prepare(self)
   self.maxSpawnRadius = 0
   for i=1,self.count do
     local life,delay, x,y,z, dx,dy,dz, sizeStart,sizeEnd = self:CreateParticleAttributes(up,right,forward, partposCode, i-1)
     dx,dy,dz = MultMatrix3x3(emitMatrix,dx,dy,dz)
-    DrawParticleForDList(life, delay,
+    local animX = floor((rand() - 0.5) * 2)
+    local animY = floor((rand() - 0.5) * 2)
+    if not self.gpuOnly then DrawParticleForDList(life, delay,
                          x,y,z,    -- relative start pos
                          dx,dy,dz, -- speed vector
-                         sizeStart,sizeEnd)
+                         sizeStart,sizeEnd, animX,animY) end
+    ParticleBatch.pack(self, life,delay, x+self.pos[1],y+self.pos[2],z+self.pos[3], dx,dy,dz, sizeStart,sizeEnd, 0,0,animX,animY)
     local spawnDist = x*x + y*y + z*z
     if (spawnDist>self.maxSpawnRadius) then self.maxSpawnRadius=spawnDist end
   end
   self.maxSpawnRadius = sqrt(self.maxSpawnRadius)
 
-  glMultiTexCoord(2, 0,0,0,1)
-  glMultiTexCoord(3, 0,0,0,1)
-  glMultiTexCoord(4, 0,0,0,1)
-  glMultiTexCoord(5, 0,0,0,1)
-  glMultiTexCoord(6, 0,0,0,1)
+  if not self.gpuOnly then
+    glMultiTexCoord(2, 0,0,0,1)
+    glMultiTexCoord(3, 0,0,0,1)
+    glMultiTexCoord(4, 0,0,0,1)
+    glMultiTexCoord(5, 0,0,0,1)
+    glMultiTexCoord(6, 0,0,0,1)
+  end
 end
 
 local function CreateDList(self)
@@ -370,7 +387,9 @@ local function CreateDList(self)
 end
 
 function JitterParticles2:CreateParticle()
-  self.dlist = glCreateList(CreateDList,self)
+  self.gpuOnly = batch and ParticleBatch.worldspace(self)
+  if self.gpuOnly then InitializeParticles(self)
+  else self.dlist = glCreateList(CreateDList,self) end
 
   self.frame = 0
   self.firstGameFrame = thisGameFrame
@@ -384,7 +403,8 @@ function JitterParticles2:CreateParticle()
 end
 
 function JitterParticles2:Destroy()
-  gl.DeleteList(self.dlist)
+  ParticleBatch.release(self)
+  if self.dlist then gl.DeleteList(self.dlist) end
   --gl.DeleteTexture(self.texture)
 end
 
@@ -423,7 +443,7 @@ local MergeTable   = MergeTable
 local setmetatable = setmetatable
 
 function JitterParticles2.Create(Options)
-  local newObject = MergeTable(Options, JitterParticles2.Default)
+  local newObject = ParticleBatch.options(Options, JitterParticles2.Default)
   setmetatable(newObject,JitterParticles2)  --// make handle lookup
   newObject:CreateParticle()
   return newObject

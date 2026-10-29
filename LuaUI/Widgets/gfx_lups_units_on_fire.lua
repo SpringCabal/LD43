@@ -32,6 +32,7 @@ local function sample()
     randomState = (randomState*251+1)%65521
     return randomState/65521
 end
+flameFX.immutableColormap = true
 flameFX.random = sample
 flameFX.partpos = "0,0,0"
 

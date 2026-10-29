@@ -52,6 +52,28 @@ local function palette(colors)
     return colors
 end
 
+-- Callers may explicitly share a palette that they never mutate. Other
+-- options retain MergeTable's recursive copy and overlay behavior.
+local immutablePalettes = setmetatable({}, {__mode='kv'})
+local function copyFields(result, source)
+    for key,value in pairs(source) do
+        if key ~= 'colormap' then
+            if type(value)=='table' then
+                if type(result[key])~='table' then result[key]={} end
+                CopyTable(result[key],value)
+            else result[key]=value end
+        end
+    end
+end
+local function copyOptions(options, defaults)
+    if not options.immutableColormap then return MergeTable(options, defaults) end
+    local result = {}
+    copyFields(result,defaults)
+    copyFields(result,options)
+    result.colormap = options.colormap or defaults.colormap
+    return result
+end
+
 local FX,START,COUNT,DEAD,VISIBLE,SEEN,PALETTE,BIRTH = 1,2,3,4,5,6,7,8
 local Batch = {}
 Batch.__index = Batch
@@ -258,13 +280,21 @@ function Batch:delete()
 end
 
 -- Called while the original attribute generator runs, consuming no new RNG.
+Batch.options = copyOptions
+
 function Batch.prepare(self)
     self.gpuParticles = {}
     self.gpuLastParticle = 0
     self.gpuReset = false
     self.gpuEntry = false
     self.gpuGroup = false
-    self.gpuPalette = palette(self.colormap)
+    if self.immutableColormap then
+        self.gpuPalette = immutablePalettes[self.colormap]
+        if not self.gpuPalette then
+            self.gpuPalette = palette(self.colormap)
+            immutablePalettes[self.colormap] = self.gpuPalette
+        end
+    else self.gpuPalette = palette(self.colormap) end
 end
 
 function Batch.pack(self, life, delay, x,y,z, dx,dy,dz, sizeStart,sizeEnd,
