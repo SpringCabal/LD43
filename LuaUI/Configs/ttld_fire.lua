@@ -1,4 +1,7 @@
 return {
+	-- Both playable ally teams have global LOS. Let the common GPU path
+	-- clip billboards; avoid per-effect CPU visibility queries and masks.
+	alwaysVisible = true,
 	layer        = 0,
 	speed        = 0.65,
 	life         = 30,
