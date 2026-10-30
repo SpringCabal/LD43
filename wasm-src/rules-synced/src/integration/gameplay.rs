@@ -59,6 +59,36 @@ pub(super) fn setup_checks(
             scales.0, scales.1
         ),
     );
+    let house_scale_params = defs(spring)
+        .id(UnitKind::House)
+        .and_then(|wanted| {
+            spring
+                .units()
+                .get_all_units()
+                .ok()?
+                .into_iter()
+                .find(|unit| spring.units_info().get_unit_def_id(*unit).ok() == Some(wanted))
+        })
+        .map(|unit| {
+            (
+                spring
+                    .rules_params()
+                    .get_unit_rules_param_f32(unit, "scale_horizontal")
+                    .ok(),
+                spring
+                    .rules_params()
+                    .get_unit_rules_param_f32(unit, "scale_vertical")
+                    .ok(),
+            )
+        });
+    check(
+        spring,
+        tracker,
+        house_scale_params == Some((Some(1.2), Some(0.7))),
+        &format!(
+            "scaled house publishes Lua-compatible scale rules parameters ({house_scale_params:?})"
+        ),
+    );
     let leader_scales = defs(spring)
         .id(UnitKind::OrkBoss)
         .map(|leader| {

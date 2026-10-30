@@ -56,6 +56,7 @@ pub struct DefInfo {
     pub max_weapon_range: f32,
     pub movement: Option<Movement>,
     pub footprint: Option<(f32, f32)>,
+    pub draw_scale: Option<(f32, f32)>,
 }
 
 #[derive(Clone, Copy)]
@@ -147,6 +148,11 @@ impl DefInfo {
             max_weapon_range: param(spring, def_id, "maxWeaponRange"),
             movement,
             footprint,
+            draw_scale: {
+                let horizontal = custom_scale(spring, def_id, "hscale").unwrap_or(1.0);
+                let vertical = custom_scale(spring, def_id, "vscale").unwrap_or(1.0);
+                (horizontal != 1.0 || vertical != 1.0).then_some((horizontal, vertical))
+            },
         }
     }
 }
@@ -171,4 +177,18 @@ fn footprint(
         .get_unit_def_param_int(def_id, key)
         .ok()
         .map(|size| size as f32 * FOOTPRINT_TO_ELMOS)
+}
+
+fn custom_scale(
+    spring: &spring::Spring<'_, spring::RulesSynced>,
+    def_id: i32,
+    key: &str,
+) -> Option<f32> {
+    spring
+        .unit_defs()
+        .get_unit_def_custom_param(def_id, key)
+        .ok()?
+        .trim()
+        .parse()
+        .ok()
 }
