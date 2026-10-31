@@ -6,6 +6,69 @@ use crate::units;
 
 use super::*;
 
+pub(super) fn house_fire_checks(spring: &spring::Spring<'_, spring::RulesSynced>, world: &World) {
+    if !(71..=74).contains(&world.frame) {
+        return;
+    }
+    if world.frame == 71 {
+        let tracker = Rc::clone(world.tracker);
+        units::spawn(spring, UnitKind::House, 700.0, 700.0, PLAYER_TEAM, 0)
+            .then(move |_, unit| tracker.borrow_mut().damage_house = unit);
+    }
+    let unit = world.track(|tracker| tracker.damage_house);
+    let burning = unit.and_then(|unit| {
+        spring
+            .rules_params()
+            .get_unit_rules_param_f32(unit, "on_fire")
+            .ok()
+    }) == Some(1.0);
+    if world.frame == 73 {
+        world.track(|tracker| {
+            check(
+                spring,
+                tracker,
+                unit.is_some(),
+                "house damage fixture spawned",
+            );
+            check(
+                spring,
+                tracker,
+                unit.is_some() && !burning,
+                "400 damage does not ignite a house",
+            );
+        });
+    }
+    if world.frame == 74 {
+        world.track(|tracker| {
+            check(
+                spring,
+                tracker,
+                unit.is_some() && burning,
+                "engine damage above 400 invokes the house fire callback",
+            );
+        });
+        if let Some(unit) = unit {
+            units::destroy(spring, unit);
+        }
+    }
+    if let Some(unit) = unit.filter(|_| matches!(world.frame, 72 | 73)) {
+        let damage = if world.frame == 72 { 400.0 } else { 401.0 };
+        crate::with_addon_context(|ctx| {
+            ctx.commands().add_unit_damage(
+                unit,
+                damage,
+                0.0,
+                -1,
+                -1,
+                spring::Float3::new(0.0, 0.0, 0.0),
+            )
+        })
+        .then(move |spring, result| {
+            crate::engine::check(spring, result, "house fixture damage", unit)
+        });
+    }
+}
+
 pub(super) fn setup_checks(
     spring: &spring::Spring<'_, spring::RulesSynced>,
     tracker: &mut Tracker,

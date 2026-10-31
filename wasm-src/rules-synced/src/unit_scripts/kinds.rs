@@ -35,7 +35,7 @@ pub(super) fn script_kind_for_def(
 pub(super) fn capabilities(kind: ScriptKind) -> ScriptCapabilities {
     let mut bits = ScriptCapabilities::KILLED | ScriptCapabilities::CREATE;
     match kind {
-        ScriptKind::House => bits |= ScriptCapabilities::HIT_BY_WEAPON,
+        ScriptKind::House => bits |= ScriptCapabilities::WORLD_HIT_BY_WEAPON,
         ScriptKind::Coward => {
             bits |= ScriptCapabilities::START_MOVING
                 | ScriptCapabilities::STOP_MOVING

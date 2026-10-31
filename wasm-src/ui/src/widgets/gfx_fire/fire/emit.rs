@@ -2,6 +2,7 @@ use super::particles::{Effect, Field, Texture};
 
 /// Exactly representable arithmetic in Spring's f32 Lua. Both widgets own it,
 /// so native CEG randomness is independent of custom fire polling.
+#[cfg_attr(feature = "fire-probe", derive(Debug))]
 pub struct Random(u32);
 impl Default for Random {
     fn default() -> Self {

@@ -27,11 +27,12 @@ use crate::units::{
 
 const TAG: &str = "[TTLD-Rust-Test]";
 const TITLE: &str = "TO THE LAST DROP INTEGRATION TESTS";
-const CHECK_COUNT: u32 = 54;
+const CHECK_COUNT: u32 = 57;
 const PHYSICAL_STATE_FLYING: u32 = 1 << 7;
 
 #[derive(Default)]
 pub struct Tracker {
+    damage_house: Option<i32>,
     animation_unit: Option<i32>,
     walking_ork: Option<i32>,
     ork_heights: Vec<f32>,
@@ -156,6 +157,7 @@ pub fn update(
         return;
     }
     animation_checks(spring, &world);
+    house_fire_checks(spring, &world);
     match frame {
         10 => {
             with_checks(spring, &world, setup_checks);

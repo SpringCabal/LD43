@@ -15,7 +15,8 @@ pub const HIDDEN_INTERFACE: u32 =
     CONSOLE | RESOURCE_BAR | TOOLTIP | CLOCK | PLAYER_INFO | UNIT_ICONS | END_GRAPH;
 
 pub fn setup(handler: &mut WidgetHandler<Global>, spring: &spring::Spring<'_, spring::Ui>) {
-    if cfg!(feature = "fire-probe") {
+    #[cfg(feature = "fire-probe")]
+    if !gfx_fire::fire::probe::observes_production(spring) {
         register_widgets!(
             handler,
             [

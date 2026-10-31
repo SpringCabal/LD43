@@ -12,16 +12,16 @@ Unit-script tasks keep their unit context across waits and acquire Spring only
 for synchronous engine operations. The CUS timer stays after all queued frame
 commands, including their continuations. Synced random draw order is preserved.
 
-Verification in the dedicated port worktree:
+The development repository supplies the headless gameplay, visual,
+Lua/Rust pose comparison and controls suites. The gameplay suite applies real
+engine damage to a house: 400 damage must not ignite it; 401 damage must.
+The native unit script registers `WorldHitByWeapon`, the callback used by engine
+damage delivery. Its handler leaves the damage unchanged and sets `on_fire`
+above the same threshold as Lua's `HitByWeapon` handler.
 
-- All 54 existing gameplay assertions pass on Linux and Wine.
-- The live Lua/Rust animation comparison passes: 105 samples, identical transforms.
-- Default and all-feature builds pass strict Clippy.
-- The visual scenario captures all three screens and verifies both boss models.
-  The renderer gate rejects Mesa package `.4` versus recorded `.2`. Two early
-  captures also slightly exceed the existing 1% image limit in both the old code
-  and the port; the late capture meets its 3% limit. Expected images and limits
-  were not changed. The visual suite remains red.
+World health bars use the original Lua renderer alongside the Wasm HUD and
+input. Both editions share its shaders, visibility rules, bar states and
+defaults. Gameplay and unit scripts remain in Wasm.
 
 Rendering rejects deferred lights only when their entire influence sphere is
 outside the camera frustum. Mirrored terrain tiles likewise use bounds covering

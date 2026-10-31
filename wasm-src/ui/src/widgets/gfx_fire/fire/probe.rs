@@ -2,6 +2,14 @@
 use super::{Fire, emit};
 use springcabal_control::camera::{View, place_camera};
 
+pub(crate) fn observes_production(spring: &spring::Spring<'_, spring::Ui>) -> bool {
+    spring
+        .rules_params()
+        .get_game_rules_param_f32("perf_fire_observe")
+        .unwrap_or(0.0)
+        == 1.0
+}
+
 pub struct Probe {
     stage: i32,
     shot: i32,
@@ -16,6 +24,31 @@ impl Default for Probe {
 }
 impl Probe {
     pub fn update(&mut self, spring: &spring::Spring<'_, spring::Ui>, fire: &mut Fire) {
+        // Observe the ordinary production path without installing held ages,
+        // emitters, camera changes or visibility overrides.
+        if observes_production(spring) {
+            fire.update(spring);
+            let frame = spring.game().current_frame().unwrap_or(0);
+            if frame / 30 != self.shot {
+                self.shot = frame / 30;
+                let records = fire
+                    .field
+                    .textures()
+                    .into_iter()
+                    .map(|texture| fire.field.gpu_particles(Some(texture)).len())
+                    .sum::<usize>()
+                    + fire.field.gpu_particles(None).len();
+                spring::log_notice!(
+                    spring,
+                    "TTLDProductionFire",
+                    "frame={frame} houses={} burning={} records={records} rng={:?}",
+                    fire.houses.len(),
+                    fire.burning.len(),
+                    fire.random
+                );
+            }
+            return;
+        }
         let _ = spring.unsynced_ctrl().warp_mouse(200, 500);
         place_camera(
             spring,

@@ -350,7 +350,7 @@ impl UnitScript for TtldUnitScript {
         .expect("unit-script engine scope")
     }
 
-    fn hit_by_weapon(
+    fn world_hit_by_weapon(
         &mut self,
         ctx: &UnitCtx,
         _hit_direction: spring::Float3,
