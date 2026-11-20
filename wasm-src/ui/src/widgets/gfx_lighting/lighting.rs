@@ -5,6 +5,10 @@ pub fn apply(spring: &spring::Spring<'_, spring::Ui>, applied: &Cell<bool>) {
     if applied.get() {
         return;
     }
+    if spring.platform().is_headless().unwrap_or(false) {
+        applied.set(true);
+        return;
+    }
     let params = spring::unsynced_ctrl::SunLightingParams {
         ground_ambient_color: Some(vec![GROUND_AMBIENT, GROUND_AMBIENT, GROUND_AMBIENT, 1.0]),
         ground_diffuse_color: Some(vec![GROUND_DIFFUSE, GROUND_DIFFUSE, GROUND_DIFFUSE, 1.0]),
